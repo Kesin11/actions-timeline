@@ -1,5 +1,5 @@
 {
   "tasks": {
-    "dev": "deno run --watch main.ts"
+    "dnt": "deno run -A scripts/build.ts 0.1.0"
   }
 }
