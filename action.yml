@@ -1,0 +1,11 @@
+name: 'actions-timeline'
+description: 'Show workflow timeline in summary'
+author: 'kesin1202000@gmail.com'
+inputs:
+  foo:
+    required: false
+    description: 'bar'
+runs:
+  using: 'node16'
+  main: 'dist/main/index.js'
+  post: 'dist/post/index.js'
