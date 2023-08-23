@@ -89,5 +89,33 @@
     "https://deno.land/x/ts_morph@18.0.0/common/typescript.js": "d5c598b6a2db2202d0428fca5fd79fc9a301a71880831a805d778797d2413c59",
     "https://deno.land/x/wasmbuild@0.15.0/cache.ts": "89eea5f3ce6035a1164b3e655c95f21300498920575ade23161421f5b01967f4",
     "https://deno.land/x/wasmbuild@0.15.0/loader.ts": "d98d195a715f823151cbc8baa3f32127337628379a02d9eb2a3c5902dbccfc02"
+  },
+  "npm": {
+    "specifiers": {
+      "@actions/core@1.10.0": "@actions/core@1.10.0"
+    },
+    "packages": {
+      "@actions/core@1.10.0": {
+        "integrity": "sha512-2aZDDa3zrrZbP5ZYg159sNoLRb61nQ7awl5pSvIq5Qpj81vwDzdMRKzkWJGJuwVvWpvZKx7vspJALyvaaIQyug==",
+        "dependencies": {
+          "@actions/http-client": "@actions/http-client@2.1.1",
+          "uuid": "uuid@8.3.2"
+        }
+      },
+      "@actions/http-client@2.1.1": {
+        "integrity": "sha512-qhrkRMB40bbbLo7gF+0vu+X+UawOvQQqNAA/5Unx774RS8poaOhThDOG6BGmxvAnxhQnDp2BG/ZUm65xZILTpw==",
+        "dependencies": {
+          "tunnel": "tunnel@0.0.6"
+        }
+      },
+      "tunnel@0.0.6": {
+        "integrity": "sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==",
+        "dependencies": {}
+      },
+      "uuid@8.3.2": {
+        "integrity": "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==",
+        "dependencies": {}
+      }
+    }
   }
 }

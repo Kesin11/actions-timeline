@@ -1,11 +1,14 @@
-// ex. scripts/build_npm.ts
-import { build, emptyDir } from "https://deno.land/x/dnt/mod.ts";
+import { build, emptyDir } from "https://deno.land/x/dnt@0.38.1/mod.ts";
 
-await emptyDir("./npm");
+const outDir = "./npm";
+await emptyDir(outDir);
 
 await build({
   entryPoints: ["./main.ts"],
-  outDir: "./npm",
+  outDir,
+  typeCheck: false,
+  declaration: false,
+  scriptModule: false,
   shims: {
     // see JS docs for overview and more options
     deno: true,
@@ -23,10 +26,5 @@ await build({
     bugs: {
       url: "https://github.com/Kesin11/actions-timeline/issues",
     },
-  },
-  postBuild() {
-    // steps to run after building and before running the tests
-    Deno.copyFileSync("LICENSE", "npm/LICENSE");
-    Deno.copyFileSync("README.md", "npm/README.md");
   },
 });
