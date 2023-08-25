@@ -7,5 +7,5 @@ inputs:
     description: 'bar'
 runs:
   using: 'node16'
-  main: 'dist/main/index.js'
-  post: 'dist/post/index.js'
+  main: 'dist/main.js'
+  # post: 'dist/post/index.js'

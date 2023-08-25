@@ -6,10 +6,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  mermaid_summary:
+  run_self:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
-      - run: |
-          cat gantt.md >> $GITHUB_STEP_SUMMARY
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.36.x
+      - run: deno task bundle
+      - name: Run self action
+        uses: ./
