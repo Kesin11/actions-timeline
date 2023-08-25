@@ -9,8 +9,7 @@ if (Deno.env.get("GITHUB_STEP_SUMMARY") === undefined) {
 }
 
 const main = async () => {
-  await summary.addRaw(`github.run_id: ${github.context.run_id}`).write()
-  await summary.addRaw(`github.run_attempt: ${github.context.run_attempt}`).write()
+  await summary.addRaw(`github.run_id: ${github.context.runId}\n`).write()
 
   const gantt = `
 \`\`\`mermaid
