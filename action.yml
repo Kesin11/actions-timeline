@@ -8,4 +8,4 @@ inputs:
 runs:
   using: 'node16'
   main: 'dist/main.js'
-  # post: 'dist/post/index.js'
+  post: 'dist/main.js'
