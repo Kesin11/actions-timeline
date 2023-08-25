@@ -1,4 +1,5 @@
 import { summary } from "npm:@actions/core@1.10.0"
+import * as github from "npm:@actions/github@5.1.1"
 
 // DEBUG
 if (Deno.env.get("GITHUB_STEP_SUMMARY") === undefined) {
@@ -8,6 +9,9 @@ if (Deno.env.get("GITHUB_STEP_SUMMARY") === undefined) {
 }
 
 const main = async () => {
+  await summary.addRaw(`github.run_id: ${github.context.run_id}`).write()
+  await summary.addRaw(`github.run_attempt: ${github.context.run_attempt}`).write()
+
   const gantt = `
 \`\`\`mermaid
 gantt
