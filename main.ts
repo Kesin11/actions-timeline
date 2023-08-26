@@ -10,6 +10,8 @@ if (Deno.env.get("GITHUB_STEP_SUMMARY") === undefined) {
 
 const main = async () => {
   await summary.addRaw(`github.run_id: ${github.context.runId}\n`).write()
+  // TODO: gh api repos/kesin11/actions-timeline/actions/runs/${github.context.runId}/jobs
+  // これだけでjobs, それぞれのstepsの情報が取れる
 
   const gantt = `
 \`\`\`mermaid
