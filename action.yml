@@ -1,11 +1,11 @@
-name: 'actions-timeline'
-description: 'Show workflow timeline in summary'
-author: 'kesin1202000@gmail.com'
+name: "actions-timeline"
+description: "Show workflow timeline in summary"
+author: "kesin1202000@gmail.com"
 inputs:
   foo:
     required: false
-    description: 'bar'
+    description: "bar"
 runs:
-  using: 'node16'
-  # main: 'dist/main.js'
-  post: 'dist/main.js'
+  using: "node16"
+  main: "./main_dummy.js"
+  post: "dist/main.js"
