@@ -105,7 +105,7 @@ title ${workflowJobs[0].workflow_name}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
 section ${workflowJobs[0].name}
-${workflowJobs[0].steps![0].name} :job0-0, 00:00:00, 2s
+${workflowJobs[0].steps![0].name} :job0-0, 00:00:08, 2s
 ${workflowJobs[0].steps![1].name} :job0-1, after job0-0, 1s
 ${workflowJobs[0].steps![2].name} :job0-2, after job0-1, 1s
 ${workflowJobs[0].steps![3].name} :job0-3, after job0-2, 11s

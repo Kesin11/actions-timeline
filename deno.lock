@@ -104,7 +104,8 @@
       "@actions/github@5.1.1": "@actions/github@5.1.1_@octokit+core@3.6.0",
       "@octokit/plugin-rest-endpoint-methods@5.13.0": "@octokit/plugin-rest-endpoint-methods@5.13.0_@octokit+core@5.0.0",
       "@octokit/plugin-rest-endpoint-methods@9.0.0": "@octokit/plugin-rest-endpoint-methods@9.0.0_@octokit+core@5.0.0",
-      "@octokit/rest@20.0.1": "@octokit/rest@20.0.1_@octokit+core@5.0.0"
+      "@octokit/rest@20.0.1": "@octokit/rest@20.0.1_@octokit+core@5.0.0",
+      "date-fns@2.30.0": "date-fns@2.30.0"
     },
     "packages": {
       "@actions/core@1.10.0": {
@@ -127,6 +128,12 @@
         "integrity": "sha512-qhrkRMB40bbbLo7gF+0vu+X+UawOvQQqNAA/5Unx774RS8poaOhThDOG6BGmxvAnxhQnDp2BG/ZUm65xZILTpw==",
         "dependencies": {
           "tunnel": "tunnel@0.0.6"
+        }
+      },
+      "@babel/runtime@7.22.11": {
+        "integrity": "sha512-ee7jVNlWN09+KftVOu9n7S8gQzD/Z6hN/I8VBRXW4P1+Xe7kJGXMwu8vds4aGIMHZnNbdpSWCfZZtinytpcAvA==",
+        "dependencies": {
+          "regenerator-runtime": "regenerator-runtime@0.14.0"
         }
       },
       "@octokit/auth-token@2.5.0": {
@@ -308,6 +315,12 @@
         "integrity": "sha512-NzUnlZexiaH/46WDhANlyR2bXRopNg4F/zuSA3OpZnllCUgRaOF2znDioDWrmbNVsuZk6l9pMquQB38cfBZwkQ==",
         "dependencies": {}
       },
+      "date-fns@2.30.0": {
+        "integrity": "sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==",
+        "dependencies": {
+          "@babel/runtime": "@babel/runtime@7.22.11"
+        }
+      },
       "deprecation@2.3.1": {
         "integrity": "sha512-xmHIy4F3scKVwMsQ4WnVaS8bHOx0DmVwRywosKhaILI0ywMDWPtBSku2HNxRvF7jtwDRsoEwYQSfbxj8b7RlJQ==",
         "dependencies": {}
@@ -327,6 +340,10 @@
         "dependencies": {
           "wrappy": "wrappy@1.0.2"
         }
+      },
+      "regenerator-runtime@0.14.0": {
+        "integrity": "sha512-srw17NI0TUWHuGa5CFGGmhfNIeja30WMBfbslPNhf6JrqQlLN5gcrvig1oqPxiVaXb0oW0XRKtH6Nngs5lKCIA==",
+        "dependencies": {}
       },
       "tr46@0.0.3": {
         "integrity": "sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==",

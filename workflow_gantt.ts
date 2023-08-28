@@ -1,6 +1,7 @@
 // import * as github from "npm:@actions/github@5.1.1";
 // import { RestEndpointMethodTypes } from "npm:@octokit/plugin-rest-endpoint-methods@9.0.0";
 import { Octokit, RestEndpointMethodTypes } from "npm:@octokit/rest@20.0.1";
+import { format } from "npm:date-fns@2.30.0";
 
 export type Workflow =
   RestEndpointMethodTypes["actions"]["getWorkflowRun"]["response"]["data"];
@@ -14,6 +15,14 @@ const diffSec = (start: string | Date, end: string | Date): number => {
   const endDate = new Date(end);
 
   return (endDate.getTime() - startDate.getTime()) / 1000;
+};
+
+// Sec to elapsed time that format is HH:mm:ss (eg. 70sec -> 00:01:10)
+const formatElapsedTime = (sec: number): string => {
+  const date = new Date(sec * 1000);
+  const offsetMinute = date.getTimezoneOffset();
+  const timezonreIgnoredDate = new Date(sec * 1000 + offsetMinute * 60 * 1000);
+  return format(timezonreIgnoredDate, "HH:mm:ss");
 };
 
 export const fetchWorkflow = async (
@@ -72,8 +81,9 @@ export const createGantt = (
   const jobs = workflowJobs.map((job, jobIndex, _jobs): ganttJob => {
     const section = job.name;
     const steps = job.steps?.map((step, stepIndex, _steps) => {
+      const startJobElapsedSec = diffSec(workflow.created_at, job.started_at);
       const position = stepIndex === 0
-        ? "00:00:00" // TODO: workflow.created_atからjob.startedの差分を計算して00:00:00からの相対時間にする
+        ? formatElapsedTime(startJobElapsedSec)
         : `after job${jobIndex}-${stepIndex - 1}`;
       return {
         name: step.name,
