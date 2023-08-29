@@ -1,5 +1,3 @@
-// import * as github from "npm:@actions/github@5.1.1";
-// import { RestEndpointMethodTypes } from "npm:@octokit/plugin-rest-endpoint-methods@9.0.0";
 import { Octokit, RestEndpointMethodTypes } from "npm:@octokit/rest@20.0.1";
 import { format } from "npm:date-fns@2.30.0";
 
@@ -65,14 +63,17 @@ export const fetchWorkflowRunJobs = async (
 
 type ganttJob = {
   section: string;
-  steps: {
-    name: string;
-    status: "" | "done" | "active" | "crit";
-    id: string;
-    position: string;
-    sec: number;
-  }[];
+  steps: ganttStep[];
 };
+
+type ganttStep = {
+  name: string;
+  id: `job${number}-${number}`;
+  status: "" | "done" | "active" | "crit";
+  position: string;
+  sec: number;
+};
+
 export const createGantt = (
   workflow: Workflow,
   workflowJobs: WorkflowJobs,
@@ -80,20 +81,26 @@ export const createGantt = (
   const title = workflowJobs[0].workflow_name;
   const jobs = workflowJobs.map((job, jobIndex, _jobs): ganttJob => {
     const section = job.name;
-    const steps = job.steps?.map((step, stepIndex, _steps) => {
-      const startJobElapsedSec = diffSec(workflow.created_at, job.started_at);
-      const position = stepIndex === 0
-        ? formatElapsedTime(startJobElapsedSec)
-        : `after job${jobIndex}-${stepIndex - 1}`;
+    const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
+    const waitingRunnerStep: ganttStep = {
+      name: "Waiting for a runner",
+      id: `job${jobIndex}-0`,
+      status: "" as const,
+      position: formatElapsedTime(startJobElapsedSec),
+      sec: diffSec(job.created_at, job.started_at),
+    };
+
+    const steps = job.steps?.map((step, stepIndex, _steps): ganttStep => {
       return {
         name: step.name,
-        id: `job${jobIndex}-${stepIndex}`,
-        status: "" as const,
-        position,
+        id: `job${jobIndex}-${stepIndex + 1}`,
+        status: "" as const, // TODO: Set gantt color by step.conclusion
+        position: `after job${jobIndex}-${stepIndex}`,
         sec: diffSec(step.started_at!, step.completed_at!),
       };
     }) ?? [];
-    return { section, steps };
+
+    return { section, steps: [waitingRunnerStep, ...steps] };
   });
 
   return `

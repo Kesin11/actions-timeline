@@ -100,14 +100,15 @@ title ${workflowJobs[0].workflow_name}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
 section ${workflowJobs[0].name}
-${workflowJobs[0].steps![0].name} :job0-0, 00:00:08, 2s
-${workflowJobs[0].steps![1].name} :job0-1, after job0-0, 1s
-${workflowJobs[0].steps![2].name} :job0-2, after job0-1, 1s
-${workflowJobs[0].steps![3].name} :job0-3, after job0-2, 11s
-${workflowJobs[0].steps![4].name} :job0-4, after job0-3, 0s
-${workflowJobs[0].steps![5].name} :job0-5, after job0-4, 0s
-${workflowJobs[0].steps![6].name} :job0-6, after job0-5, 0s
-${workflowJobs[0].steps![7].name} :job0-7, after job0-6, 0s
+Waiting for a runner :job0-0, 00:00:01, 7s
+${workflowJobs[0].steps![0].name} :job0-1, after job0-0, 2s
+${workflowJobs[0].steps![1].name} :job0-2, after job0-1, 1s
+${workflowJobs[0].steps![2].name} :job0-3, after job0-2, 1s
+${workflowJobs[0].steps![3].name} :job0-4, after job0-3, 11s
+${workflowJobs[0].steps![4].name} :job0-5, after job0-4, 0s
+${workflowJobs[0].steps![5].name} :job0-6, after job0-5, 0s
+${workflowJobs[0].steps![6].name} :job0-7, after job0-6, 0s
+${workflowJobs[0].steps![7].name} :job0-8, after job0-7, 0s
 \`\`\`
 `;
 
@@ -284,22 +285,24 @@ title ${workflowJobs[0].workflow_name}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
 section ${workflowJobs[0].name}
-${workflowJobs[0].steps![0].name} :job0-0, 00:00:43, 2s
-${workflowJobs[0].steps![1].name} :job0-1, after job0-0, 0s
-${workflowJobs[0].steps![2].name} :job0-2, after job0-1, 0s
-${workflowJobs[0].steps![3].name} :job0-3, after job0-2, 0s
-${workflowJobs[0].steps![4].name} :job0-4, after job0-3, 0s
-${workflowJobs[0].steps![5].name} :job0-5, after job0-4, 0s
-${workflowJobs[0].steps![6].name} :job0-6, after job0-5, 0s
-${workflowJobs[0].steps![7].name} :job0-7, after job0-6, 0s
+Waiting for a runner :job0-0, 00:00:02, 41s
+${workflowJobs[0].steps![0].name} :job0-1, after job0-0, 2s
+${workflowJobs[0].steps![1].name} :job0-2, after job0-1, 0s
+${workflowJobs[0].steps![2].name} :job0-3, after job0-2, 0s
+${workflowJobs[0].steps![3].name} :job0-4, after job0-3, 0s
+${workflowJobs[0].steps![4].name} :job0-5, after job0-4, 0s
+${workflowJobs[0].steps![5].name} :job0-6, after job0-5, 0s
+${workflowJobs[0].steps![6].name} :job0-7, after job0-6, 0s
+${workflowJobs[0].steps![7].name} :job0-8, after job0-7, 0s
 section ${workflowJobs[1].name}
-${workflowJobs[1].steps![0].name} :job1-0, 00:00:42, 3s
-${workflowJobs[1].steps![1].name} :job1-1, after job1-0, 0s
-${workflowJobs[1].steps![2].name} :job1-2, after job1-1, 16s
-${workflowJobs[1].steps![3].name} :job1-3, after job1-2, 0s
-${workflowJobs[1].steps![4].name} :job1-4, after job1-3, 0s
-${workflowJobs[1].steps![5].name} :job1-5, after job1-4, 0s
-${workflowJobs[1].steps![6].name} :job1-6, after job1-5, 0s
+Waiting for a runner :job1-0, 00:00:03, 39s
+${workflowJobs[1].steps![0].name} :job1-1, after job1-0, 3s
+${workflowJobs[1].steps![1].name} :job1-2, after job1-1, 0s
+${workflowJobs[1].steps![2].name} :job1-3, after job1-2, 16s
+${workflowJobs[1].steps![3].name} :job1-4, after job1-3, 0s
+${workflowJobs[1].steps![4].name} :job1-5, after job1-4, 0s
+${workflowJobs[1].steps![5].name} :job1-6, after job1-5, 0s
+${workflowJobs[1].steps![6].name} :job1-7, after job1-6, 0s
 \`\`\`
 `;
 
