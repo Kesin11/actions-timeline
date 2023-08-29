@@ -102,11 +102,15 @@ gantt
 title ${title}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
-section ${jobs[0].section}
 ${
-    jobs[0].steps.map((step) =>
-      `${step.name} :${step.id}, ${step.position}, ${step.sec}s`
-    ).join("\n")
+    jobs.flatMap((job) => {
+      return [
+        `section ${job.section}`,
+        ...job.steps.map((step) =>
+          `${step.name} :${step.id}, ${step.position}, ${step.sec}s`
+        ),
+      ];
+    }).join("\n")
   }
 \`\`\`
 `;
