@@ -1,5 +1,11 @@
 import { assertEquals } from "https://deno.land/std@0.189.0/testing/asserts.ts";
-import { createGantt, Workflow, WorkflowJobs } from "../workflow_gantt.ts";
+import {
+  createGantt,
+  formatStep,
+  ganttStep,
+  Workflow,
+  WorkflowJobs,
+} from "../workflow_gantt.ts";
 
 Deno.test("1 section gantt", () => {
   const workflow = {
@@ -307,4 +313,42 @@ ${workflowJobs[1].steps![6].name} :job1-7, after job1-6, 0s
 `;
 
   assertEquals(createGantt(workflow, workflowJobs), expect);
+});
+
+Deno.test("formatStep", async (t) => {
+  const baseStep: ganttStep = {
+    name: "Test step",
+    id: "job0-1",
+    status: "",
+    position: "after job0-0",
+    sec: 1,
+  };
+
+  await t.step("status:empty", () => {
+    const step: ganttStep = { ...baseStep, status: "" };
+    const actual = formatStep(step);
+    const expect = `${step.name} :${step.id}, ${step.position}, ${step.sec}s`;
+    assertEquals(actual, expect);
+  });
+  await t.step("status:done", () => {
+    const step: ganttStep = { ...baseStep, status: "done" };
+    const actual = formatStep(step);
+    const expect =
+      `${step.name} :done, ${step.id}, ${step.position}, ${step.sec}s`;
+    assertEquals(actual, expect);
+  });
+  await t.step("status:crit", () => {
+    const step: ganttStep = { ...baseStep, status: "crit" };
+    const actual = formatStep(step);
+    const expect =
+      `${step.name} :crit, ${step.id}, ${step.position}, ${step.sec}s`;
+    assertEquals(actual, expect);
+  });
+  await t.step("status:active", () => {
+    const step: ganttStep = { ...baseStep, status: "active" };
+    const actual = formatStep(step);
+    const expect =
+      `${step.name} :active, ${step.id}, ${step.position}, ${step.sec}s`;
+    assertEquals(actual, expect);
+  });
 });

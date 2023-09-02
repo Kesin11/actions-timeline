@@ -23,6 +23,15 @@ const formatElapsedTime = (sec: number): string => {
   return format(timezonreIgnoredDate, "HH:mm:ss");
 };
 
+export const formatStep = (step: ganttStep): string => {
+  switch (step.status) {
+    case "":
+      return `${step.name} :${step.id}, ${step.position}, ${step.sec}s`;
+    default:
+      return `${step.name} :${step.status}, ${step.id}, ${step.position}, ${step.sec}s`;
+  }
+};
+
 export const fetchWorkflow = async (
   owner: string,
   repo: string,
@@ -66,7 +75,7 @@ type ganttJob = {
   steps: ganttStep[];
 };
 
-type ganttStep = {
+export type ganttStep = {
   name: string;
   id: `job${number}-${number}`;
   status: "" | "done" | "active" | "crit";
@@ -113,9 +122,7 @@ ${
     jobs.flatMap((job) => {
       return [
         `section ${job.section}`,
-        ...job.steps.map((step) =>
-          `${step.name} :${step.id}, ${step.position}, ${step.sec}s`
-        ),
+        ...job.steps.map((step) => formatStep(step)),
       ];
     }).join("\n")
   }
