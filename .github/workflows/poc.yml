@@ -17,3 +17,5 @@ jobs:
       - run: deno task bundle
       - name: Run self action
         uses: ./
+        env:
+          NODE_OPTIONS: "--enable-source-maps"

@@ -1,8 +1,8 @@
 import { build, emptyDir } from "https://deno.land/x/dnt@0.38.1/mod.ts";
 // @deno-types="https://deno.land/x/esbuild@v0.19.2/mod.d.ts"
-import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js"
+import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
 
-console.debug("Start dnt ...")
+console.debug("Start dnt ...");
 
 const outDir = "./npm";
 await emptyDir(outDir);
@@ -32,7 +32,7 @@ await build({
   },
 });
 
-console.log("Start esbuild ...")
+console.log("Start esbuild ...");
 const distDir = "./dist";
 await emptyDir(distDir);
 
@@ -46,5 +46,5 @@ await esbuild.build({
   minify: true,
   sourcemap: true,
 }).finally(() => {
-  esbuild.stop()
-})
+  esbuild.stop();
+});
