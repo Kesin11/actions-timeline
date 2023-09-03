@@ -180,7 +180,6 @@ Deno.test("1 section gantt with skipped and failure steps", () => {
     ],
   }] as unknown as WorkflowJobs;
 
-  // TODO: テスト修正
   // deno-fmt-ignore
   const expect = `
 \`\`\`mermaid
