@@ -7,6 +7,15 @@ export type WorkflowJobs =
   RestEndpointMethodTypes["actions"]["listJobsForWorkflowRun"]["response"][
     "data"
   ]["jobs"];
+// ref: https://docs.github.com/ja/free-pro-team@latest/rest/actions/workflow-jobs?apiVersion=2022-11-28#get-a-job-for-a-workflow-run
+type StepConclusion =
+  | "success"
+  | "failure"
+  | "neutral"
+  | "cancelled"
+  | "skipped"
+  | "timed_out"
+  | "action_required";
 
 const diffSec = (start: string | Date, end: string | Date): number => {
   const startDate = new Date(start);
@@ -83,6 +92,16 @@ export type ganttStep = {
   sec: number;
 };
 
+const stepStatusMap: Record<StepConclusion, ganttStep["status"]> = {
+  success: "",
+  failure: "crit",
+  cancelled: "done",
+  skipped: "done",
+  timed_out: "done",
+  neutral: "active",
+  action_required: "active",
+};
+
 export const createGantt = (
   workflow: Workflow,
   workflowJobs: WorkflowJobs,
@@ -103,7 +122,7 @@ export const createGantt = (
       return {
         name: step.name,
         id: `job${jobIndex}-${stepIndex + 1}`,
-        status: "" as const, // TODO: Set gantt color by step.conclusion
+        status: stepStatusMap[step.conclusion as StepConclusion] ?? "active",
         position: `after job${jobIndex}-${stepIndex}`,
         sec: diffSec(step.started_at!, step.completed_at!),
       };

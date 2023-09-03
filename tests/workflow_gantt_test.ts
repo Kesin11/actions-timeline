@@ -121,6 +121,85 @@ ${workflowJobs[0].steps![7].name} :job0-8, after job0-7, 0s
   assertEquals(createGantt(workflow, workflowJobs), expect);
 });
 
+Deno.test("1 section gantt with skipped and failure steps", () => {
+  const workflow = {
+    "id": 5977929222,
+    "name": "POC",
+    "run_number": 5,
+    "event": "push",
+    "status": "completed",
+    "conclusion": "failure",
+    "workflow_id": 66989622,
+    "created_at": "2023-08-25T15:57:51Z",
+    "updated_at": "2023-08-25T15:58:19Z",
+  } as unknown as Workflow;
+
+  const workflowJobs = [{
+    "id": 16218974194,
+    "run_id": 5977929222,
+    "workflow_name": "POC",
+    "status": "completed",
+    "conclusion": "failure",
+    "created_at": "2023-08-25T15:57:52Z",
+    "started_at": "2023-08-25T15:57:59Z",
+    "completed_at": "2023-08-25T15:58:17Z",
+    "name": "run_self",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "skipped",
+        "number": 1,
+        "started_at": "2023-08-26T00:57:58.000+09:00",
+        "completed_at": "2023-08-26T00:58:00.000+09:00",
+      },
+      {
+        "name": "Run actions/checkout@v3",
+        "status": "completed",
+        "conclusion": "failure",
+        "number": 2,
+        "started_at": "2023-08-26T00:58:00.000+09:00",
+        "completed_at": "2023-08-26T00:58:01.000+09:00",
+      },
+      {
+        "name": "Post Run actions/checkout@v3",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 10,
+        "started_at": "2023-08-26T00:58:15.000+09:00",
+        "completed_at": "2023-08-26T00:58:15.000+09:00",
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 11,
+        "started_at": "2023-08-26T00:58:15.000+09:00",
+        "completed_at": "2023-08-26T00:58:15.000+09:00",
+      },
+    ],
+  }] as unknown as WorkflowJobs;
+
+  // TODO: テスト修正
+  // deno-fmt-ignore
+  const expect = `
+\`\`\`mermaid
+gantt
+title ${workflowJobs[0].workflow_name}
+dateFormat  HH:mm:ss
+axisFormat  %H:%M:%S
+section ${workflowJobs[0].name}
+Waiting for a runner :job0-0, 00:00:01, 7s
+${workflowJobs[0].steps![0].name} :done, job0-1, after job0-0, 2s
+${workflowJobs[0].steps![1].name} :crit, job0-2, after job0-1, 1s
+${workflowJobs[0].steps![2].name} :job0-3, after job0-2, 0s
+${workflowJobs[0].steps![3].name} :job0-4, after job0-3, 0s
+\`\`\`
+`;
+
+  assertEquals(createGantt(workflow, workflowJobs), expect);
+});
+
 Deno.test("2 section gantt", () => {
   const workflow = {
     "id": 5833450919,
