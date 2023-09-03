@@ -102,7 +102,7 @@ const stepStatusMap: Record<StepConclusion, ganttStep["status"]> = {
   timed_out: "done",
   neutral: "active",
   action_required: "active",
-};
+} as const;
 
 export const createGantt = (
   workflow: Workflow,
@@ -111,11 +111,12 @@ export const createGantt = (
   const title = workflowJobs[0].workflow_name;
   const jobs = workflowJobs.map((job, jobIndex, _jobs): ganttJob => {
     const section = job.name;
+    const status: ganttStep["status"] = "active";
     const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
     const waitingRunnerStep: ganttStep = {
       name: "Waiting for a runner",
       id: `job${jobIndex}-0`,
-      status: "" as const,
+      status,
       position: formatElapsedTime(startJobElapsedSec),
       sec: diffSec(job.created_at, job.started_at),
     };
