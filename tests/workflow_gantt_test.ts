@@ -5,7 +5,7 @@ import {
   ganttStep,
   Workflow,
   WorkflowJobs,
-} from "../workflow_gantt.ts";
+} from "../src/workflow_gantt.ts";
 
 Deno.test("1 section gantt", () => {
   const workflow = {
