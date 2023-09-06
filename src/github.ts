@@ -9,20 +9,20 @@ export type WorkflowJobs =
     "data"
   ]["jobs"];
 
-const createOctokit = () => {
-  const token = Deno.env.get("GITHUB_TOKEN")!;
+export const createOctokit = (token: string): Octokit => {
+  const baseUrl = Deno.env.get("GITHUB_API_URL") ?? "https://api.github.com";
   return new Octokit({
     auth: token,
-    // baseUrl: baseUrl ? baseUrl : "https://api.github.com",
+    baseUrl,
   });
 };
 
 export const fetchWorkflow = async (
+  octokit: Octokit,
   owner: string,
   repo: string,
   runId: number,
 ): Promise<Workflow> => {
-  const octokit = createOctokit();
   const workflow = await octokit.rest.actions.getWorkflowRun({
     owner,
     repo,
@@ -32,11 +32,11 @@ export const fetchWorkflow = async (
 };
 
 export const fetchWorkflowRunJobs = async (
+  octokit: Octokit,
   owner: string,
   repo: string,
   runId: number,
 ): Promise<WorkflowJobs> => {
-  const octokit = createOctokit();
   const workflowJob = await octokit.rest.actions.listJobsForWorkflowRun({
     owner,
     repo,
