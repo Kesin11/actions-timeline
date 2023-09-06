@@ -1,10 +1,7 @@
 import { info, summary } from "npm:@actions/core@1.10.0";
 import * as github from "npm:@actions/github@5.1.1";
-import {
-  createGantt,
-  fetchWorkflow,
-  fetchWorkflowRunJobs,
-} from "./workflow_gantt.ts";
+import { createGantt } from "./workflow_gantt.ts";
+import { fetchWorkflow, fetchWorkflowRunJobs } from "./github.ts";
 
 // DEBUG
 if (Deno.env.get("GITHUB_STEP_SUMMARY") === undefined) {

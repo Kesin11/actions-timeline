@@ -1,11 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.189.0/testing/asserts.ts";
-import {
-  createGantt,
-  formatStep,
-  ganttStep,
-  Workflow,
-  WorkflowJobs,
-} from "../src/workflow_gantt.ts";
+import { createGantt, formatStep, ganttStep } from "../src/workflow_gantt.ts";
+import { Workflow, WorkflowJobs } from "../src/github.ts";
 
 Deno.test("1 section gantt", () => {
   const workflow = {
