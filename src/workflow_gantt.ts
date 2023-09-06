@@ -1,6 +1,19 @@
 import { format } from "npm:date-fns@2.30.0";
 import { Workflow, WorkflowJobs } from "./github.ts";
 
+type ganttJob = {
+  section: string;
+  steps: ganttStep[];
+};
+
+export type ganttStep = {
+  name: string;
+  id: `job${number}-${number}`;
+  status: "" | "done" | "active" | "crit";
+  position: string;
+  sec: number;
+};
+
 // ref: https://docs.github.com/ja/free-pro-team@latest/rest/actions/workflow-jobs?apiVersion=2022-11-28#get-a-job-for-a-workflow-run
 type StepConclusion =
   | "success"
@@ -33,19 +46,6 @@ export const formatStep = (step: ganttStep): string => {
     default:
       return `${step.name} :${step.status}, ${step.id}, ${step.position}, ${step.sec}s`;
   }
-};
-
-type ganttJob = {
-  section: string;
-  steps: ganttStep[];
-};
-
-export type ganttStep = {
-  name: string;
-  id: `job${number}-${number}`;
-  status: "" | "done" | "active" | "crit";
-  position: string;
-  sec: number;
 };
 
 const stepStatusMap: Record<StepConclusion, ganttStep["status"]> = {

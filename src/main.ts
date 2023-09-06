@@ -3,13 +3,6 @@ import * as github from "npm:@actions/github@5.1.1";
 import { createGantt } from "./workflow_gantt.ts";
 import { fetchWorkflow, fetchWorkflowRunJobs } from "./github.ts";
 
-// DEBUG
-if (Deno.env.get("GITHUB_STEP_SUMMARY") === undefined) {
-  Deno.env.set("GITHUB_STEP_SUMMARY", "out.md");
-  Deno.openSync("out.md", { create: true, write: true });
-  Deno.truncateSync("out.md");
-}
-
 const main = async () => {
   info("Fetch workflow...");
   const workflow = await fetchWorkflow(
