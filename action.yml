@@ -8,5 +8,5 @@ inputs:
     required: false
 runs:
   using: "node16"
-  main: "./main_dummy.js"
-  post: "dist/main.js"
+  main: "dist/main.js"
+  post: "dist/post.js"
