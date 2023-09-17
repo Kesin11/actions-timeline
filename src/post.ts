@@ -1,27 +1,26 @@
-import { info, summary } from "npm:@actions/core@1.10.0";
+import { getInput, info, summary } from "npm:@actions/core@1.10.0";
 import * as github from "npm:@actions/github@5.1.1";
+import { createGantt } from "./workflow_gantt.ts";
 import {
-  createGantt,
+  createOctokit,
   fetchWorkflow,
   fetchWorkflowRunJobs,
-} from "./workflow_gantt.ts";
-
-// DEBUG
-if (Deno.env.get("GITHUB_STEP_SUMMARY") === undefined) {
-  Deno.env.set("GITHUB_STEP_SUMMARY", "out.md");
-  Deno.openSync("out.md", { create: true, write: true });
-  Deno.truncateSync("out.md");
-}
+} from "./github.ts";
 
 const main = async () => {
+  const token = getInput("github-token", { required: true });
+  const octokit = createOctokit(token);
+
   info("Fetch workflow...");
   const workflow = await fetchWorkflow(
+    octokit,
     github.context.repo.owner,
     github.context.repo.repo,
     github.context.runId,
   );
   info("Fetch workflow_job...");
   const workflowJobs = await fetchWorkflowRunJobs(
+    octokit,
     github.context.repo.owner,
     github.context.repo.repo,
     github.context.runId,

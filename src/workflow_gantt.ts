@@ -1,14 +1,19 @@
-// @octokit/rest@20 dropped support for node16. However, node16 bundled in actions/runner and still supported.
-// So, we use @octokit/rest@19.
-import { Octokit, RestEndpointMethodTypes } from "npm:@octokit/rest@19.0.13";
 import { format } from "npm:date-fns@2.30.0";
+import { Workflow, WorkflowJobs } from "./github.ts";
 
-export type Workflow =
-  RestEndpointMethodTypes["actions"]["getWorkflowRun"]["response"]["data"];
-export type WorkflowJobs =
-  RestEndpointMethodTypes["actions"]["listJobsForWorkflowRun"]["response"][
-    "data"
-  ]["jobs"];
+type ganttJob = {
+  section: string;
+  steps: ganttStep[];
+};
+
+export type ganttStep = {
+  name: string;
+  id: `job${number}-${number}`;
+  status: "" | "done" | "active" | "crit";
+  position: string;
+  sec: number;
+};
+
 // ref: https://docs.github.com/ja/free-pro-team@latest/rest/actions/workflow-jobs?apiVersion=2022-11-28#get-a-job-for-a-workflow-run
 type StepConclusion =
   | "success"
@@ -41,57 +46,6 @@ export const formatStep = (step: ganttStep): string => {
     default:
       return `${step.name} :${step.status}, ${step.id}, ${step.position}, ${step.sec}s`;
   }
-};
-
-export const fetchWorkflow = async (
-  owner: string,
-  repo: string,
-  runId: number,
-): Promise<Workflow> => {
-  const token = Deno.env.get("GITHUB_TOKEN")!;
-  const octokit = new Octokit({
-    auth: token,
-    // baseUrl: baseUrl ? baseUrl : "https://api.github.com",
-  });
-
-  const workflow = await octokit.rest.actions.getWorkflowRun({
-    owner,
-    repo,
-    run_id: runId,
-  });
-  return workflow.data;
-};
-
-export const fetchWorkflowRunJobs = async (
-  owner: string,
-  repo: string,
-  runId: number,
-): Promise<WorkflowJobs> => {
-  const token = Deno.env.get("GITHUB_TOKEN")!;
-  const octokit = new Octokit({
-    auth: token,
-    // baseUrl: baseUrl ? baseUrl : "https://api.github.com",
-  });
-
-  const workflowJob = await octokit.rest.actions.listJobsForWorkflowRun({
-    owner,
-    repo,
-    run_id: runId,
-  });
-  return workflowJob.data.jobs;
-};
-
-type ganttJob = {
-  section: string;
-  steps: ganttStep[];
-};
-
-export type ganttStep = {
-  name: string;
-  id: `job${number}-${number}`;
-  status: "" | "done" | "active" | "crit";
-  position: string;
-  sec: number;
 };
 
 const stepStatusMap: Record<StepConclusion, ganttStep["status"]> = {

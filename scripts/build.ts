@@ -7,7 +7,7 @@ console.debug("Start dnt ...");
 const outDir = "./npm";
 await emptyDir(outDir);
 await build({
-  entryPoints: ["./main.ts"],
+  entryPoints: ["./src/main.ts", "./src/post.ts"],
   outDir,
   typeCheck: false,
   declaration: false,
@@ -37,7 +37,7 @@ const distDir = "./dist";
 await emptyDir(distDir);
 
 await esbuild.build({
-  entryPoints: ["./npm/src/main.ts"],
+  entryPoints: ["./npm/src/src/main.ts", "./npm/src/src/post.ts"],
   outdir: distDir,
   bundle: true,
   platform: "node",

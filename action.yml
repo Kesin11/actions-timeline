@@ -2,10 +2,11 @@ name: "actions-timeline"
 description: "Show workflow timeline in summary"
 author: "kesin1202000@gmail.com"
 inputs:
-  foo:
+  github-token:
+    description: The GitHub token used to create an authenticated client
+    default: ${{ github.token }}
     required: false
-    description: "bar"
 runs:
   using: "node16"
-  main: "./main_dummy.js"
-  post: "dist/main.js"
+  main: "dist/main.js"
+  post: "dist/post.js"
