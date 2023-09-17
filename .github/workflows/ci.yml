@@ -1,4 +1,4 @@
-name: POC
+name: CI
 
 on:
   push:
@@ -7,9 +7,30 @@ on:
   workflow_dispatch:
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.36.x
+      - id: fmt
+        run: deno fmt
+      - id: lint
+        run: deno lint
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.36.x
+      - id: test
+        run: deno test
+
   run_self:
     runs-on: ubuntu-latest
-
+    needs: [ check, test ]
     steps:
       - uses: actions/checkout@v3
       - uses: denoland/setup-deno@v1
