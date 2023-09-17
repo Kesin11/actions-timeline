@@ -10,17 +10,17 @@ await build({
   entryPoints: ["./src/main.ts", "./src/post.ts"],
   outDir,
   typeCheck: false,
+  test: false,
   declaration: false,
   esModule: false,
   shims: {
-    // see JS docs for overview and more options
     deno: true,
   },
   package: {
-    // package.json properties
+    // Dummy package.json
     name: "@kesin11/actions-timeline",
-    version: Deno.args[0],
-    description: "Show workflow timeline in summary",
+    version: "0.1.0",
+    description: "A Action shows timeline of a workflow in a run summary.",
     license: "MIT",
     repository: {
       type: "git",
@@ -37,14 +37,16 @@ const distDir = "./dist";
 await emptyDir(distDir);
 
 await esbuild.build({
-  entryPoints: ["./npm/src/src/main.ts", "./npm/src/src/post.ts"],
+  entryPoints: ["./npm/src/main.ts", "./npm/src/post.ts"],
   outdir: distDir,
   bundle: true,
   platform: "node",
   target: "node16",
   format: "cjs",
-  minify: true,
-  sourcemap: true,
+  minify: false,
+  sourcemap: false,
 }).finally(() => {
   esbuild.stop();
 });
+
+console.log("Complete!");

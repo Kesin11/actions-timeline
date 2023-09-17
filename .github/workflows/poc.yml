@@ -3,6 +3,7 @@ name: POC
 on:
   push:
     branches: [ "main" ]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -17,5 +18,3 @@ jobs:
       - run: deno task bundle
       - name: Run self action
         uses: ./
-        env:
-          NODE_OPTIONS: "--enable-source-maps"
