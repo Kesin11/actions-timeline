@@ -1,5 +1,12 @@
 {
   "tasks": {
     "bundle": "deno run -A scripts/build.ts 0.1.0"
+  },
+  "fmt": {
+    "exclude": ["./dist/", "./npm/"],
+    "proseWrap": "preserve"
+  },
+  "lint": {
+    "exclude": ["./dist/", "./npm/"]
   }
 }
