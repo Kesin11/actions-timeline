@@ -17,10 +17,10 @@ await build({
     deno: true,
   },
   package: {
-    // package.json properties
+    // Dummy package.json
     name: "@kesin11/actions-timeline",
-    version: Deno.args[0],
-    description: "Show workflow timeline in summary",
+    version: "0.1.0",
+    description: "A Action shows timeline of a workflow in a run summary.",
     license: "MIT",
     repository: {
       type: "git",
@@ -48,3 +48,5 @@ await esbuild.build({
 }).finally(() => {
   esbuild.stop();
 });
+
+console.log("Complete!");

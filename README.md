@@ -54,16 +54,14 @@ You can set `GITHUB_API_URL` environment variable to use this action with GHES.
 
 # DEBUG
 
-If you want to debug this action, you should enable soucemap using
-`NODE_OPTIONS` environment variable.
+If you want to debug this action, first generate `dist/` then execute own
+action.
 
 ```yaml
 - uses: actions/checkout@v3
 - uses: denoland/setup-deno@v1
 - run: deno task bundle
 - uses: ./
-  env:
-    NODE_OPTIONS: "--enable-source-maps"
 ```
 
 # LICENSE
