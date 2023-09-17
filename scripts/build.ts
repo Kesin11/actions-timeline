@@ -10,10 +10,10 @@ await build({
   entryPoints: ["./src/main.ts", "./src/post.ts"],
   outDir,
   typeCheck: false,
+  test: false,
   declaration: false,
   esModule: false,
   shims: {
-    // see JS docs for overview and more options
     deno: true,
   },
   package: {
@@ -37,14 +37,14 @@ const distDir = "./dist";
 await emptyDir(distDir);
 
 await esbuild.build({
-  entryPoints: ["./npm/src/src/main.ts", "./npm/src/src/post.ts"],
+  entryPoints: ["./npm/src/main.ts", "./npm/src/post.ts"],
   outdir: distDir,
   bundle: true,
   platform: "node",
   target: "node16",
   format: "cjs",
-  minify: true,
-  sourcemap: true,
+  minify: false,
+  sourcemap: false,
 }).finally(() => {
   esbuild.stop();
 });
