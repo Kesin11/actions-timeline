@@ -31,12 +31,26 @@ const diffSec = (start: string | Date, end: string | Date): number => {
   return (endDate.getTime() - startDate.getTime()) / 1000;
 };
 
-// Sec to elapsed time that format is HH:mm:ss (eg. 70sec -> 00:01:10)
+// Sec to elapsed format time like HH:mm:ss (ex. 70sec -> 00:01:10)
 const formatElapsedTime = (sec: number): string => {
   const date = new Date(sec * 1000);
   const offsetMinute = date.getTimezoneOffset();
   const timezonreIgnoredDate = new Date(sec * 1000 + offsetMinute * 60 * 1000);
   return format(timezonreIgnoredDate, "HH:mm:ss");
+};
+
+// Sec to elapsed short format time like 1h2m3s (ex. 70sec -> 1m10s)
+export const formatShortElapsedTime = (sec: number): string => {
+  const date = new Date(sec * 1000);
+  const offsetMinute = date.getTimezoneOffset();
+  const timezonreIgnoredDate = new Date(sec * 1000 + offsetMinute * 60 * 1000);
+  if (sec < 60) {
+    return format(timezonreIgnoredDate, "s's'");
+  } else if (sec < 60 * 60) {
+    return format(timezonreIgnoredDate, "m'm's's'");
+  } else {
+    return format(timezonreIgnoredDate, "H'h'm'm's's'");
+  }
 };
 
 export const formatStep = (step: ganttStep): string => {
@@ -46,6 +60,10 @@ export const formatStep = (step: ganttStep): string => {
     default:
       return `${step.name} :${step.status}, ${step.id}, ${step.position}, ${step.sec}s`;
   }
+};
+
+const formatName = (name: string, sec: number): string => {
+  return `${name} (${formatShortElapsedTime(sec)})`;
 };
 
 const stepStatusMap: Record<StepConclusion, ganttStep["status"]> = {
@@ -67,21 +85,23 @@ export const createGantt = (
     const section = job.name;
     const status: ganttStep["status"] = "active";
     const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
+    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
     const waitingRunnerStep: ganttStep = {
-      name: "Waiting for a runner",
+      name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
       id: `job${jobIndex}-0`,
       status,
       position: formatElapsedTime(startJobElapsedSec),
-      sec: diffSec(job.created_at, job.started_at),
+      sec: waitingRunnerElapsedSec,
     };
 
     const steps = job.steps?.map((step, stepIndex, _steps): ganttStep => {
+      const stepElapsedSec = diffSec(step.started_at!, step.completed_at!);
       return {
-        name: step.name,
+        name: formatName(step.name, stepElapsedSec),
         id: `job${jobIndex}-${stepIndex + 1}`,
         status: stepStatusMap[step.conclusion as StepConclusion] ?? "active",
         position: `after job${jobIndex}-${stepIndex}`,
-        sec: diffSec(step.started_at!, step.completed_at!),
+        sec: stepElapsedSec,
       };
     }) ?? [];
 
