@@ -46,7 +46,8 @@ jobs:
 
   run_self:
     runs-on: ubuntu-latest
-    needs: [ check, test ]
+    if: ${{ always() }}
+    needs: [ check, check-dist, test ]
     steps:
       - uses: actions/checkout@v3
       - uses: denoland/setup-deno@v1
