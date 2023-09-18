@@ -20,5 +20,6 @@
         "(?:im|ex)port(?:.|\\s)+?from\\s*['\"]npm:(?<depName>.+?)@(?<currentValue>\\d+?\\.\\d+?\\.\\d+?).*?['\"]"
       ],
       "datasourceTemplate": "npm"
-    },
+    }
+  ]
 }
