@@ -1,5 +1,10 @@
 import { assertEquals } from "https://deno.land/std@0.189.0/testing/asserts.ts";
-import { createGantt, formatStep, ganttStep } from "../src/workflow_gantt.ts";
+import {
+  createGantt,
+  formatShortElapsedTime,
+  formatStep,
+  ganttStep,
+} from "../src/workflow_gantt.ts";
 import { Workflow, WorkflowJobs } from "../src/github.ts";
 
 Deno.test("1 section gantt", () => {
@@ -423,5 +428,36 @@ Deno.test("formatStep", async (t) => {
     const expect =
       `${step.name} :active, ${step.id}, ${step.position}, ${step.sec}s`;
     assertEquals(actual, expect);
+  });
+});
+
+Deno.test("formatShortElapsedTime", async (t) => {
+  await t.step("9sec => 9s", () => {
+    const elapsedSec = 9;
+    assertEquals(formatShortElapsedTime(elapsedSec), `9s`);
+  });
+  await t.step("59sec => 59s", () => {
+    const elapsedSec = 59;
+    assertEquals(formatShortElapsedTime(elapsedSec), `59s`);
+  });
+  await t.step("60sec => 1m0s", () => {
+    const elapsedSec = 60;
+    assertEquals(formatShortElapsedTime(elapsedSec), `1m0s`);
+  });
+  await t.step("61sec => 1m1s", () => {
+    const elapsedSec = 61;
+    assertEquals(formatShortElapsedTime(elapsedSec), `1m1s`);
+  });
+  await t.step("3600sec => 1h0m0s", () => {
+    const elapsedSec = 60 * 60; // 1hour
+    assertEquals(formatShortElapsedTime(elapsedSec), `1h0m0s`);
+  });
+  await t.step("3660sec => 1h1m0s", () => {
+    const elapsedSec = 60 * 60 + 60; // 1hour 1min
+    assertEquals(formatShortElapsedTime(elapsedSec), `1h1m0s`);
+  });
+  await t.step("3661sec => 1h1m1s", () => {
+    const elapsedSec = 60 * 60 + 60 + 1; // 1hour 1min 1sec
+    assertEquals(formatShortElapsedTime(elapsedSec), `1h1m1s`);
   });
 });

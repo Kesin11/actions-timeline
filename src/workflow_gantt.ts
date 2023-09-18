@@ -31,12 +31,26 @@ const diffSec = (start: string | Date, end: string | Date): number => {
   return (endDate.getTime() - startDate.getTime()) / 1000;
 };
 
-// Sec to elapsed time that format is HH:mm:ss (eg. 70sec -> 00:01:10)
+// Sec to elapsed format time like HH:mm:ss (ex. 70sec -> 00:01:10)
 const formatElapsedTime = (sec: number): string => {
   const date = new Date(sec * 1000);
   const offsetMinute = date.getTimezoneOffset();
   const timezonreIgnoredDate = new Date(sec * 1000 + offsetMinute * 60 * 1000);
   return format(timezonreIgnoredDate, "HH:mm:ss");
+};
+
+// Sec to elapsed short format time like 1h2m3s (ex. 70sec -> 1m10s)
+export const formatShortElapsedTime = (sec: number): string => {
+  const date = new Date(sec * 1000);
+  const offsetMinute = date.getTimezoneOffset();
+  const timezonreIgnoredDate = new Date(sec * 1000 + offsetMinute * 60 * 1000);
+  if (sec < 60) {
+    return format(timezonreIgnoredDate, "s's'");
+  } else if (sec < 60 * 60) {
+    return format(timezonreIgnoredDate, "m'm's's'");
+  } else {
+    return format(timezonreIgnoredDate, "H'h'm'm's's'");
+  }
 };
 
 export const formatStep = (step: ganttStep): string => {

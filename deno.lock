@@ -103,6 +103,7 @@
       "@actions/core@1.10.0": "@actions/core@1.10.0",
       "@actions/github@5.1.1": "@actions/github@5.1.1_@octokit+core@3.6.0",
       "@octokit/rest@19.0.13": "@octokit/rest@19.0.13_@octokit+core@4.2.4",
+      "@types/node": "@types/node@18.16.16",
       "date-fns@2.30.0": "date-fns@2.30.0"
     },
     "packages": {
@@ -312,6 +313,10 @@
         "dependencies": {
           "@octokit/openapi-types": "@octokit/openapi-types@18.0.0"
         }
+      },
+      "@types/node@18.16.16": {
+        "integrity": "sha512-NpaM49IGQQAUlBhHMF82QH80J08os4ZmyF9MkpCzWAGuOHqE4gTEbhzd7L3l5LmWuZ6E0OiC1FweQ4tsiW35+g==",
+        "dependencies": {}
       },
       "before-after-hook@2.2.3": {
         "integrity": "sha512-NzUnlZexiaH/46WDhANlyR2bXRopNg4F/zuSA3OpZnllCUgRaOF2znDioDWrmbNVsuZk6l9pMquQB38cfBZwkQ==",
