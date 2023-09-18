@@ -1,5 +1,5 @@
 name: "actions-timeline"
-description: "Show workflow timeline in summary"
+description: "An Action shows timeline of a GitHub Action workflow in the run summary page."
 author: "kesin1202000@gmail.com"
 inputs:
   github-token:
