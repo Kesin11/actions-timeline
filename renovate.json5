@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>Kesin11/renovate-config:oss",
+    ":prConcurrentLimit10",
+    "schedule:weekends"
+  ],
+  "regexManagers": [
+    // ref: https://blog.s2n.tech/articles/renovate-deno
+    {
+      "fileMatch": ["\\.tsx?$"],
+      "matchStrings": [
+        "(?:im|ex)port(?:.|\\s)+?from\\s*['\"](?<depName>https://deno.land/.+?)@v?(?<currentValue>\\d+?\\.\\d+?\\.\\d+?).*?['\"]"
+      ],
+      "datasourceTemplate": "deno"
+    },
+    {
+      "fileMatch": ["\\.tsx?$"],
+      "matchStrings": [
+        "(?:im|ex)port(?:.|\\s)+?from\\s*['\"]npm:(?<depName>.+?)@(?<currentValue>\\d+?\\.\\d+?\\.\\d+?).*?['\"]"
+      ],
+      "datasourceTemplate": "npm"
+    }
+  ]
+}
