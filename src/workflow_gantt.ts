@@ -62,6 +62,10 @@ export const formatStep = (step: ganttStep): string => {
   }
 };
 
+const formatName = (name: string, sec: number): string => {
+  return `${name} (${formatShortElapsedTime(sec)})`;
+};
+
 const stepStatusMap: Record<StepConclusion, ganttStep["status"]> = {
   success: "",
   failure: "crit",
@@ -81,21 +85,23 @@ export const createGantt = (
     const section = job.name;
     const status: ganttStep["status"] = "active";
     const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
+    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
     const waitingRunnerStep: ganttStep = {
-      name: "Waiting for a runner",
+      name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
       id: `job${jobIndex}-0`,
       status,
       position: formatElapsedTime(startJobElapsedSec),
-      sec: diffSec(job.created_at, job.started_at),
+      sec: waitingRunnerElapsedSec,
     };
 
     const steps = job.steps?.map((step, stepIndex, _steps): ganttStep => {
+      const stepElapsedSec = diffSec(step.started_at!, step.completed_at!);
       return {
-        name: step.name,
+        name: formatName(step.name, stepElapsedSec),
         id: `job${jobIndex}-${stepIndex + 1}`,
         status: stepStatusMap[step.conclusion as StepConclusion] ?? "active",
         position: `after job${jobIndex}-${stepIndex}`,
-        sec: diffSec(step.started_at!, step.completed_at!),
+        sec: stepElapsedSec,
       };
     }) ?? [];
 
