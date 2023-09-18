@@ -1,8 +1,10 @@
 # actions-timeline
 
-A Action shows timeline of a workflow in a run summary.
+An Action shows timeline of a GitHub Action workflow in the run summary page.
 
-TODO: sample screenshot
+`actions-timeline` is a tool that allows developers to visualize the sequence of jobs and steps that occur during a GitHub Actions workflow. By examining the timeline, you can quickly identify any issues or bottlenecks in your workflow, and make adjustments as needed to improve performance and efficiency.
+
+![Sample screenshot](https://user-images.githubusercontent.com/1324862/268660777-5ee9fffd-6ef7-4960-9632-3589cb7138e1.png)
 
 ## USAGE
 
@@ -40,7 +42,9 @@ jobs:
 
 ## How it works
 
-TODO
+`actions-timeline` fetches the jobs and steps of the workflow run from the GitHub API, and then generates a timeline with [mermaid gantt diagrams](https://mermaid.js.org/syntax/gantt.html). Thanks to the GitHub flavored markdown that can visualize mermaid diagrams, the timeline is displayed in the run summary page.
+
+This action is run on post-processing of the job, so you should register this action before your build step. If you register this action after your build step, the timeline will not include other post-processing steps.
 
 ## Support GHES
 

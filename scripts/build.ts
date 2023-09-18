@@ -20,7 +20,8 @@ await build({
     // Dummy package.json
     name: "@kesin11/actions-timeline",
     version: "0.1.0",
-    description: "A Action shows timeline of a workflow in a run summary.",
+    description:
+      "An Action shows timeline of a GitHub Action workflow in the run summary page.",
     license: "MIT",
     repository: {
       type: "git",
