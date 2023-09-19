@@ -36,7 +36,7 @@ jobs:
           fi
       - name: Create dist/*.js size json
         run: |
-          inner=$(find ./dist -type f -printf '%s %f\n' | jq -s -R 'split("\n") | map(select(. != "")) | map(split(" ")) | map({"value": .[0], "key": .[1], "unit": "byte"})')
+          inner=$(find ./dist -type f -printf '%s %f\n' | jq -s -R 'split("\n") | map(select(. != "")) | map(split(" ")) | map({"value": .[0]|tonumber, "key": .[1], "unit": "byte"})')
           jq -n --arg  key "dist_size" --arg  name "dist_size" --argjson metrics "$inner" '$ARGS.named' > dist_js_sizes.json
       - name: Create dummy coverage
         run: touch coverage.out
