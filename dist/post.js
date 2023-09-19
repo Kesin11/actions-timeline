@@ -24921,6 +24921,7 @@ var main = async () => {
   (0, import_core.info)("Create gantt mermaid diagram...");
   const gantt = createGantt(workflow, workflowJobs);
   await import_core.summary.addRaw(gantt).write();
+  (0, import_core.info)("Complete!");
 };
 main();
 /*! Bundled license information:
