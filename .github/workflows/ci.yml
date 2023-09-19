@@ -38,6 +38,8 @@ jobs:
         run: |
           inner=$(find ./dist -type f -printf '%s %f\n' | jq -s -R 'split("\n") | map(select(. != "")) | map(split(" ")) | map({"value": .[0], "key": .[1], "unit": "byte"})')
           jq -n --arg  key "dist_size" --arg  name "dist_size" --argjson metrics "$inner" '$ARGS.named' > dist_js_sizes.json
+      - name: Create dummy coverage
+        run: touch coverage.out
       - uses: k1LoW/octocov-action@v0
         env:
           OCTOCOV_CUSTOM_METRICS_DIST_JS: dist_js_sizes.json
