@@ -6,9 +6,9 @@ runs:
     - uses: actions/cache@v3
       with:
         path: ~/.cache/deno
-        key: deno-${{ runner.os }}-${{ hashFiles('deno.lock') }}
+        key: deno-${{ github.job }}-${{ runner.os }}-${{ hashFiles('deno.lock') }}
         restore-keys: |
-          deno-${{ runner.os }}-
+          deno-${{ github.job }}-${{ runner.os }}-
     - uses: denoland/setup-deno@v1
       with:
         deno-version: "v1.36.x"
