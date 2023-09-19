@@ -34,6 +34,7 @@ jobs:
             git diff
             exit 1
           fi
+      - uses: k1LoW/octocov-action@v0
   test:
     runs-on: ubuntu-latest
     steps:
