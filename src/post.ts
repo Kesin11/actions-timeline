@@ -29,5 +29,7 @@ const main = async () => {
   info("Create gantt mermaid diagram...");
   const gantt = createGantt(workflow, workflowJobs);
   await summary.addRaw(gantt).write();
+
+  info("Complete!");
 };
 main();
