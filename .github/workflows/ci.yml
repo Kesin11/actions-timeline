@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./github/actions/setup-deno-with-cache
+      - uses: ./.github/actions/setup-deno-with-cache
       - id: fmt
         run: deno fmt --check
       - id: lint
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./github/actions/setup-deno-with-cache
+      - uses: ./.github/actions/setup-deno-with-cache
       - name: Rebuild the dist/ directory
         run: deno task bundle
       - name: Compare the expected and actual dist/ directories
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./github/actions/setup-deno-with-cache
+      - uses: ./.github/actions/setup-deno-with-cache
       - id: test
         run: deno test
 
@@ -57,7 +57,7 @@ jobs:
     needs: [ check, check-dist, test ]
     steps:
       - uses: actions/checkout@v4
-      - uses: ./github/actions/setup-deno-with-cache
+      - uses: ./.github/actions/setup-deno-with-cache
       - run: deno task bundle
       - name: Run self action
         uses: ./
