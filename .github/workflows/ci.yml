@@ -18,6 +18,22 @@ jobs:
         run: deno fmt
       - id: lint
         run: deno lint
+  check-dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.36.x
+      - name: Rebuild the dist/ directory
+        run: deno task bundle
+      - name: Compare the expected and actual dist/ directories
+        run: |
+          if [ "$(git diff --ignore-space-at-eol dist/ | wc -l)" -gt "0" ]; then
+            echo "Detected uncommitted changes after build.  See status below:"
+            git diff
+            exit 1
+          fi
   test:
     runs-on: ubuntu-latest
     steps:
@@ -30,7 +46,8 @@ jobs:
 
   run_self:
     runs-on: ubuntu-latest
-    needs: [ check, test ]
+    if: ${{ always() }}
+    needs: [ check, check-dist, test ]
     steps:
       - uses: actions/checkout@v3
       - uses: denoland/setup-deno@v1

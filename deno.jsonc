@@ -1,6 +1,8 @@
 {
   "tasks": {
-    "bundle": "deno run -A scripts/build.ts 0.1.0"
+    "setup:githooks": "git config --local core.hooksPath .githooks",
+    "bundle": "deno run -A scripts/build.ts",
+    "bundle:commit": "deno task bundle && git add -u dist && git commit -m 'deno task bundle'"
   },
   "fmt": {
     "exclude": ["./dist/", "./npm/"],
