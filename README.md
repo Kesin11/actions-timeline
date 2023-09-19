@@ -57,7 +57,9 @@ You can set `GITHUB_API_URL` environment variable to use this action with GHES.
 ```
 
 # DEVELOPMENT
+
 ## Setup
+
 ```
 deno task setup:githooks
 ```

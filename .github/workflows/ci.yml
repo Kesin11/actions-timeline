@@ -19,7 +19,7 @@ jobs:
         with:
           deno-version: v1.36.x
       - id: fmt
-        run: deno fmt
+        run: deno fmt --check
       - id: lint
         run: deno lint
   check-dist:
