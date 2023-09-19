@@ -56,6 +56,12 @@ You can set `GITHUB_API_URL` environment variable to use this action with GHES.
     GITHUB_API_URL: 'https://github.example.com/api/v3'
 ```
 
+# DEVELOPMENT
+## Setup
+```
+deno task setup:githooks
+```
+
 # DEBUG
 
 If you want to debug this action, first generate `dist/` then execute own
