@@ -15,20 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.36.x
+      - uses: ./.github/actions/setup-deno-with-cache
       - id: fmt
-        run: deno fmt
+        run: deno fmt --check
       - id: lint
         run: deno lint
   check-dist:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.36.x
+      - uses: ./.github/actions/setup-deno-with-cache
       - name: Rebuild the dist/ directory
         run: deno task bundle
       - name: Compare the expected and actual dist/ directories
@@ -38,7 +34,17 @@ jobs:
             git diff
             exit 1
           fi
+      # post processes
+      - name: Upload dist for post job
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v3
+        with:
+            name: js_dist
+            path: |
+              dist/
+              action.yml
       - name: Create dist/*.js size json
+        if: ${{ always() }}
         run: |
           find ./dist -type f -printf '%s %f\n' \
             | jq -n -R '{name: "dist_size", key: "dist_size", metrics: [inputs | capture("(?<value>\\S+)\\s+(?<key>.+)") + {unit: "byte"} | .value |= tonumber | .name = .key ]}' \
@@ -46,17 +52,17 @@ jobs:
           cat dist_js_sizes.json
       # octocov must needs some coverage files but this job don't exec test, so put dummy file.
       - name: Create dummy coverage
+        if: ${{ always() }}
         run: touch coverage.out
       - uses: k1LoW/octocov-action@v0
+        if: ${{ always() }}
         env:
           OCTOCOV_CUSTOM_METRICS_DIST_JS: dist_js_sizes.json
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.36.x
+      - uses: ./.github/actions/setup-deno-with-cache
       - id: test
         run: deno test
 
@@ -65,10 +71,9 @@ jobs:
     if: ${{ always() }}
     needs: [ check, check-dist, test ]
     steps:
-      - uses: actions/checkout@v4
-      - uses: denoland/setup-deno@v1
+      - name: Download bundled dist
+        uses: actions/download-artifact@v3
         with:
-          deno-version: v1.36.x
-      - run: deno task bundle
+          name: js_dist
       - name: Run self action
         uses: ./
