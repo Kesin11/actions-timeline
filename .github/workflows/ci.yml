@@ -34,13 +34,25 @@ jobs:
             git diff
             exit 1
           fi
+      # post processes
+      - name: Upload dist for post job
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v3
+        with:
+            name: js_dist
+            path: |
+              dist/
+              action.yml
       - name: Create dist/*.js size json
+        if: ${{ always() }}
         run: |
           inner=$(find ./dist -type f -printf '%s %f\n' | jq -s -R 'split("\n") | map(select(. != "")) | map(split(" ")) | map({"value": .[0]|tonumber, "key": .[1], "name": .[1], "unit": "byte"})')
           jq -n --arg  key "dist_size" --arg  name "dist_size" --argjson metrics "$inner" '$ARGS.named' > dist_js_sizes.json
       - name: Create dummy coverage
+        if: ${{ always() }}
         run: touch coverage.out
       - uses: k1LoW/octocov-action@v0
+        if: ${{ always() }}
         env:
           OCTOCOV_CUSTOM_METRICS_DIST_JS: dist_js_sizes.json
   test:
@@ -56,8 +68,9 @@ jobs:
     if: ${{ always() }}
     needs: [ check, check-dist, test ]
     steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-deno-with-cache
-      - run: deno task bundle
+      - name: Download bundled dist
+        uses: actions/download-artifact@v3
+        with:
+          name: js_dist
       - name: Run self action
         uses: ./
