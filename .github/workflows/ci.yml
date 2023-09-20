@@ -40,8 +40,10 @@ jobs:
           fi
       - name: Create dist/*.js size json
         run: |
-          inner=$(find ./dist -type f -printf '%s %f\n' | jq -s -R 'split("\n") | map(select(. != "")) | map(split(" ")) | map({"value": .[0]|tonumber, "key": .[1], "name": .[1], "unit": "byte"})')
-          jq -n --arg  key "dist_size" --arg  name "dist_size" --argjson metrics "$inner" '$ARGS.named' > dist_js_sizes.json
+          find ./dist -type f -printf '%s %f\n' \
+            | jq -n -R '{name: "dist_size", key: "dist_size", metrics: [inputs | capture("(?<value>\\S+)\\s+(?<key>.+)") + {unit: "byte"} | .value |= tonumber ]}' \
+            > dist_js_sizes.json
+      # octocov must needs some coverage files but this job don't exec test, so put dummy file.
       - name: Create dummy coverage
         run: touch coverage.out
       - uses: k1LoW/octocov-action@v0
