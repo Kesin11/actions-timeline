@@ -1,0 +1,56 @@
+name: Release
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+permissions:
+  contents: write
+  # Comment out to enable these permissions if needed.
+  # packages: write
+  # deployments: write
+  # id-token: write
+
+jobs:
+  draft_release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.release-drafter.outputs.tag_name }}
+    steps:
+      # Get next version
+      - uses: release-drafter/release-drafter@v5
+        id: release-drafter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Sample job for GitHub Actions repository.
+  # It creates GitHub Releases and push semver(major, minor, patch) git tags.
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    needs: draft_release
+    steps:
+      - uses: release-drafter/release-drafter@v5
+        id: release-drafter
+        with:
+          publish: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create semver outputs
+        uses: actions/github-script@v6
+        id: semver
+        with:
+          script: |
+            const VERSION = "${{ steps.release-drafter.outputs.tag_name }}"
+            const matched = VERSION.match(/(((v\d+)\.\d+).\d+)/)
+            core.setOutput('major', matched[3])
+            core.setOutput('minor', matched[2])
+            core.setOutput('patch', matched[1])
+      - uses: actions/checkout@v4
+        with:
+          ref: "${{ steps.release-drafter.outputs.tag_name }}"
+      - name: Update major and minor git tags
+        run: |
+           git push -f origin "refs/tags/${{ steps.release-drafter.outputs.tag_name }}:refs/tags/${{ steps.semver.outputs.major }}"
+           git push -f origin "refs/tags/${{ steps.release-drafter.outputs.tag_name }}:refs/tags/${{ steps.semver.outputs.minor }}"
