@@ -24788,6 +24788,8 @@ var github = __toESM(require_github());
 // npm/src/workflow_gantt.ts
 var import_date_fns = __toESM(require_date_fns());
 var diffSec = (start, end) => {
+  if (!start || !end)
+    return 0;
   const startDate = new Date(start);
   const endDate = new Date(end);
   return (endDate.getTime() - startDate.getTime()) / 1e3;
@@ -24821,14 +24823,23 @@ var formatStep = (step) => {
 var formatName = (name, sec) => {
   return `${name} (${formatShortElapsedTime(sec)})`;
 };
-var stepStatusMap = {
-  success: "",
-  failure: "crit",
-  cancelled: "done",
-  skipped: "done",
-  timed_out: "done",
-  neutral: "active",
-  action_required: "active"
+var convertStepToStatus = (conclusion) => {
+  switch (conclusion) {
+    case "success":
+      return "";
+    case "failure":
+      return "crit";
+    case "cancelled":
+    case "skipped":
+    case "timed_out":
+      return "done";
+    case "neutral":
+    case "action_required":
+    case null:
+      return "active";
+    default:
+      return "active";
+  }
 };
 var createGantt = (workflow, workflowJobs) => {
   const title = workflowJobs[0].workflow_name;
@@ -24850,7 +24861,7 @@ var createGantt = (workflow, workflowJobs) => {
       return {
         name: formatName(step.name, stepElapsedSec),
         id: `job${jobIndex}-${stepIndex + 1}`,
-        status: stepStatusMap[step.conclusion] ?? "active",
+        status: convertStepToStatus(step.conclusion),
         position: `after job${jobIndex}-${stepIndex}`,
         sec: stepElapsedSec
       };

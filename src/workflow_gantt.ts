@@ -14,7 +14,7 @@ export type ganttStep = {
   sec: number;
 };
 
-// ref: https://docs.github.com/ja/free-pro-team@latest/rest/actions/workflow-jobs?apiVersion=2022-11-28#get-a-job-for-a-workflow-run
+// ref: https://docs.github.com/en/rest/actions/workflow-jobs?apiVersion=2022-11-28#get-a-job-for-a-workflow-run
 type StepConclusion =
   | "success"
   | "failure"
@@ -22,9 +22,14 @@ type StepConclusion =
   | "cancelled"
   | "skipped"
   | "timed_out"
-  | "action_required";
+  | "action_required"
+  | null;
 
-const diffSec = (start: string | Date, end: string | Date): number => {
+const diffSec = (
+  start?: string | Date | null,
+  end?: string | Date | null,
+): number => {
+  if (!start || !end) return 0;
   const startDate = new Date(start);
   const endDate = new Date(end);
 
@@ -66,15 +71,26 @@ const formatName = (name: string, sec: number): string => {
   return `${name} (${formatShortElapsedTime(sec)})`;
 };
 
-const stepStatusMap: Record<StepConclusion, ganttStep["status"]> = {
-  success: "",
-  failure: "crit",
-  cancelled: "done",
-  skipped: "done",
-  timed_out: "done",
-  neutral: "active",
-  action_required: "active",
-} as const;
+const convertStepToStatus = (
+  conclusion: StepConclusion,
+): ganttStep["status"] => {
+  switch (conclusion) {
+    case "success":
+      return "";
+    case "failure":
+      return "crit";
+    case "cancelled":
+    case "skipped":
+    case "timed_out":
+      return "done";
+    case "neutral":
+    case "action_required":
+    case null:
+      return "active";
+    default:
+      return "active";
+  }
+};
 
 export const createGantt = (
   workflow: Workflow,
@@ -95,11 +111,11 @@ export const createGantt = (
     };
 
     const steps = job.steps?.map((step, stepIndex, _steps): ganttStep => {
-      const stepElapsedSec = diffSec(step.started_at!, step.completed_at!);
+      const stepElapsedSec = diffSec(step.started_at, step.completed_at);
       return {
         name: formatName(step.name, stepElapsedSec),
         id: `job${jobIndex}-${stepIndex + 1}`,
-        status: stepStatusMap[step.conclusion as StepConclusion] ?? "active",
+        status: convertStepToStatus(step.conclusion as StepConclusion),
         position: `after job${jobIndex}-${stepIndex}`,
         sec: stepElapsedSec,
       };
