@@ -1,6 +1,9 @@
 name: "actions-timeline"
 description: "An Action shows timeline of a GitHub Action workflow in the run summary page."
 author: "kesin1202000@gmail.com"
+branding:
+  icon: "activity"
+  color: "blue"
 inputs:
   github-token:
     description: The GitHub token used to create an authenticated client
