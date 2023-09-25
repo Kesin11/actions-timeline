@@ -44,7 +44,6 @@ jobs:
               dist/
               action.yml
       - name: Create dist/*.js size json
-        if: ${{ always() }}
         run: |
           find ./dist -type f -printf '%s %f\n' \
             | jq -n -R '{name: "dist_size", key: "dist_size", metrics: [inputs | capture("(?<value>\\S+)\\s+(?<key>.+)") + {unit: "byte"} | .value |= tonumber | .name = .key ]}' \
@@ -52,10 +51,8 @@ jobs:
           cat dist_js_sizes.json
       # octocov must needs some coverage files but this job don't exec test, so put dummy file.
       - name: Create dummy coverage
-        if: ${{ always() }}
         run: touch coverage.out
       - uses: k1LoW/octocov-action@v0
-        if: ${{ always() }}
         env:
           OCTOCOV_CUSTOM_METRICS_DIST_JS: dist_js_sizes.json
   test:

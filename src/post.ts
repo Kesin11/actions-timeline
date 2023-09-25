@@ -1,4 +1,4 @@
-import { getInput, info, summary } from "npm:@actions/core@1.10.0";
+import { debug, getInput, info, summary } from "npm:@actions/core@1.10.0";
 import * as github from "npm:@actions/github@5.1.1";
 import { createGantt } from "./workflow_gantt.ts";
 import {
@@ -18,6 +18,7 @@ const main = async () => {
     github.context.repo.repo,
     github.context.runId,
   );
+  debug(JSON.stringify(workflow, null, 2));
   info("Fetch workflow_job...");
   const workflowJobs = await fetchWorkflowRunJobs(
     octokit,
@@ -25,10 +26,12 @@ const main = async () => {
     github.context.repo.repo,
     github.context.runId,
   );
+  debug(JSON.stringify(workflowJobs, null, 2));
 
   info("Create gantt mermaid diagram...");
   const gantt = createGantt(workflow, workflowJobs);
   await summary.addRaw(gantt).write();
+  debug(gantt);
 
   info("Complete!");
 };

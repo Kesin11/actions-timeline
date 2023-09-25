@@ -393,6 +393,74 @@ ${workflowJobs[1].steps![6].name} (0s) :job1-7, after job1-6, 0s
   assertEquals(createGantt(workflow, workflowJobs), expect);
 });
 
+Deno.test("1 section gantt includes status:in_progress and status:queued steps", () => {
+  const workflow = {
+    "id": 6290960492,
+    "name": "CI",
+    "run_number": 53,
+    "event": "pull_request",
+    "status": "in_progress",
+    "conclusion": null,
+    "created_at": "2023-09-24T15:41:23Z",
+    "updated_at": "2023-09-24T15:46:01Z",
+  } as unknown as Workflow;
+
+  const workflowJobs = [{
+    "id": 17078901763,
+    "run_id": 6290960492,
+    "workflow_name": "CI",
+    "status": "in_progress",
+    "conclusion": null,
+    "created_at": "2023-09-24T15:45:54Z",
+    "started_at": "2023-09-24T15:46:00Z",
+    "completed_at": null,
+    "name": "run_self",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1,
+        "started_at": "2023-09-24T15:46:00.000Z",
+        "completed_at": "2023-09-24T15:46:01.000Z",
+      },
+      {
+        "name": "Download bundled dist",
+        "status": "in_progress",
+        "conclusion": null,
+        "number": 2,
+        "started_at": "2023-09-24T15:46:01.000Z",
+        "completed_at": null,
+      },
+      {
+        "name": "Run self action",
+        "status": "queued",
+        "conclusion": null,
+        "number": 3,
+        "started_at": null,
+        "completed_at": null,
+      },
+    ],
+  }] as unknown as WorkflowJobs;
+
+  // deno-fmt-ignore
+  const expect = `
+\`\`\`mermaid
+gantt
+title ${workflowJobs[0].workflow_name}
+dateFormat  HH:mm:ss
+axisFormat  %H:%M:%S
+section ${workflowJobs[0].name}
+Waiting for a runner (6s) :active, job0-0, 00:04:31, 6s
+${workflowJobs[0].steps![0].name} (1s) :job0-1, after job0-0, 1s
+${workflowJobs[0].steps![1].name} (0s) :active, job0-2, after job0-1, 0s
+${workflowJobs[0].steps![2].name} (0s) :active, job0-3, after job0-2, 0s
+\`\`\`
+`;
+
+  assertEquals(createGantt(workflow, workflowJobs), expect);
+});
+
 Deno.test("formatStep", async (t) => {
   const baseStep: ganttStep = {
     name: "Test step",

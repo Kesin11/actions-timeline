@@ -722,7 +722,7 @@ var require_tunnel = __commonJS({
         connectOptions.headers = connectOptions.headers || {};
         connectOptions.headers["Proxy-Authorization"] = "Basic " + new Buffer(connectOptions.proxyAuth).toString("base64");
       }
-      debug("making CONNECT request");
+      debug2("making CONNECT request");
       var connectReq = self.request(connectOptions);
       connectReq.useChunkedEncodingByDefault = false;
       connectReq.once("response", onResponse);
@@ -742,7 +742,7 @@ var require_tunnel = __commonJS({
         connectReq.removeAllListeners();
         socket.removeAllListeners();
         if (res.statusCode !== 200) {
-          debug(
+          debug2(
             "tunneling socket could not be established, statusCode=%d",
             res.statusCode
           );
@@ -754,7 +754,7 @@ var require_tunnel = __commonJS({
           return;
         }
         if (head.length > 0) {
-          debug("got illegal response body from proxy");
+          debug2("got illegal response body from proxy");
           socket.destroy();
           var error = new Error("got illegal response body from proxy");
           error.code = "ECONNRESET";
@@ -762,13 +762,13 @@ var require_tunnel = __commonJS({
           self.removeSocket(placeholder);
           return;
         }
-        debug("tunneling connection has established");
+        debug2("tunneling connection has established");
         self.sockets[self.sockets.indexOf(placeholder)] = socket;
         return cb(socket);
       }
       function onError(cause) {
         connectReq.removeAllListeners();
-        debug(
+        debug2(
           "tunneling socket could not be established, cause=%s\n",
           cause.message,
           cause.stack
@@ -830,9 +830,9 @@ var require_tunnel = __commonJS({
       }
       return target;
     }
-    var debug;
+    var debug2;
     if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
-      debug = function() {
+      debug2 = function() {
         var args = Array.prototype.slice.call(arguments);
         if (typeof args[0] === "string") {
           args[0] = "TUNNEL: " + args[0];
@@ -842,10 +842,10 @@ var require_tunnel = __commonJS({
         console.error.apply(console, args);
       };
     } else {
-      debug = function() {
+      debug2 = function() {
       };
     }
-    exports.debug = debug;
+    exports.debug = debug2;
   }
 });
 
@@ -2144,10 +2144,10 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       return process.env["RUNNER_DEBUG"] === "1";
     }
     exports.isDebug = isDebug;
-    function debug(message) {
+    function debug2(message) {
       command_1.issueCommand("debug", {}, message);
     }
-    exports.debug = debug;
+    exports.debug = debug2;
     function error(message, properties = {}) {
       command_1.issueCommand("error", utils_1.toCommandProperties(properties), message instanceof Error ? message.toString() : message);
     }
@@ -24788,6 +24788,8 @@ var github = __toESM(require_github());
 // npm/src/workflow_gantt.ts
 var import_date_fns = __toESM(require_date_fns());
 var diffSec = (start, end) => {
+  if (!start || !end)
+    return 0;
   const startDate = new Date(start);
   const endDate = new Date(end);
   return (endDate.getTime() - startDate.getTime()) / 1e3;
@@ -24821,14 +24823,23 @@ var formatStep = (step) => {
 var formatName = (name, sec) => {
   return `${name} (${formatShortElapsedTime(sec)})`;
 };
-var stepStatusMap = {
-  success: "",
-  failure: "crit",
-  cancelled: "done",
-  skipped: "done",
-  timed_out: "done",
-  neutral: "active",
-  action_required: "active"
+var convertStepToStatus = (conclusion) => {
+  switch (conclusion) {
+    case "success":
+      return "";
+    case "failure":
+      return "crit";
+    case "cancelled":
+    case "skipped":
+    case "timed_out":
+      return "done";
+    case "neutral":
+    case "action_required":
+    case null:
+      return "active";
+    default:
+      return "active";
+  }
 };
 var createGantt = (workflow, workflowJobs) => {
   const title = workflowJobs[0].workflow_name;
@@ -24850,7 +24861,7 @@ var createGantt = (workflow, workflowJobs) => {
       return {
         name: formatName(step.name, stepElapsedSec),
         id: `job${jobIndex}-${stepIndex + 1}`,
-        status: stepStatusMap[step.conclusion] ?? "active",
+        status: convertStepToStatus(step.conclusion),
         position: `after job${jobIndex}-${stepIndex}`,
         sec: stepElapsedSec
       };
@@ -24911,6 +24922,7 @@ var main = async () => {
     github.context.repo.repo,
     github.context.runId
   );
+  (0, import_core.debug)(JSON.stringify(workflow, null, 2));
   (0, import_core.info)("Fetch workflow_job...");
   const workflowJobs = await fetchWorkflowRunJobs(
     octokit,
@@ -24918,9 +24930,11 @@ var main = async () => {
     github.context.repo.repo,
     github.context.runId
   );
+  (0, import_core.debug)(JSON.stringify(workflowJobs, null, 2));
   (0, import_core.info)("Create gantt mermaid diagram...");
   const gantt = createGantt(workflow, workflowJobs);
   await import_core.summary.addRaw(gantt).write();
+  (0, import_core.debug)(gantt);
   (0, import_core.info)("Complete!");
 };
 main();
