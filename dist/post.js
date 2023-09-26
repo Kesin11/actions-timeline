@@ -24845,33 +24845,42 @@ var convertStepToStatus = (conclusion) => {
       return "active";
   }
 };
+var filterSteps = (steps) => {
+  return steps.filter((step) => step.status === "completed");
+};
+var filterJobs = (jobs) => {
+  return jobs.filter((job) => job.conclusion !== "skipped");
+};
 var createGantt = (workflow, workflowJobs) => {
   const title = workflowJobs[0].workflow_name;
-  const jobs = workflowJobs.map((job, jobIndex, _jobs) => {
-    var _a;
-    const section = escapeName(job.name);
-    const status = "active";
-    const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
-    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
-    const waitingRunnerStep = {
-      name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
-      id: `job${jobIndex}-0`,
-      status,
-      position: formatElapsedTime(startJobElapsedSec),
-      sec: waitingRunnerElapsedSec
-    };
-    const steps = ((_a = job.steps) == null ? void 0 : _a.map((step, stepIndex, _steps) => {
-      const stepElapsedSec = diffSec(step.started_at, step.completed_at);
-      return {
-        name: formatName(step.name, stepElapsedSec),
-        id: `job${jobIndex}-${stepIndex + 1}`,
-        status: convertStepToStatus(step.conclusion),
-        position: `after job${jobIndex}-${stepIndex}`,
-        sec: stepElapsedSec
+  const jobs = filterJobs(workflowJobs).map(
+    (job, jobIndex, _jobs) => {
+      const section = escapeName(job.name);
+      const status = "active";
+      const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
+      const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
+      const waitingRunnerStep = {
+        name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
+        id: `job${jobIndex}-0`,
+        status,
+        position: formatElapsedTime(startJobElapsedSec),
+        sec: waitingRunnerElapsedSec
       };
-    })) ?? [];
-    return { section, steps: [waitingRunnerStep, ...steps] };
-  });
+      const steps = filterSteps(job.steps ?? []).map(
+        (step, stepIndex, _steps) => {
+          const stepElapsedSec = diffSec(step.started_at, step.completed_at);
+          return {
+            name: formatName(step.name, stepElapsedSec),
+            id: `job${jobIndex}-${stepIndex + 1}`,
+            status: convertStepToStatus(step.conclusion),
+            position: `after job${jobIndex}-${stepIndex}`,
+            sec: stepElapsedSec
+          };
+        }
+      );
+      return { section, steps: [waitingRunnerStep, ...steps] };
+    }
+  );
   return `
 \`\`\`mermaid
 gantt
