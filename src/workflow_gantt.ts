@@ -25,6 +25,8 @@ type StepConclusion =
   | "action_required"
   | null;
 
+type workflowJobSteps = NonNullable<WorkflowJobs[0]["steps"]>;
+
 const diffSec = (
   start?: string | Date | null,
   end?: string | Date | null,
@@ -96,37 +98,51 @@ const convertStepToStatus = (
   }
 };
 
+// Skip steps that is not status:completed (ex. status:queued, status:in_progress)
+const filterSteps = (steps: workflowJobSteps): workflowJobSteps => {
+  return steps.filter((step) => step.status === "completed");
+};
+
+// Skip jobs that is conclusion:skipped
+const filterJobs = (jobs: WorkflowJobs): WorkflowJobs => {
+  return jobs.filter((job) => job.conclusion !== "skipped");
+};
+
 export const createGantt = (
   workflow: Workflow,
   workflowJobs: WorkflowJobs,
 ): string => {
   const title = workflowJobs[0].workflow_name;
-  const jobs = workflowJobs.map((job, jobIndex, _jobs): ganttJob => {
-    const section = escapeName(job.name);
-    const status: ganttStep["status"] = "active";
-    const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
-    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
-    const waitingRunnerStep: ganttStep = {
-      name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
-      id: `job${jobIndex}-0`,
-      status,
-      position: formatElapsedTime(startJobElapsedSec),
-      sec: waitingRunnerElapsedSec,
-    };
-
-    const steps = job.steps?.map((step, stepIndex, _steps): ganttStep => {
-      const stepElapsedSec = diffSec(step.started_at, step.completed_at);
-      return {
-        name: formatName(step.name, stepElapsedSec),
-        id: `job${jobIndex}-${stepIndex + 1}`,
-        status: convertStepToStatus(step.conclusion as StepConclusion),
-        position: `after job${jobIndex}-${stepIndex}`,
-        sec: stepElapsedSec,
+  const jobs = filterJobs(workflowJobs).map(
+    (job, jobIndex, _jobs): ganttJob => {
+      const section = escapeName(job.name);
+      const status: ganttStep["status"] = "active";
+      const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
+      const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
+      const waitingRunnerStep: ganttStep = {
+        name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
+        id: `job${jobIndex}-0`,
+        status,
+        position: formatElapsedTime(startJobElapsedSec),
+        sec: waitingRunnerElapsedSec,
       };
-    }) ?? [];
 
-    return { section, steps: [waitingRunnerStep, ...steps] };
-  });
+      const steps = filterSteps(job.steps ?? []).map(
+        (step, stepIndex, _steps): ganttStep => {
+          const stepElapsedSec = diffSec(step.started_at, step.completed_at);
+          return {
+            name: formatName(step.name, stepElapsedSec),
+            id: `job${jobIndex}-${stepIndex + 1}`,
+            status: convertStepToStatus(step.conclusion as StepConclusion),
+            position: `after job${jobIndex}-${stepIndex}`,
+            sec: stepElapsedSec,
+          };
+        },
+      );
+
+      return { section, steps: [waitingRunnerStep, ...steps] };
+    },
+  );
 
   return `
 \`\`\`mermaid

@@ -1,3 +1,4 @@
+import { setTimeout } from "node:timers/promises";
 import { debug, getInput, info, summary } from "npm:@actions/core@1.10.0";
 import * as github from "npm:@actions/github@5.1.1";
 import { createGantt } from "./workflow_gantt.ts";
@@ -10,6 +11,9 @@ import {
 const main = async () => {
   const token = getInput("github-token", { required: true });
   const octokit = createOctokit(token);
+
+  info("Wait for workflow API result stability...");
+  await setTimeout(1000);
 
   info("Fetch workflow...");
   const workflow = await fetchWorkflow(
