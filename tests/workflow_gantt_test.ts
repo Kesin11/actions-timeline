@@ -267,6 +267,80 @@ ${workflowJobs[0].steps![2].name} (0s) :active, job0-3, after job0-2, 0s
 
     assertEquals(createGantt(workflow, workflowJobs), expect);
   });
+
+  await t.step(
+    "colon in job name or step name is deleted",
+    () => {
+      const workflow = {
+        "id": 6301810753,
+        "name": "CI",
+        "run_number": 60,
+        "event": "pull_request",
+        "status": "in_progress",
+        "conclusion": null,
+        "workflow_id": 69674074,
+        "created_at": "2023-09-25T15:55:47Z",
+        "updated_at": "2023-09-25T15:57:36Z",
+      } as unknown as Workflow;
+
+      const workflowJobs = [{
+        "id": 17107722147,
+        "run_id": 6301810753,
+        "workflow_name": "CI",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2023-09-25T15:55:50Z",
+        "started_at": "2023-09-25T15:55:56Z",
+        "completed_at": "2023-09-25T15:56:06Z",
+        "name": "check: deno 1.36.1",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2023-09-25T15:55:56.000Z",
+            "completed_at": "2023-09-25T15:55:57.000Z",
+          },
+          {
+            "name": "check: deno",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2023-09-25T15:55:57.000Z",
+            "completed_at": "2023-09-25T15:55:58.000Z",
+          },
+          {
+            "name": "Complete job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2023-09-25T15:56:03.000Z",
+            "completed_at": "2023-09-25T15:56:03.000Z",
+          },
+        ],
+      }] as unknown as WorkflowJobs;
+
+      const expectJobName = "check deno 1.36.1";
+      const expectStepName = "check deno";
+      // deno-fmt-ignore
+      const expect = `
+\`\`\`mermaid
+gantt
+title ${workflowJobs[0].workflow_name}
+dateFormat  HH:mm:ss
+axisFormat  %H:%M:%S
+section ${expectJobName}
+Waiting for a runner (6s) :active, job0-0, 00:00:03, 6s
+${workflowJobs[0].steps![0].name} (1s) :job0-1, after job0-0, 1s
+${expectStepName} (1s) :job0-2, after job0-1, 1s
+${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
+\`\`\`
+`;
+
+      assertEquals(createGantt(workflow, workflowJobs), expect);
+    },
+  );
 });
 
 Deno.test("2 section gantt", async (t) => {

@@ -68,7 +68,11 @@ export const formatStep = (step: ganttStep): string => {
 };
 
 const formatName = (name: string, sec: number): string => {
-  return `${name} (${formatShortElapsedTime(sec)})`;
+  return `${escapeName(name)} (${formatShortElapsedTime(sec)})`;
+};
+
+const escapeName = (name: string): string => {
+  return name.replaceAll(":", "");
 };
 
 const convertStepToStatus = (
@@ -98,7 +102,7 @@ export const createGantt = (
 ): string => {
   const title = workflowJobs[0].workflow_name;
   const jobs = workflowJobs.map((job, jobIndex, _jobs): ganttJob => {
-    const section = job.name;
+    const section = escapeName(job.name);
     const status: ganttStep["status"] = "active";
     const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
     const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
