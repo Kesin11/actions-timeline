@@ -24821,7 +24821,10 @@ var formatStep = (step) => {
   }
 };
 var formatName = (name, sec) => {
-  return `${name} (${formatShortElapsedTime(sec)})`;
+  return `${escapeName(name)} (${formatShortElapsedTime(sec)})`;
+};
+var escapeName = (name) => {
+  return name.replaceAll(":", "");
 };
 var convertStepToStatus = (conclusion) => {
   switch (conclusion) {
@@ -24845,7 +24848,7 @@ var createGantt = (workflow, workflowJobs) => {
   const title = workflowJobs[0].workflow_name;
   const jobs = workflowJobs.map((job, jobIndex, _jobs) => {
     var _a;
-    const section = job.name;
+    const section = escapeName(job.name);
     const status = "active";
     const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
     const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
