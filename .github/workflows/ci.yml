@@ -74,3 +74,9 @@ jobs:
           name: js_dist
       - name: Run self action
         uses: ./
+      - name: fail step
+        run: |
+          sleep 10
+          exit 1
+      - name: skipped step
+        run: echo "skipped step"
