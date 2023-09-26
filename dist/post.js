@@ -24782,6 +24782,7 @@ var require_dist_node20 = __commonJS({
 });
 
 // npm/src/post.ts
+var import_promises = require("timers/promises");
 var import_core = __toESM(require_core());
 var github = __toESM(require_github());
 
@@ -24918,6 +24919,8 @@ var fetchWorkflowRunJobs = async (octokit, owner, repo, runId) => {
 var main = async () => {
   const token = (0, import_core.getInput)("github-token", { required: true });
   const octokit = createOctokit(token);
+  (0, import_core.info)("Wait for workflow API result stability...");
+  await (0, import_promises.setTimeout)(1e3);
   (0, import_core.info)("Fetch workflow...");
   const workflow = await fetchWorkflow(
     octokit,
