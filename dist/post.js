@@ -24783,6 +24783,7 @@ var require_dist_node20 = __commonJS({
 
 // npm/src/post.ts
 var import_promises = require("timers/promises");
+var import_process2 = __toESM(require("process"));
 var import_core = __toESM(require_core());
 var github = __toESM(require_github());
 
@@ -24910,19 +24911,21 @@ var createOctokit = (token) => {
     baseUrl
   });
 };
-var fetchWorkflow = async (octokit, owner, repo, runId) => {
-  const workflow = await octokit.rest.actions.getWorkflowRun({
+var fetchWorkflow = async (octokit, owner, repo, runId, runAttempt) => {
+  const workflow = await octokit.rest.actions.getWorkflowRunAttempt({
     owner,
     repo,
-    run_id: runId
+    run_id: runId,
+    attempt_number: runAttempt
   });
   return workflow.data;
 };
-var fetchWorkflowRunJobs = async (octokit, owner, repo, runId) => {
-  const workflowJob = await octokit.rest.actions.listJobsForWorkflowRun({
+var fetchWorkflowRunJobs = async (octokit, owner, repo, runId, runAttempt) => {
+  const workflowJob = await octokit.rest.actions.listJobsForWorkflowRunAttempt({
     owner,
     repo,
-    run_id: runId
+    run_id: runId,
+    attempt_number: runAttempt
   });
   return workflowJob.data.jobs;
 };
@@ -24934,11 +24937,13 @@ var main = async () => {
   (0, import_core.info)("Wait for workflow API result stability...");
   await (0, import_promises.setTimeout)(1e3);
   (0, import_core.info)("Fetch workflow...");
+  const runAttempt = import_process2.default.env.GITHUB_RUN_ATTEMPT ? Number(import_process2.default.env.GITHUB_RUN_ATTEMPT) : 1;
   const workflow = await fetchWorkflow(
     octokit,
     github.context.repo.owner,
     github.context.repo.repo,
-    github.context.runId
+    github.context.runId,
+    runAttempt
   );
   (0, import_core.debug)(JSON.stringify(workflow, null, 2));
   (0, import_core.info)("Fetch workflow_job...");
@@ -24946,7 +24951,8 @@ var main = async () => {
     octokit,
     github.context.repo.owner,
     github.context.repo.repo,
-    github.context.runId
+    github.context.runId,
+    runAttempt
   );
   (0, import_core.debug)(JSON.stringify(workflowJobs, null, 2));
   (0, import_core.info)("Create gantt mermaid diagram...");

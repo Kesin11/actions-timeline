@@ -4,9 +4,13 @@ import { Octokit, RestEndpointMethodTypes } from "npm:@octokit/rest@19.0.13";
 import process from "node:process";
 
 export type Workflow =
-  RestEndpointMethodTypes["actions"]["getWorkflowRun"]["response"]["data"];
+  RestEndpointMethodTypes["actions"]["getWorkflowRunAttempt"]["response"][
+    "data"
+  ];
 export type WorkflowJobs =
-  RestEndpointMethodTypes["actions"]["listJobsForWorkflowRun"]["response"][
+  RestEndpointMethodTypes["actions"]["listJobsForWorkflowRunAttempt"][
+    "response"
+  ][
     "data"
   ]["jobs"];
 
@@ -23,11 +27,13 @@ export const fetchWorkflow = async (
   owner: string,
   repo: string,
   runId: number,
+  runAttempt: number,
 ): Promise<Workflow> => {
-  const workflow = await octokit.rest.actions.getWorkflowRun({
+  const workflow = await octokit.rest.actions.getWorkflowRunAttempt({
     owner,
     repo,
     run_id: runId,
+    attempt_number: runAttempt,
   });
   return workflow.data;
 };
@@ -37,11 +43,13 @@ export const fetchWorkflowRunJobs = async (
   owner: string,
   repo: string,
   runId: number,
+  runAttempt: number,
 ): Promise<WorkflowJobs> => {
-  const workflowJob = await octokit.rest.actions.listJobsForWorkflowRun({
+  const workflowJob = await octokit.rest.actions.listJobsForWorkflowRunAttempt({
     owner,
     repo,
     run_id: runId,
+    attempt_number: runAttempt,
   });
   return workflowJob.data.jobs;
 };
