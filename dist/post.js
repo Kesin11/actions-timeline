@@ -24852,7 +24852,7 @@ var filterJobs = (jobs) => {
   return jobs.filter((job) => job.conclusion !== "skipped");
 };
 var createGantt = (workflow, workflowJobs) => {
-  const title = workflowJobs[0].workflow_name;
+  const title = workflow.name;
   const jobs = filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs) => {
       const section = escapeName(job.name);
