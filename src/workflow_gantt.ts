@@ -112,7 +112,7 @@ export const createGantt = (
   workflow: Workflow,
   workflowJobs: WorkflowJobs,
 ): string => {
-  const title = workflowJobs[0].workflow_name;
+  const title = workflow.name;
   const jobs = filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs): ganttJob => {
       const section = escapeName(job.name);
