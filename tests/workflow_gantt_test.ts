@@ -19,6 +19,7 @@ Deno.test("1 section gantt", async (t) => {
       "workflow_id": 66989622,
       "created_at": "2023-08-25T15:57:51Z",
       "updated_at": "2023-08-25T15:58:19Z",
+      "run_started_at": "2023-08-25T15:57:51Z",
     } as unknown as Workflow;
 
     const workflowJobs = [{
@@ -133,6 +134,7 @@ ${workflowJobs[0].steps![7].name} (0s) :job0-8, after job0-7, 0s
       "workflow_id": 66989622,
       "created_at": "2023-08-25T15:57:51Z",
       "updated_at": "2023-08-25T15:58:19Z",
+      "run_started_at": "2023-08-25T15:57:51Z",
     } as unknown as Workflow;
 
     const workflowJobs = [{
@@ -210,6 +212,7 @@ ${workflowJobs[0].steps![3].name} (0s) :job0-4, after job0-3, 0s
       "conclusion": null,
       "created_at": "2023-09-24T15:41:23Z",
       "updated_at": "2023-09-24T15:46:01Z",
+      "run_started_at": "2023-09-24T15:41:23Z",
     } as unknown as Workflow;
 
     const workflowJobs = [{
@@ -279,6 +282,7 @@ ${workflowJobs[0].steps![0].name} (1s) :job0-1, after job0-0, 1s
         "workflow_id": 69674074,
         "created_at": "2023-09-25T15:55:47Z",
         "updated_at": "2023-09-25T15:57:36Z",
+        "run_started_at": "2023-09-25T15:55:47Z",
       } as unknown as Workflow;
 
       const workflowJobs = [{
@@ -339,6 +343,81 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
       assertEquals(createGantt(workflow, workflowJobs), expect);
     },
   );
+
+  await t.step("retried job", () => {
+    const workflow = {
+      "id": 5833450919,
+      "name": "Check self-hosted runner",
+      "run_number": 128,
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "workflow_id": 10970418,
+      // Retried job does not changed created_at but changed run_started_at.
+      // This dummy simulate to retry job after 1 hour.
+      "created_at": "2023-08-11T13:00:48Z",
+      "updated_at": "2023-08-11T14:01:56Z",
+      "run_started_at": "2023-08-11T14:00:48Z",
+      "run_attempt": 2,
+    } as unknown as Workflow;
+
+    const workflowJobs = [
+      {
+        "id": 15820938470,
+        "run_id": 5833450919,
+        "workflow_name": "Check self-hosted runner",
+        "status": "completed",
+        "conclusion": "success",
+        "created_at": "2023-08-11T14:00:50Z",
+        "started_at": "2023-08-11T14:01:31Z",
+        "completed_at": "2023-08-11T14:01:36Z",
+        "name": "node",
+        "steps": [
+          {
+            "name": "Set up job",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 1,
+            "started_at": "2023-08-11T23:01:30.000+09:00",
+            "completed_at": "2023-08-11T23:01:32.000+09:00",
+          },
+          {
+            "name": "Set up runner",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 2,
+            "started_at": "2023-08-11T23:01:32.000+09:00",
+            "completed_at": "2023-08-11T23:01:32.000+09:00",
+          },
+          {
+            "name": "Run actions/checkout@v3",
+            "status": "completed",
+            "conclusion": "success",
+            "number": 3,
+            "started_at": "2023-08-11T23:01:34.000+09:00",
+            "completed_at": "2023-08-11T23:01:34.000+09:00",
+          },
+        ],
+      },
+    ] as unknown as WorkflowJobs;
+
+    // deno-fmt-ignore
+    const expect = `
+\`\`\`mermaid
+gantt
+title ${workflowJobs[0].workflow_name}
+dateFormat  HH:mm:ss
+axisFormat  %H:%M:%S
+section ${workflowJobs[0].name}
+Waiting for a runner (41s) :active, job0-0, 00:00:02, 41s
+${workflowJobs[0].steps![0].name} (2s) :job0-1, after job0-0, 2s
+${workflowJobs[0].steps![1].name} (0s) :job0-2, after job0-1, 0s
+${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
+\`\`\`
+`;
+
+    assertEquals(createGantt(workflow, workflowJobs), expect);
+  });
 });
 
 Deno.test("2 section gantt", async (t) => {
@@ -353,6 +432,7 @@ Deno.test("2 section gantt", async (t) => {
       "workflow_id": 10970418,
       "created_at": "2023-08-11T14:00:48Z",
       "updated_at": "2023-08-11T14:01:56Z",
+      "run_started_at": "2023-08-11T14:00:48Z",
     } as unknown as Workflow;
 
     const workflowJobs = [
@@ -547,6 +627,7 @@ ${workflowJobs[1].steps![6].name} (0s) :job1-7, after job1-6, 0s
       "workflow_id": 10970418,
       "created_at": "2023-08-11T14:00:48Z",
       "updated_at": "2023-08-11T14:01:56Z",
+      "run_started_at": "2023-08-11T14:00:48Z",
     } as unknown as Workflow;
 
     const workflowJobs = [
