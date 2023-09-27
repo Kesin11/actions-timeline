@@ -117,7 +117,10 @@ export const createGantt = (
     (job, jobIndex, _jobs): ganttJob => {
       const section = escapeName(job.name);
       const status: ganttStep["status"] = "active";
-      const startJobElapsedSec = diffSec(workflow.created_at, job.created_at);
+      const startJobElapsedSec = diffSec(
+        workflow.run_started_at,
+        job.created_at,
+      );
       const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
       const waitingRunnerStep: ganttStep = {
         name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
