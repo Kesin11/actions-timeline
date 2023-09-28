@@ -700,6 +700,85 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 
     assertEquals(createGantt(workflow, workflowJobs), expect);
   });
+
+  await t.step(
+    "'Waiting for a runner' step duration is ommited if workflow_job has not 'created_at' field (< GHES v3.9)",
+    () => {
+      const workflow = {
+        "id": 5833450919,
+        "name": "Check self-hosted runner",
+        "run_number": 128,
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "workflow_id": 10970418,
+        "created_at": "2023-08-11T14:00:48Z",
+        "updated_at": "2023-08-11T14:01:56Z",
+        "run_started_at": "2023-08-11T14:00:48Z",
+      } as unknown as Workflow;
+
+      const workflowJobs = [
+        {
+          "id": 15820938470,
+          "run_id": 5833450919,
+          "workflow_name": "Check self-hosted runner",
+          "status": "completed",
+          "conclusion": "success",
+          // "created_at" field is not exists before GHES v3.9.
+          // GHES v3.8 https://docs.github.com/en/enterprise-server@3.8/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt
+          // GHES v3.9 https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28#list-jobs-for-a-workflow-run-attempt
+          // To emulate < GHES v3.9, just comment out this fixture.
+          // "created_at": "2023-08-11T14:00:50Z",
+          "started_at": "2023-08-11T14:01:31Z",
+          "completed_at": "2023-08-11T14:01:36Z",
+          "name": "node",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2023-08-11T23:01:30.000+09:00",
+              "completed_at": "2023-08-11T23:01:32.000+09:00",
+            },
+            {
+              "name": "Set up runner",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2023-08-11T23:01:32.000+09:00",
+              "completed_at": "2023-08-11T23:01:32.000+09:00",
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3,
+              "started_at": "2023-08-11T23:01:34.000+09:00",
+              "completed_at": "2023-08-11T23:01:34.000+09:00",
+            },
+          ],
+        },
+      ] as unknown as WorkflowJobs;
+
+      // deno-fmt-ignore
+      const expect = `
+\`\`\`mermaid
+gantt
+title ${workflowJobs[0].workflow_name}
+dateFormat  HH:mm:ss
+axisFormat  %H:%M:%S
+section ${workflowJobs[0].name}
+Waiting for a runner (not supported < GHES v3.9) :active, job0-0, 00:00:43, 0s
+${workflowJobs[0].steps![0].name} (2s) :job0-1, after job0-0, 2s
+${workflowJobs[0].steps![1].name} (0s) :job0-2, after job0-1, 0s
+${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
+\`\`\`
+`;
+
+      assertEquals(createGantt(workflow, workflowJobs), expect);
+    },
+  );
 });
 
 Deno.test("formatStep", async (t) => {

@@ -108,6 +108,46 @@ const filterJobs = (jobs: WorkflowJobs): WorkflowJobs => {
   return jobs.filter((job) => job.conclusion !== "skipped");
 };
 
+const createWaitingRunnerStep = (
+  workflow: Workflow,
+  job: WorkflowJobs[0],
+  jobIndex: number,
+): ganttStep => {
+  const status: ganttStep["status"] = "active";
+
+  // job.created_at is not appered in < GHES v3.9
+  // So it it not possible to calculate the elapsed time that runner waiting for a job,
+  // print it is not supported instead of the elapsed time.
+  // Also, it is not possible to create accurate job start time position. So use job.started_at instead of job.created_at.
+  if (job.created_at === undefined) {
+    const startJobElapsedSec = diffSec(
+      workflow.run_started_at,
+      job.started_at,
+    );
+    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
+    return {
+      name: `Waiting for a runner (not supported < GHES v3.9)`,
+      id: `job${jobIndex}-0`,
+      status,
+      position: formatElapsedTime(startJobElapsedSec),
+      sec: waitingRunnerElapsedSec,
+    };
+  } else {
+    const startJobElapsedSec = diffSec(
+      workflow.run_started_at,
+      job.created_at,
+    );
+    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
+    return {
+      name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
+      id: `job${jobIndex}-0`,
+      status,
+      position: formatElapsedTime(startJobElapsedSec),
+      sec: waitingRunnerElapsedSec,
+    };
+  }
+};
+
 export const createGantt = (
   workflow: Workflow,
   workflowJobs: WorkflowJobs,
@@ -116,19 +156,11 @@ export const createGantt = (
   const jobs = filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs): ganttJob => {
       const section = escapeName(job.name);
-      const status: ganttStep["status"] = "active";
-      const startJobElapsedSec = diffSec(
-        workflow.run_started_at,
-        job.created_at,
+      const waitingRunnerStep = createWaitingRunnerStep(
+        workflow,
+        job,
+        jobIndex,
       );
-      const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
-      const waitingRunnerStep: ganttStep = {
-        name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
-        id: `job${jobIndex}-0`,
-        status,
-        position: formatElapsedTime(startJobElapsedSec),
-        sec: waitingRunnerElapsedSec,
-      };
 
       const steps = filterSteps(job.steps ?? []).map(
         (step, stepIndex, _steps): ganttStep => {

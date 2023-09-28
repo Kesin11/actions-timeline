@@ -24852,24 +24852,46 @@ var filterSteps = (steps) => {
 var filterJobs = (jobs) => {
   return jobs.filter((job) => job.conclusion !== "skipped");
 };
+var createWaitingRunnerStep = (workflow, job, jobIndex) => {
+  const status = "active";
+  if (job.created_at === void 0) {
+    const startJobElapsedSec = diffSec(
+      workflow.run_started_at,
+      job.started_at
+    );
+    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
+    return {
+      name: `Waiting for a runner (not supported < GHES v3.9)`,
+      id: `job${jobIndex}-0`,
+      status,
+      position: formatElapsedTime(startJobElapsedSec),
+      sec: waitingRunnerElapsedSec
+    };
+  } else {
+    const startJobElapsedSec = diffSec(
+      workflow.run_started_at,
+      job.created_at
+    );
+    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
+    return {
+      name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
+      id: `job${jobIndex}-0`,
+      status,
+      position: formatElapsedTime(startJobElapsedSec),
+      sec: waitingRunnerElapsedSec
+    };
+  }
+};
 var createGantt = (workflow, workflowJobs) => {
   const title = workflow.name;
   const jobs = filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs) => {
       const section = escapeName(job.name);
-      const status = "active";
-      const startJobElapsedSec = diffSec(
-        workflow.run_started_at,
-        job.created_at
+      const waitingRunnerStep = createWaitingRunnerStep(
+        workflow,
+        job,
+        jobIndex
       );
-      const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
-      const waitingRunnerStep = {
-        name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
-        id: `job${jobIndex}-0`,
-        status,
-        position: formatElapsedTime(startJobElapsedSec),
-        sec: waitingRunnerElapsedSec
-      };
       const steps = filterSteps(job.steps ?? []).map(
         (step, stepIndex, _steps) => {
           const stepElapsedSec = diffSec(step.started_at, step.completed_at);
