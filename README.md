@@ -62,6 +62,12 @@ You can set `GITHUB_API_URL` environment variable to use this action with GHES.
 
 GET `workflow_job` API response does not contain `created_at` field in [GHES v3.8](https://docs.github.com/en/enterprise-server@3.8/rest/actions/workflow-jobs#get-a-job-for-a-workflow-run), it is added from [GHES v3.9](https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28). So it is not possible to calculate the elapsed time the runner is waiting for a job, `actions-timeline` inserts a dummy step instead.
 
+# Similar works
+
+- https://github.com/Kesin11/github_actions_otel_trace
+- https://github.com/inception-health/otel-export-trace-action
+- https://github.com/runforesight/workflow-telemetry-action
+
 # DEVELOPMENT
 
 ## Setup
