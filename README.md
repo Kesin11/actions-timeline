@@ -58,6 +58,20 @@ You can set `GITHUB_API_URL` environment variable to use this action with GHES.
 
 ## Known issues
 
+### In some cases, the workflow requires `actions:read' permission.
+
+Sometimes the `actions:read' permission is needed in the workflow to fetch workflow jobs and steps. If you see the following error, you need to add the`actions:read' permission to your workflow.
+
+```yaml
+jobs:
+  build:
+    permissions:
+      actions: read
+    runs-on: ubuntu-latest
+    steps:
+    - uses: Kesin11/actions-timeline@v0
+```
+
 ### 'Waiting for a runner' step is not supported < GHES v3.9
 
 GET `workflow_job` API response does not contain `created_at` field in [GHES v3.8](https://docs.github.com/en/enterprise-server@3.8/rest/actions/workflow-jobs#get-a-job-for-a-workflow-run), it is added from [GHES v3.9](https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28). So it is not possible to calculate the elapsed time the runner is waiting for a job, `actions-timeline` inserts a dummy step instead.
