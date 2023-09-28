@@ -724,7 +724,7 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
           "workflow_name": "Check self-hosted runner",
           "status": "completed",
           "conclusion": "success",
-          // "created_at" field is not exists before GHES v3.9.
+          // "created_at" field does not exists before GHES v3.9.
           // GHES v3.8 https://docs.github.com/en/enterprise-server@3.8/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt
           // GHES v3.9 https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28#list-jobs-for-a-workflow-run-attempt
           // To emulate < GHES v3.9, just comment out this fixture.

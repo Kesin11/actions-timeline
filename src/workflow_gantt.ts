@@ -115,10 +115,9 @@ const createWaitingRunnerStep = (
 ): ganttStep => {
   const status: ganttStep["status"] = "active";
 
-  // job.created_at is not appered in < GHES v3.9
-  // So it it not possible to calculate the elapsed time that runner waiting for a job,
-  // print it is not supported instead of the elapsed time.
-  // Also, it is not possible to create accurate job start time position. So use job.started_at instead of job.created_at.
+  // job.created_at does not exist in < GHES v3.9.
+  // So it is not possible to calculate the elapsed time the runner is waiting for a job, is not supported instead of the elapsed time.
+  // Also, it is not possible to create an exact job start time position. So use job.started_at instead of job.created_at.
   if (job.created_at === undefined) {
     const startJobElapsedSec = diffSec(
       workflow.run_started_at,
