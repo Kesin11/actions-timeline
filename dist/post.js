@@ -24859,13 +24859,13 @@ var createWaitingRunnerStep = (workflow, job, jobIndex) => {
       workflow.run_started_at,
       job.started_at
     );
-    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
     return {
       name: `Waiting for a runner (not supported < GHES v3.9)`,
       id: `job${jobIndex}-0`,
       status,
       position: formatElapsedTime(startJobElapsedSec),
-      sec: waitingRunnerElapsedSec
+      sec: 1
+      // dummy sec for gantt look and feel
     };
   } else {
     const startJobElapsedSec = diffSec(
