@@ -124,14 +124,17 @@ const createWaitingRunnerStep = (
       workflow.run_started_at,
       job.started_at,
     );
-    const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
+    // dummy sec for gantt look and feel
+    const waitingRunnerElapsedSec = startJobElapsedSec;
     return {
       name: `Waiting for a runner (not supported < GHES v3.9)`,
       id: `job${jobIndex}-0`,
       status,
-      position: formatElapsedTime(startJobElapsedSec),
+      // dummy position for gantt look and feel
+      position: formatElapsedTime(0),
       sec: waitingRunnerElapsedSec,
     };
+    // >= GHES v3.9 or GitHub.com
   } else {
     const startJobElapsedSec = diffSec(
       workflow.run_started_at,
