@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     # Register this action before your build step. It will then be executed at the end of the job post-processing.
-    - uses: Kesin11/actions-timeline@v0
+    - uses: Kesin11/actions-timeline@v1
       with:
         # e.g.: ${{ secrets.MY_PAT }}
         # Default: ${{ github.token }}
@@ -37,7 +37,7 @@ jobs:
     needs: [build-1, build-2, build-3]
     runs-on: ubuntu-latest
     steps:
-    - uses: Kesin11/actions-timeline@v0
+    - uses: Kesin11/actions-timeline@v1
 ```
 
 ## How it works
@@ -51,7 +51,7 @@ This action is run on post-processing of the job, so you should register this ac
 You can set `GITHUB_API_URL` environment variable to use this action with GHES.
 
 ```yaml
-- uses: Kesin11/actions-timeline@v0
+- uses: Kesin11/actions-timeline@v1
   env:
     GITHUB_API_URL: 'https://github.example.com/api/v3'
 ```
@@ -69,7 +69,7 @@ jobs:
       actions: read
     runs-on: ubuntu-latest
     steps:
-    - uses: Kesin11/actions-timeline@v0
+    - uses: Kesin11/actions-timeline@v1
 ```
 
 ### 'Waiting for a runner' step is not supported < GHES v3.9
