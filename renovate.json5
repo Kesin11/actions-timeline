@@ -10,14 +10,14 @@
     {
       "fileMatch": ["\\.tsx?$"],
       "matchStrings": [
-        "(?:im|ex)port(?:.|\\s)+?from\\s*['\"](?<depName>https://deno.land/.+?)@v?(?<currentValue>\\d+?\\.\\d+?\\.\\d+?).*?['\"]"
+        "(?:im|ex)port(?:.|\\s)+?from\\s*['\"](?<depName>https://deno.land/.+?)@v?(?<currentValue>[\\.\\d]+).*?['\"]"
       ],
       "datasourceTemplate": "deno"
     },
     {
       "fileMatch": ["\\.tsx?$"],
       "matchStrings": [
-        "(?:im|ex)port(?:.|\\s)+?from\\s*['\"]npm:(?<depName>.+?)@(?<currentValue>\\d+?\\.\\d+?\\.\\d+?).*?['\"]"
+        "(?:im|ex)port(?:.|\\s)+?from\\s*['\"]npm:(?<depName>.+?)@.*?(?<currentValue>[\\.\\d]+).*?['\"]"
       ],
       "datasourceTemplate": "npm"
     }
