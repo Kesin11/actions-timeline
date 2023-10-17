@@ -1,6 +1,6 @@
 import { setTimeout } from "node:timers/promises";
 import process from "node:process";
-import { debug, getInput, info, summary } from "npm:@actions/core@1.10.0";
+import { debug, getInput, info, summary } from "npm:@actions/core@1.10.1";
 import * as github from "npm:@actions/github@5.1.1";
 import { createGantt } from "./workflow_gantt.ts";
 import {
