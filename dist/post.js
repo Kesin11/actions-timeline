@@ -12714,6 +12714,8 @@ var require_fetch = __commonJS({
       }
       if (!sameOrigin(requestCurrentURL(request), locationURL)) {
         request.headersList.delete("authorization");
+        request.headersList.delete("cookie");
+        request.headersList.delete("host");
       }
       if (request.body != null) {
         assert(request.body.source != null);
@@ -12763,7 +12765,7 @@ var require_fetch = __commonJS({
       appendRequestOriginHeader(httpRequest);
       appendFetchMetadata(httpRequest);
       if (!httpRequest.headersList.contains("user-agent")) {
-        httpRequest.headersList.append("user-agent", __filename.endsWith("index.js") ? "undici" : "node");
+        httpRequest.headersList.append("user-agent", typeof esbuildDetection === "undefined" ? "undici" : "node");
       }
       if (httpRequest.cache === "default" && (httpRequest.headersList.contains("if-modified-since") || httpRequest.headersList.contains("if-none-match") || httpRequest.headersList.contains("if-unmodified-since") || httpRequest.headersList.contains("if-match") || httpRequest.headersList.contains("if-range"))) {
         httpRequest.cache = "no-store";
@@ -17274,7 +17276,7 @@ var require_oidc_utils = __commonJS({
  
         Error Code : ${error.statusCode}
  
-        Error Message: ${error.result.message}`);
+        Error Message: ${error.message}`);
           });
           const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
           if (!id_token) {
