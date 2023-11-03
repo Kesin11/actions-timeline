@@ -1,6 +1,5 @@
 import { build, emptyDir } from "https://deno.land/x/dnt@0.38.1/mod.ts";
-// @deno-types="https://deno.land/x/esbuild@v0.19.2/mod.d.ts"
-import * as esbuild from "https://deno.land/x/esbuild@v0.19.2/mod.js";
+import * as esbuild from "npm:esbuild@0.19.2";
 
 console.debug("Start dnt ...");
 
@@ -47,7 +46,6 @@ await esbuild.build({
   minify: false,
   sourcemap: false,
 }).finally(() => {
-  esbuild.stop();
 });
 
 console.log("Complete!");
