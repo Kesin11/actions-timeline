@@ -3017,8 +3017,10 @@ var require_constants = __commonJS({
     "use strict";
     var { MessageChannel, receiveMessageOnPort } = require("worker_threads");
     var corsSafeListedMethods = ["GET", "HEAD", "POST"];
+    var corsSafeListedMethodsSet = new Set(corsSafeListedMethods);
     var nullBodyStatus = [101, 204, 205, 304];
     var redirectStatus = [301, 302, 303, 307, 308];
+    var redirectStatusSet = new Set(redirectStatus);
     var badPorts = [
       "1",
       "7",
@@ -3101,6 +3103,7 @@ var require_constants = __commonJS({
       "6697",
       "10080"
     ];
+    var badPortsSet = new Set(badPorts);
     var referrerPolicy = [
       "",
       "no-referrer",
@@ -3112,8 +3115,10 @@ var require_constants = __commonJS({
       "strict-origin-when-cross-origin",
       "unsafe-url"
     ];
+    var referrerPolicySet = new Set(referrerPolicy);
     var requestRedirect = ["follow", "manual", "error"];
     var safeMethods = ["GET", "HEAD", "OPTIONS", "TRACE"];
+    var safeMethodsSet = new Set(safeMethods);
     var requestMode = ["navigate", "same-origin", "no-cors", "cors"];
     var requestCredentials = ["omit", "same-origin", "include"];
     var requestCache = [
@@ -3139,6 +3144,7 @@ var require_constants = __commonJS({
       "half"
     ];
     var forbiddenMethods = ["CONNECT", "TRACE", "TRACK"];
+    var forbiddenMethodsSet = new Set(forbiddenMethods);
     var subresource = [
       "audio",
       "audioworklet",
@@ -3153,6 +3159,7 @@ var require_constants = __commonJS({
       "xslt",
       ""
     ];
+    var subresourceSet = new Set(subresource);
     var DOMException2 = globalThis.DOMException ?? (() => {
       try {
         atob("~");
@@ -3191,7 +3198,14 @@ var require_constants = __commonJS({
       nullBodyStatus,
       safeMethods,
       badPorts,
-      requestDuplex
+      requestDuplex,
+      subresourceSet,
+      badPortsSet,
+      redirectStatusSet,
+      corsSafeListedMethodsSet,
+      safeMethodsSet,
+      forbiddenMethodsSet,
+      referrerPolicySet
     };
   }
 });
@@ -3236,7 +3250,7 @@ var require_global = __commonJS({
 var require_util2 = __commonJS({
   "npm/node_modules/undici/lib/fetch/util.js"(exports, module2) {
     "use strict";
-    var { redirectStatus, badPorts, referrerPolicy: referrerPolicyTokens } = require_constants();
+    var { redirectStatusSet, referrerPolicySet: referrerPolicyTokens, badPortsSet } = require_constants();
     var { getGlobalOrigin } = require_global();
     var { performance: performance2 } = require("perf_hooks");
     var { isBlobLike, toUSVString, ReadableStreamFrom } = require_util();
@@ -3253,7 +3267,7 @@ var require_util2 = __commonJS({
       return length === 0 ? null : urlList[length - 1].toString();
     }
     function responseLocationURL(response, requestFragment) {
-      if (!redirectStatus.includes(response.status)) {
+      if (!redirectStatusSet.has(response.status)) {
         return null;
       }
       let location = response.headersList.get("location");
@@ -3270,7 +3284,7 @@ var require_util2 = __commonJS({
     }
     function requestBadPort(request) {
       const url = requestCurrentURL(request);
-      if (urlIsHttpHttpsScheme(url) && badPorts.includes(url.port)) {
+      if (urlIsHttpHttpsScheme(url) && badPortsSet.has(url.port)) {
         return "blocked";
       }
       return "allowed";
@@ -3327,7 +3341,7 @@ var require_util2 = __commonJS({
       if (policyHeader.length > 0) {
         for (let i = policyHeader.length; i !== 0; i--) {
           const token = policyHeader[i - 1].trim();
-          if (referrerPolicyTokens.includes(token)) {
+          if (referrerPolicyTokens.has(token)) {
             policy = token;
             break;
           }
@@ -4452,6 +4466,7 @@ var require_file = __commonJS({
     var { webidl } = require_webidl();
     var { parseMIMEType, serializeAMimeType } = require_dataURL();
     var { kEnumerableProperty } = require_util();
+    var encoder = new TextEncoder();
     var File = class _File extends Blob2 {
       constructor(fileBits, fileName, options = {}) {
         webidl.argumentLengthCheck(arguments, 2, { header: "File constructor" });
@@ -4597,7 +4612,7 @@ var require_file = __commonJS({
           if (options.endings === "native") {
             s = convertLineEndingsNative(s);
           }
-          bytes.push(new TextEncoder().encode(s));
+          bytes.push(encoder.encode(s));
         } else if (types.isAnyArrayBuffer(element) || types.isTypedArray(element)) {
           if (!element.buffer) {
             bytes.push(new Uint8Array(element));
@@ -4809,6 +4824,8 @@ var require_body = __commonJS({
     var { parseMIMEType, serializeAMimeType } = require_dataURL();
     var ReadableStream = globalThis.ReadableStream;
     var File = NativeFile ?? UndiciFile;
+    var textEncoder = new TextEncoder();
+    var textDecoder = new TextDecoder();
     function extractBody(object, keepalive = false) {
       if (!ReadableStream) {
         ReadableStream = require("stream/web").ReadableStream;
@@ -4822,7 +4839,7 @@ var require_body = __commonJS({
         stream = new ReadableStream({
           async pull(controller) {
             controller.enqueue(
-              typeof source === "string" ? new TextEncoder().encode(source) : source
+              typeof source === "string" ? textEncoder.encode(source) : source
             );
             queueMicrotask(() => readableStreamClose(controller));
           },
@@ -4852,21 +4869,20 @@ var require_body = __commonJS({
 Content-Disposition: form-data`;
         const escape = (str) => str.replace(/\n/g, "%0A").replace(/\r/g, "%0D").replace(/"/g, "%22");
         const normalizeLinefeeds = (value) => value.replace(/\r?\n|\r/g, "\r\n");
-        const enc = new TextEncoder();
         const blobParts = [];
         const rn = new Uint8Array([13, 10]);
         length = 0;
         let hasUnknownSizeValue = false;
         for (const [name, value] of object) {
           if (typeof value === "string") {
-            const chunk2 = enc.encode(prefix + `; name="${escape(normalizeLinefeeds(name))}"\r
+            const chunk2 = textEncoder.encode(prefix + `; name="${escape(normalizeLinefeeds(name))}"\r
 \r
 ${normalizeLinefeeds(value)}\r
 `);
             blobParts.push(chunk2);
             length += chunk2.byteLength;
           } else {
-            const chunk2 = enc.encode(`${prefix}; name="${escape(normalizeLinefeeds(name))}"` + (value.name ? `; filename="${escape(value.name)}"` : "") + `\r
+            const chunk2 = textEncoder.encode(`${prefix}; name="${escape(normalizeLinefeeds(name))}"` + (value.name ? `; filename="${escape(value.name)}"` : "") + `\r
 Content-Type: ${value.type || "application/octet-stream"}\r
 \r
 `);
@@ -4878,7 +4894,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
             }
           }
         }
-        const chunk = enc.encode(`--${boundary}--`);
+        const chunk = textEncoder.encode(`--${boundary}--`);
         blobParts.push(chunk);
         length += chunk.byteLength;
         if (hasUnknownSizeValue) {
@@ -5068,14 +5084,14 @@ Content-Type: ${value.type || "application/octet-stream"}\r
             let entries;
             try {
               let text = "";
-              const textDecoder = new TextDecoder("utf-8", { ignoreBOM: true });
+              const streamingDecoder = new TextDecoder("utf-8", { ignoreBOM: true });
               for await (const chunk of consumeBody(this[kState].body)) {
                 if (!isUint8Array(chunk)) {
                   throw new TypeError("Expected Uint8Array chunk");
                 }
-                text += textDecoder.decode(chunk, { stream: true });
+                text += streamingDecoder.decode(chunk, { stream: true });
               }
-              text += textDecoder.decode();
+              text += streamingDecoder.decode();
               entries = new URLSearchParams(text);
             } catch (err) {
               throw Object.assign(new TypeError(), { cause: err });
@@ -5132,7 +5148,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
       if (buffer[0] === 239 && buffer[1] === 187 && buffer[2] === 191) {
         buffer = buffer.subarray(3);
       }
-      const output = new TextDecoder().decode(buffer);
+      const output = textDecoder.decode(buffer);
       return output;
     }
     function parseJSONFromBytes(bytes) {
@@ -5318,6 +5334,13 @@ var require_request = __commonJS({
       onRequestSent() {
         if (channels.bodySent.hasSubscribers) {
           channels.bodySent.publish({ request: this });
+        }
+        if (this[kHandler].onRequestSent) {
+          try {
+            this[kHandler].onRequestSent();
+          } catch (err) {
+            this.onError(err);
+          }
         }
       }
       onConnect(abort) {
@@ -7163,7 +7186,9 @@ var require_client = __commonJS({
     }
     function onSocketReadable() {
       const { [kParser]: parser } = this;
-      parser.readMore();
+      if (parser) {
+        parser.readMore();
+      }
     }
     function onSocketError(err) {
       const { [kClient]: client, [kParser]: parser } = this;
@@ -8894,7 +8919,7 @@ var require_readable = __commonJS({
             dst.set(buf, pos);
             pos += buf.byteLength;
           }
-          resolve(dst);
+          resolve(dst.buffer);
         } else if (type === "blob") {
           if (!Blob2) {
             Blob2 = require("buffer").Blob;
@@ -9264,6 +9289,9 @@ var require_api_stream = __commonJS({
             { callback, body: res, contentType, statusCode, statusMessage, headers }
           );
         } else {
+          if (factory === null) {
+            return;
+          }
           res = this.runInAsyncScope(factory, null, {
             statusCode,
             headers,
@@ -9293,11 +9321,14 @@ var require_api_stream = __commonJS({
       }
       onData(chunk) {
         const { res } = this;
-        return res.write(chunk);
+        return res ? res.write(chunk) : true;
       }
       onComplete(trailers) {
         const { res } = this;
         removeSignal(this);
+        if (!res) {
+          return;
+        }
         this.trailers = util.parseHeaders(trailers);
         res.end();
       }
@@ -11117,7 +11148,7 @@ var require_response = __commonJS({
       isomorphicEncode
     } = require_util2();
     var {
-      redirectStatus,
+      redirectStatusSet,
       nullBodyStatus,
       DOMException: DOMException2
     } = require_constants();
@@ -11130,6 +11161,7 @@ var require_response = __commonJS({
     var assert = require("assert");
     var { types } = require("util");
     var ReadableStream = globalThis.ReadableStream || require("stream/web").ReadableStream;
+    var textEncoder = new TextEncoder("utf-8");
     var Response = class _Response {
       // Creates network error Response.
       static error() {
@@ -11148,7 +11180,7 @@ var require_response = __commonJS({
         if (init !== null) {
           init = webidl.converters.ResponseInit(init);
         }
-        const bytes = new TextEncoder("utf-8").encode(
+        const bytes = textEncoder.encode(
           serializeJavascriptValueToJSONString(data)
         );
         const body = extractBody(bytes);
@@ -11174,7 +11206,7 @@ var require_response = __commonJS({
             cause: err
           });
         }
-        if (!redirectStatus.includes(status)) {
+        if (!redirectStatusSet.has(status)) {
           throw new RangeError("Invalid status code " + status);
         }
         const responseObject = new _Response();
@@ -11492,8 +11524,8 @@ var require_request2 = __commonJS({
       makePolicyContainer
     } = require_util2();
     var {
-      forbiddenMethods,
-      corsSafeListedMethods,
+      forbiddenMethodsSet,
+      corsSafeListedMethodsSet,
       referrerPolicy,
       requestRedirect,
       requestMode,
@@ -11685,7 +11717,7 @@ var require_request2 = __commonJS({
           if (!isValidHTTPToken(init.method)) {
             throw TypeError(`'${init.method}' is not a valid HTTP method.`);
           }
-          if (forbiddenMethods.indexOf(method.toUpperCase()) !== -1) {
+          if (forbiddenMethodsSet.has(method.toUpperCase())) {
             throw TypeError(`'${init.method}' HTTP method is unsupported.`);
           }
           method = normalizeMethod(init.method);
@@ -11732,7 +11764,7 @@ var require_request2 = __commonJS({
         this[kHeaders][kGuard] = "request";
         this[kHeaders][kRealm] = this[kRealm];
         if (mode === "no-cors") {
-          if (!corsSafeListedMethods.includes(request.method)) {
+          if (!corsSafeListedMethodsSet.has(request.method)) {
             throw new TypeError(
               `'${request.method} is unsupported in no-cors mode.`
             );
@@ -12167,11 +12199,11 @@ var require_fetch = __commonJS({
     var assert = require("assert");
     var { safelyExtractBody } = require_body();
     var {
-      redirectStatus,
+      redirectStatusSet,
       nullBodyStatus,
-      safeMethods,
+      safeMethodsSet,
       requestBodyHeader,
-      subresource,
+      subresourceSet,
       DOMException: DOMException2
     } = require_constants();
     var { kHeadersList } = require_symbols();
@@ -12183,6 +12215,7 @@ var require_fetch = __commonJS({
     var { getGlobalDispatcher } = require_global2();
     var { webidl } = require_webidl();
     var { STATUS_CODES } = require("http");
+    var GET_OR_HEAD = ["GET", "HEAD"];
     var resolveObjectURL;
     var ReadableStream = globalThis.ReadableStream;
     var Fetch = class extends EE {
@@ -12218,7 +12251,7 @@ var require_fetch = __commonJS({
         this.emit("terminated", error);
       }
     };
-    async function fetch(input, init = {}) {
+    function fetch(input, init = {}) {
       var _a;
       webidl.argumentLengthCheck(arguments, 1, { header: "globalThis.fetch" });
       const p = createDeferredPromise();
@@ -12254,17 +12287,17 @@ var require_fetch = __commonJS({
       const handleFetchDone = (response) => finalizeAndReportTiming(response, "fetch");
       const processResponse = (response) => {
         if (locallyAborted) {
-          return;
+          return Promise.resolve();
         }
         if (response.aborted) {
           abortFetch(p, request, responseObject, controller.serializedAbortReason);
-          return;
+          return Promise.resolve();
         }
         if (response.type === "error") {
           p.reject(
             Object.assign(new TypeError("fetch failed"), { cause: response.error })
           );
-          return;
+          return Promise.resolve();
         }
         responseObject = new Response();
         responseObject[kState] = response;
@@ -12407,7 +12440,7 @@ var require_fetch = __commonJS({
       }
       if (request.priority === null) {
       }
-      if (subresource.includes(request.destination)) {
+      if (subresourceSet.has(request.destination)) {
       }
       mainFetch(fetchParams).catch((err) => {
         fetchParams.controller.terminate(err);
@@ -12511,15 +12544,15 @@ var require_fetch = __commonJS({
         fetchFinale(fetchParams, response);
       }
     }
-    async function schemeFetch(fetchParams) {
+    function schemeFetch(fetchParams) {
       if (isCancelled(fetchParams) && fetchParams.request.redirectCount === 0) {
-        return makeAppropriateNetworkError(fetchParams);
+        return Promise.resolve(makeAppropriateNetworkError(fetchParams));
       }
       const { request } = fetchParams;
       const { protocol: scheme } = requestCurrentURL(request);
       switch (scheme) {
         case "about:": {
-          return makeNetworkError("about scheme is not supported");
+          return Promise.resolve(makeNetworkError("about scheme is not supported"));
         }
         case "blob:": {
           if (!resolveObjectURL) {
@@ -12527,11 +12560,11 @@ var require_fetch = __commonJS({
           }
           const blobURLEntry = requestCurrentURL(request);
           if (blobURLEntry.search.length !== 0) {
-            return makeNetworkError("NetworkError when attempting to fetch resource.");
+            return Promise.resolve(makeNetworkError("NetworkError when attempting to fetch resource."));
           }
           const blobURLEntryObject = resolveObjectURL(blobURLEntry.toString());
           if (request.method !== "GET" || !isBlobLike(blobURLEntryObject)) {
-            return makeNetworkError("invalid method");
+            return Promise.resolve(makeNetworkError("invalid method"));
           }
           const bodyWithType = safelyExtractBody(blobURLEntryObject);
           const body = bodyWithType[0];
@@ -12545,32 +12578,32 @@ var require_fetch = __commonJS({
             ]
           });
           response.body = body;
-          return response;
+          return Promise.resolve(response);
         }
         case "data:": {
           const currentURL = requestCurrentURL(request);
           const dataURLStruct = dataURLProcessor(currentURL);
           if (dataURLStruct === "failure") {
-            return makeNetworkError("failed to fetch the data URL");
+            return Promise.resolve(makeNetworkError("failed to fetch the data URL"));
           }
           const mimeType = serializeAMimeType(dataURLStruct.mimeType);
-          return makeResponse({
+          return Promise.resolve(makeResponse({
             statusText: "OK",
             headersList: [
               ["content-type", { name: "Content-Type", value: mimeType }]
             ],
             body: safelyExtractBody(dataURLStruct.body)[0]
-          });
+          }));
         }
         case "file:": {
-          return makeNetworkError("not implemented... yet...");
+          return Promise.resolve(makeNetworkError("not implemented... yet..."));
         }
         case "http:":
         case "https:": {
-          return await httpFetch(fetchParams).catch((err) => makeNetworkError(err));
+          return httpFetch(fetchParams).catch((err) => makeNetworkError(err));
         }
         default: {
-          return makeNetworkError("unknown scheme");
+          return Promise.resolve(makeNetworkError("unknown scheme"));
         }
       }
     }
@@ -12580,7 +12613,7 @@ var require_fetch = __commonJS({
         queueMicrotask(() => fetchParams.processResponseDone(response));
       }
     }
-    async function fetchFinale(fetchParams, response) {
+    function fetchFinale(fetchParams, response) {
       if (response.type === "error") {
         response.urlList = [fetchParams.request.urlList[0]];
         response.timingInfo = createOpaqueTimingInfo({
@@ -12624,8 +12657,9 @@ var require_fetch = __commonJS({
         if (response.body == null) {
           queueMicrotask(() => processBody(null));
         } else {
-          await fullyReadBody(response.body, processBody, processBodyError);
+          return fullyReadBody(response.body, processBody, processBodyError);
         }
+        return Promise.resolve();
       }
     }
     async function httpFetch(fetchParams) {
@@ -12655,7 +12689,7 @@ var require_fetch = __commonJS({
       ) === "blocked") {
         return makeNetworkError("blocked");
       }
-      if (redirectStatus.includes(actualResponse.status)) {
+      if (redirectStatusSet.has(actualResponse.status)) {
         if (request.redirect !== "manual") {
           fetchParams.controller.connection.destroy();
         }
@@ -12672,7 +12706,7 @@ var require_fetch = __commonJS({
       response.timingInfo = timingInfo;
       return response;
     }
-    async function httpRedirectFetch(fetchParams, response) {
+    function httpRedirectFetch(fetchParams, response) {
       const request = fetchParams.request;
       const actualResponse = response.internalResponse ? response.internalResponse : response;
       let locationURL;
@@ -12685,27 +12719,27 @@ var require_fetch = __commonJS({
           return response;
         }
       } catch (err) {
-        return makeNetworkError(err);
+        return Promise.resolve(makeNetworkError(err));
       }
       if (!urlIsHttpHttpsScheme(locationURL)) {
-        return makeNetworkError("URL scheme must be a HTTP(S) scheme");
+        return Promise.resolve(makeNetworkError("URL scheme must be a HTTP(S) scheme"));
       }
       if (request.redirectCount === 20) {
-        return makeNetworkError("redirect count exceeded");
+        return Promise.resolve(makeNetworkError("redirect count exceeded"));
       }
       request.redirectCount += 1;
       if (request.mode === "cors" && (locationURL.username || locationURL.password) && !sameOrigin(request, locationURL)) {
-        return makeNetworkError('cross origin not allowed for request mode "cors"');
+        return Promise.resolve(makeNetworkError('cross origin not allowed for request mode "cors"'));
       }
       if (request.responseTainting === "cors" && (locationURL.username || locationURL.password)) {
-        return makeNetworkError(
+        return Promise.resolve(makeNetworkError(
           'URL cannot contain credentials for request mode "cors"'
-        );
+        ));
       }
       if (actualResponse.status !== 303 && request.body != null && request.body.source == null) {
-        return makeNetworkError();
+        return Promise.resolve(makeNetworkError());
       }
-      if ([301, 302].includes(actualResponse.status) && request.method === "POST" || actualResponse.status === 303 && !["GET", "HEAD"].includes(request.method)) {
+      if ([301, 302].includes(actualResponse.status) && request.method === "POST" || actualResponse.status === 303 && !GET_OR_HEAD.includes(request.method)) {
         request.method = "GET";
         request.body = null;
         for (const headerName of requestBodyHeader) {
@@ -12808,7 +12842,7 @@ var require_fetch = __commonJS({
           includeCredentials,
           isNewConnectionFetch
         );
-        if (!safeMethods.includes(httpRequest.method) && forwardResponse.status >= 200 && forwardResponse.status <= 399) {
+        if (!safeMethodsSet.has(httpRequest.method) && forwardResponse.status >= 200 && forwardResponse.status <= 399) {
         }
         if (revalidatingFlag && forwardResponse.status === 304) {
         }
@@ -13074,7 +13108,7 @@ var require_fetch = __commonJS({
               }
               this.body = new Readable({ read: resume });
               const decoders = [];
-              const willFollow = request.redirect === "follow" && location && redirectStatus.includes(status);
+              const willFollow = request.redirect === "follow" && location && redirectStatusSet.has(status);
               if (request.method !== "HEAD" && request.method !== "CONNECT" && !nullBodyStatus.includes(status) && !willFollow) {
                 for (const coding of codings) {
                   if (coding === "x-gzip" || coding === "gzip") {
