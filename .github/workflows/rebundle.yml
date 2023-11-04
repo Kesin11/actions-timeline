@@ -1,0 +1,34 @@
+name: Rebundle dist
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  # Rebundle dist and push if changed from main branch
+  rebundle-dist:
+    runs-on: ubuntu-latest
+    steps:
+      # To bypass branch rule sets, we need to use GitHub App that allowed to bypass status check.
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.BYPASS_APP_ID }}
+          private-key: ${{ secrets.BYPASS_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: ./.github/actions/setup-deno-with-cache
+      - name: Rebuild the dist/ directory
+        run: deno task bundle
+      - name: Commit and push dist/ if changed
+        run: |
+          if [ "$(git diff --ignore-space-at-eol dist/ | wc -l)" -gt "0" ]; then
+            git config --global user.name "github-actions"
+            git config --global user.email "github-actions@github.com"
+            git add -u dist
+            git commit -m "deno task bundle"
+            git push origin main
+          fi
