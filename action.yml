@@ -10,6 +10,6 @@ inputs:
     default: ${{ github.token }}
     required: false
 runs:
-  using: "node16"
+  using: "node20"
   main: "dist/main.js"
   post: "dist/post.js"
