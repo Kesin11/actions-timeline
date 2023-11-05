@@ -41,7 +41,7 @@ await esbuild.build({
   outdir: distDir,
   bundle: true,
   platform: "node",
-  target: "node16",
+  target: "node20",
   format: "cjs",
   minify: false,
   sourcemap: false,
