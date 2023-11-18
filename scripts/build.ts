@@ -15,6 +15,7 @@ await build({
   shims: {
     deno: true,
   },
+  skipNpmInstall: true,
   package: {
     // Dummy package.json
     name: "@kesin11/actions-timeline",
