@@ -50,6 +50,7 @@ export const fetchWorkflowRunJobs = async (
     repo,
     run_id: runId,
     attempt_number: runAttempt,
+    per_page: 100,
   });
   return workflowJob.data.jobs;
 };

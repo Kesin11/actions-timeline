@@ -36390,7 +36390,8 @@ var fetchWorkflowRunJobs = async (octokit, owner, repo, runId, runAttempt) => {
     owner,
     repo,
     run_id: runId,
-    attempt_number: runAttempt
+    attempt_number: runAttempt,
+    per_page: 100
   });
   return workflowJob.data.jobs;
 };
