@@ -919,7 +919,8 @@ var require_symbols = __commonJS({
       kHTTP1BuildRequest: Symbol("http1 build request"),
       kHTTP2CopyHeaders: Symbol("http2 copy headers"),
       kHTTPConnVersion: Symbol("http connection version"),
-      kRetryHandlerDefaultRetry: Symbol("retry agent default retry")
+      kRetryHandlerDefaultRetry: Symbol("retry agent default retry"),
+      kConstruct: Symbol("constructable")
     };
   }
 });
@@ -4188,8 +4189,23 @@ var require_util2 = __commonJS({
     function isCancelled(fetchParams) {
       return fetchParams.controller.state === "aborted" || fetchParams.controller.state === "terminated";
     }
+    var normalizeMethodRecord = {
+      delete: "DELETE",
+      DELETE: "DELETE",
+      get: "GET",
+      GET: "GET",
+      head: "HEAD",
+      HEAD: "HEAD",
+      options: "OPTIONS",
+      OPTIONS: "OPTIONS",
+      post: "POST",
+      POST: "POST",
+      put: "PUT",
+      PUT: "PUT"
+    };
+    Object.setPrototypeOf(normalizeMethodRecord, null);
     function normalizeMethod(method) {
-      return /^(DELETE|GET|HEAD|OPTIONS|POST|PUT)$/i.test(method) ? method.toUpperCase() : method;
+      return normalizeMethodRecord[method.toLowerCase()] ?? method;
     }
     function serializeJavascriptValueToJSONString(value) {
       const result = JSON.stringify(value);
@@ -4369,7 +4385,8 @@ var require_util2 = __commonJS({
       urlIsLocal,
       urlHasHttpsScheme,
       urlIsHttpHttpsScheme,
-      readAllBytes
+      readAllBytes,
+      normalizeMethodRecord
     };
   }
 });
@@ -4806,15 +4823,12 @@ var require_dataURL = __commonJS({
       return { mimeType: mimeTypeRecord, body };
     }
     function URLSerializer(url, excludeFragment = false) {
-      const href = url.href;
       if (!excludeFragment) {
-        return href;
+        return url.href;
       }
-      const hash = href.lastIndexOf("#");
-      if (hash === -1) {
-        return href;
-      }
-      return href.slice(0, hash);
+      const href = url.href;
+      const hashLength = url.hash.length;
+      return hashLength === 0 ? href : href.substring(0, href.length - hashLength);
     }
     function collectASequenceOfCodePoints(condition, input, position) {
       let result = "";
@@ -5935,7 +5949,11 @@ var require_request = __commonJS({
       }
       onBodySent(chunk) {
         if (this[kHandler].onBodySent) {
-          return this[kHandler].onBodySent(chunk);
+          try {
+            return this[kHandler].onBodySent(chunk);
+          } catch (err) {
+            this.abort(err);
+          }
         }
       }
       onRequestSent() {
@@ -5943,7 +5961,11 @@ var require_request = __commonJS({
           channels.bodySent.publish({ request: this });
         }
         if (this[kHandler].onRequestSent) {
-          return this[kHandler].onRequestSent();
+          try {
+            return this[kHandler].onRequestSent();
+          } catch (err) {
+            this.abort(err);
+          }
         }
       }
       onConnect(abort) {
@@ -5962,12 +5984,21 @@ var require_request = __commonJS({
         if (channels.headers.hasSubscribers) {
           channels.headers.publish({ request: this, response: { statusCode, headers, statusText } });
         }
-        return this[kHandler].onHeaders(statusCode, headers, resume, statusText);
+        try {
+          return this[kHandler].onHeaders(statusCode, headers, resume, statusText);
+        } catch (err) {
+          this.abort(err);
+        }
       }
       onData(chunk) {
         assert(!this.aborted);
         assert(!this.completed);
-        return this[kHandler].onData(chunk);
+        try {
+          return this[kHandler].onData(chunk);
+        } catch (err) {
+          this.abort(err);
+          return false;
+        }
       }
       onUpgrade(statusCode, headers, socket) {
         assert(!this.aborted);
@@ -5981,7 +6012,11 @@ var require_request = __commonJS({
         if (channels.trailers.hasSubscribers) {
           channels.trailers.publish({ request: this, trailers });
         }
-        return this[kHandler].onComplete(trailers);
+        try {
+          return this[kHandler].onComplete(trailers);
+        } catch (err) {
+          this.onError(err);
+        }
       }
       onError(error) {
         this.onFinally();
@@ -7691,11 +7726,8 @@ var require_client = __commonJS({
         } else {
           socket[kReset] = true;
         }
-        let pause;
-        try {
-          pause = request.onHeaders(statusCode, headers, this.resume, statusText) === false;
-        } catch (err) {
-          util.destroy(socket, err);
+        const pause = request.onHeaders(statusCode, headers, this.resume, statusText) === false;
+        if (request.aborted) {
           return -1;
         }
         if (request.method === "HEAD") {
@@ -7729,13 +7761,8 @@ var require_client = __commonJS({
           return -1;
         }
         this.bytesRead += buf.length;
-        try {
-          if (request.onData(buf) === false) {
-            return constants.ERROR.PAUSED;
-          }
-        } catch (err) {
-          util.destroy(socket, err);
-          return -1;
+        if (request.onData(buf) === false) {
+          return constants.ERROR.PAUSED;
         }
       }
       onMessageComplete() {
@@ -7765,11 +7792,7 @@ var require_client = __commonJS({
           util.destroy(socket, new ResponseContentLengthMismatchError());
           return -1;
         }
-        try {
-          request.onComplete(headers);
-        } catch (err) {
-          errorRequest(client, request, err);
-        }
+        request.onComplete(headers);
         client[kQueue][client[kRunningIdx]++] = null;
         if (socket[kWriting]) {
           assert.strictEqual(client[kRunning], 0);
@@ -8327,13 +8350,15 @@ upgrade: ${upgrade}\r
         request.onComplete([]);
       });
       stream.on("data", (chunk) => {
-        if (request.onData(chunk) === false)
+        if (request.onData(chunk) === false) {
           stream.pause();
+        }
       });
       stream.once("close", () => {
         h2State.openStreams -= 1;
-        if (h2State.openStreams === 0)
+        if (h2State.openStreams === 0) {
           session.unref();
+        }
       });
       stream.once("error", function(err) {
         if (client[kHTTP2Session] && !client[kHTTP2Session].destroyed && !this.closed && !this.destroyed) {
@@ -9462,7 +9487,7 @@ var require_readable = __commonJS({
           }) : noop;
           this.on("close", function() {
             signalListenerCleanup();
-            if (signal?.aborted) {
+            if (signal && signal.aborted) {
               reject(signal.reason || Object.assign(new Error("The operation was aborted"), { name: "AbortError" }));
             } else {
               resolve(null);
@@ -9816,6 +9841,7 @@ var require_api_request = __commonJS({
       }
     }
     module2.exports = request;
+    module2.exports.RequestHandler = RequestHandler;
   }
 });
 
@@ -11238,15 +11264,17 @@ var require_proxy_agent = __commonJS({
         this[kRequestTls] = opts.requestTls;
         this[kProxyTls] = opts.proxyTls;
         this[kProxyHeaders] = opts.headers || {};
+        const resolvedUrl = new URL3(opts.uri);
+        const { origin, port, host, username, password } = resolvedUrl;
         if (opts.auth && opts.token) {
           throw new InvalidArgumentError("opts.auth cannot be used in combination with opts.token");
         } else if (opts.auth) {
           this[kProxyHeaders]["proxy-authorization"] = `Basic ${opts.auth}`;
         } else if (opts.token) {
           this[kProxyHeaders]["proxy-authorization"] = opts.token;
+        } else if (username && password) {
+          this[kProxyHeaders]["proxy-authorization"] = `Basic ${Buffer.from(`${decodeURIComponent(username)}:${decodeURIComponent(password)}`).toString("base64")}`;
         }
-        const resolvedUrl = new URL3(opts.uri);
-        const { origin, port, host } = resolvedUrl;
         const connect = buildConnector({ ...opts.proxyTls });
         this[kConnectEndpoint] = buildConnector({ ...opts.requestTls });
         this[kClient] = clientFactory(resolvedUrl, { connect });
@@ -11271,7 +11299,7 @@ var require_proxy_agent = __commonJS({
               if (statusCode !== 200) {
                 socket.on("error", () => {
                 }).destroy();
-                callback(new RequestAbortedError("Proxy response !== 200 when HTTP Tunneling"));
+                callback(new RequestAbortedError(`Proxy response (${statusCode}) !== 200 when HTTP Tunneling`));
               }
               if (opts2.protocol !== "https:") {
                 callback(null, socket);
@@ -11337,7 +11365,7 @@ var require_proxy_agent = __commonJS({
 // npm/node_modules/undici/lib/handler/RetryHandler.js
 var require_RetryHandler = __commonJS({
   "npm/node_modules/undici/lib/handler/RetryHandler.js"(exports, module2) {
-    var assert = require("node:assert");
+    var assert = require("assert");
     var { kRetryHandlerDefaultRetry } = require_symbols();
     var { RequestRetryError } = require_errors();
     var { isDisturbed, parseHeaders, parseRangeHeader } = require_util();
@@ -11424,7 +11452,8 @@ var require_RetryHandler = __commonJS({
         }
       }
       onBodySent(chunk) {
-        return this.handler.onBodySent(chunk);
+        if (this.handler.onBodySent)
+          return this.handler.onBodySent(chunk);
       }
       static [kRetryHandlerDefaultRetry](err, { state, opts }, cb) {
         const { statusCode, code, headers } = err;
@@ -11669,7 +11698,7 @@ var require_DecoratorHandler = __commonJS({
 var require_headers = __commonJS({
   "npm/node_modules/undici/lib/fetch/headers.js"(exports, module2) {
     "use strict";
-    var { kHeadersList } = require_symbols();
+    var { kHeadersList, kConstruct } = require_symbols();
     var { kGuard } = require_symbols2();
     var { kEnumerableProperty } = require_util();
     var {
@@ -11821,6 +11850,9 @@ var require_headers = __commonJS({
     };
     var Headers = class _Headers {
       constructor(init = void 0) {
+        if (init === kConstruct) {
+          return;
+        }
         this[kHeadersList] = new HeadersList();
         this[kGuard] = "none";
         if (init !== void 0) {
@@ -12077,7 +12109,7 @@ var require_response = __commonJS({
     var { FormData } = require_formdata();
     var { getGlobalOrigin } = require_global();
     var { URLSerializer } = require_dataURL();
-    var { kHeadersList } = require_symbols();
+    var { kHeadersList, kConstruct } = require_symbols();
     var assert = require("assert");
     var { types } = require("util");
     var ReadableStream = globalThis.ReadableStream || require("stream/web").ReadableStream;
@@ -12146,7 +12178,7 @@ var require_response = __commonJS({
         init = webidl.converters.ResponseInit(init);
         this[kRealm] = { settingsObject: {} };
         this[kState] = makeResponse({});
-        this[kHeaders] = new Headers();
+        this[kHeaders] = new Headers(kConstruct);
         this[kHeaders][kGuard] = "response";
         this[kHeaders][kHeadersList] = this[kState].headersList;
         this[kHeaders][kRealm] = this[kRealm];
@@ -12382,7 +12414,7 @@ var require_response = __commonJS({
       if (isBlobLike(V)) {
         return webidl.converters.Blob(V, { strict: false });
       }
-      if (types.isAnyArrayBuffer(V) || types.isTypedArray(V) || types.isDataView(V)) {
+      if (types.isArrayBuffer(V) || types.isTypedArray(V) || types.isDataView(V)) {
         return webidl.converters.BufferSource(V);
       }
       if (util.isFormDataLike(V)) {
@@ -12441,7 +12473,8 @@ var require_request2 = __commonJS({
       isValidHTTPToken,
       sameOrigin,
       normalizeMethod,
-      makePolicyContainer
+      makePolicyContainer,
+      normalizeMethodRecord
     } = require_util2();
     var {
       forbiddenMethodsSet,
@@ -12458,11 +12491,10 @@ var require_request2 = __commonJS({
     var { webidl } = require_webidl();
     var { getGlobalOrigin } = require_global();
     var { URLSerializer } = require_dataURL();
-    var { kHeadersList } = require_symbols();
+    var { kHeadersList, kConstruct } = require_symbols();
     var assert = require("assert");
     var { getMaxListeners, setMaxListeners, getEventListeners, defaultMaxListeners } = require("events");
     var TransformStream = globalThis.TransformStream;
-    var kInit = Symbol("init");
     var kAbortController = Symbol("abortController");
     var requestFinalizer = new FinalizationRegistry(({ signal, abort }) => {
       signal.removeEventListener("abort", abort);
@@ -12470,7 +12502,7 @@ var require_request2 = __commonJS({
     var Request = class _Request {
       // https://fetch.spec.whatwg.org/#dom-request
       constructor(input, init = {}) {
-        if (input === kInit) {
+        if (input === kConstruct) {
           return;
         }
         webidl.argumentLengthCheck(arguments, 1, { header: "Request constructor" });
@@ -12562,7 +12594,8 @@ var require_request2 = __commonJS({
           // URL list A clone of request’s URL list.
           urlList: [...request.urlList]
         });
-        if (Object.keys(init).length > 0) {
+        const initHasKey = Object.keys(init).length !== 0;
+        if (initHasKey) {
           if (request.mode === "navigate") {
             request.mode = "same-origin";
           }
@@ -12624,7 +12657,7 @@ var require_request2 = __commonJS({
         if (init.redirect !== void 0) {
           request.redirect = init.redirect;
         }
-        if (init.integrity !== void 0 && init.integrity != null) {
+        if (init.integrity != null) {
           request.integrity = String(init.integrity);
         }
         if (init.keepalive !== void 0) {
@@ -12632,13 +12665,13 @@ var require_request2 = __commonJS({
         }
         if (init.method !== void 0) {
           let method = init.method;
-          if (!isValidHTTPToken(init.method)) {
-            throw new TypeError(`'${init.method}' is not a valid HTTP method.`);
+          if (!isValidHTTPToken(method)) {
+            throw new TypeError(`'${method}' is not a valid HTTP method.`);
           }
           if (forbiddenMethodsSet.has(method.toUpperCase())) {
-            throw new TypeError(`'${init.method}' HTTP method is unsupported.`);
+            throw new TypeError(`'${method}' HTTP method is unsupported.`);
           }
-          method = normalizeMethod(init.method);
+          method = normalizeMethodRecord[method] ?? normalizeMethod(method);
           request.method = method;
         }
         if (init.signal !== void 0) {
@@ -12677,7 +12710,7 @@ var require_request2 = __commonJS({
             requestFinalizer.register(ac, { signal, abort });
           }
         }
-        this[kHeaders] = new Headers();
+        this[kHeaders] = new Headers(kConstruct);
         this[kHeaders][kHeadersList] = request.headersList;
         this[kHeaders][kGuard] = "request";
         this[kHeaders][kRealm] = this[kRealm];
@@ -12689,16 +12722,15 @@ var require_request2 = __commonJS({
           }
           this[kHeaders][kGuard] = "request-no-cors";
         }
-        if (Object.keys(init).length !== 0) {
-          let headers = new Headers(this[kHeaders]);
-          if (init.headers !== void 0) {
-            headers = init.headers;
-          }
-          this[kHeaders][kHeadersList].clear();
-          if (headers.constructor.name === "Headers") {
+        if (initHasKey) {
+          const headersList = this[kHeaders][kHeadersList];
+          const headers = init.headers !== void 0 ? init.headers : new HeadersList(headersList);
+          headersList.clear();
+          if (headers instanceof HeadersList) {
             for (const [key, val] of headers) {
-              this[kHeaders].append(key, val);
+              headersList.append(key, val);
             }
+            headersList.cookies = headers.cookies;
           } else {
             fillHeaders(this[kHeaders], headers);
           }
@@ -12874,10 +12906,10 @@ var require_request2 = __commonJS({
           throw new TypeError("unusable");
         }
         const clonedRequest = cloneRequest(this[kState]);
-        const clonedRequestObject = new _Request(kInit);
+        const clonedRequestObject = new _Request(kConstruct);
         clonedRequestObject[kState] = clonedRequest;
         clonedRequestObject[kRealm] = this[kRealm];
-        clonedRequestObject[kHeaders] = new Headers();
+        clonedRequestObject[kHeaders] = new Headers(kConstruct);
         clonedRequestObject[kHeaders][kHeadersList] = clonedRequest.headersList;
         clonedRequestObject[kHeaders][kGuard] = this[kHeaders][kGuard];
         clonedRequestObject[kHeaders][kRealm] = this[kHeaders][kRealm];
@@ -13246,7 +13278,7 @@ var require_fetch = __commonJS({
       if (timingInfo === null) {
         return;
       }
-      if (!timingInfo.timingAllowPassed) {
+      if (!response.timingAllowPassed) {
         timingInfo = createOpaqueTimingInfo({
           startTime: timingInfo.startTime
         });
@@ -14922,7 +14954,7 @@ var require_symbols4 = __commonJS({
   "npm/node_modules/undici/lib/cache/symbols.js"(exports, module2) {
     "use strict";
     module2.exports = {
-      kConstruct: Symbol("constructable")
+      kConstruct: require_symbols().kConstruct
     };
   }
 });
@@ -19168,7 +19200,7 @@ var require_dist_node2 = __commonJS({
     });
     module2.exports = __toCommonJS2(dist_src_exports);
     var import_universal_user_agent = require_dist_node();
-    var VERSION = "9.0.3";
+    var VERSION = "9.0.4";
     var userAgent = `octokit-endpoint.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
     var DEFAULTS = {
       method: "GET",
@@ -19269,10 +19301,13 @@ var require_dist_node2 = __commonJS({
       return matches.map(removeNonChars).reduce((a, b) => a.concat(b), []);
     }
     function omit(object, keysToOmit) {
-      return Object.keys(object).filter((option) => !keysToOmit.includes(option)).reduce((obj, key) => {
-        obj[key] = object[key];
-        return obj;
-      }, {});
+      const result = { __proto__: null };
+      for (const key of Object.keys(object)) {
+        if (keysToOmit.indexOf(key) === -1) {
+          result[key] = object[key];
+        }
+      }
+      return result;
     }
     function encodeReserved(str) {
       return str.split(/(%[0-9A-Fa-f]{2})/g).map(function(part) {
@@ -20268,7 +20303,7 @@ var require_dist_node9 = __commonJS({
       restEndpointMethods: () => restEndpointMethods
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var VERSION = "10.1.5";
+    var VERSION = "10.2.0";
     var Endpoints = {
       actions: {
         addCustomLabelsToSelfHostedRunnerForOrg: [
