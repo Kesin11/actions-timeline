@@ -33,7 +33,7 @@ jobs:
   build-2:
   build-3:
   
-  action-timeline:
+  actions-timeline:
     needs: [build-1, build-2, build-3]
     runs-on: ubuntu-latest
     steps:
