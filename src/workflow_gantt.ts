@@ -1,4 +1,4 @@
-import { format } from "npm:date-fns@2.30.0";
+import { format } from "npm:date-fns@3.1.0";
 import { Workflow, WorkflowJobs } from "./github.ts";
 
 type ganttJob = {
