@@ -1,5 +1,9 @@
+import { sumOf } from "https://deno.land/std@0.211.0/collections/mod.ts";
 import { format } from "npm:date-fns@3.2.0";
 import { Workflow, WorkflowJobs } from "./github.ts";
+
+// ref: MAX_TEXTLENGTH https://github.com/mermaid-js/mermaid/blob/develop/packages/mermaid/src/mermaidAPI.ts
+const MERMAID_MAX_CHAR = 50_000;
 
 type ganttJob = {
   section: string;
@@ -150,12 +154,11 @@ const createWaitingRunnerStep = (
   }
 };
 
-export const createGantt = (
+export const createGanttJobs = (
   workflow: Workflow,
   workflowJobs: WorkflowJobs,
-): string => {
-  const title = workflow.name;
-  const jobs = filterJobs(workflowJobs).map(
+): ganttJob[] => {
+  return filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs): ganttJob => {
       const section = escapeName(job.name);
       const waitingRunnerStep = createWaitingRunnerStep(
@@ -180,21 +183,49 @@ export const createGantt = (
       return { section, steps: [waitingRunnerStep, ...steps] };
     },
   );
+};
 
-  return `
+export const createMermaids = (
+  title: string,
+  ganttJobs: ganttJob[],
+  maxChar: number = MERMAID_MAX_CHAR, // For test argument
+): string[] => {
+  const header = `
 \`\`\`mermaid
 gantt
 title ${title}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
-${
-    jobs.flatMap((job) => {
-      return [
-        `section ${job.section}`,
-        ...job.steps.map((step) => formatStep(step)),
-      ];
-    }).join("\n")
-  }
-\`\`\`
 `;
+  const footer = "\n\`\`\`";
+  const headerFooterLength = header.length + footer.length;
+
+  const mermaids = [];
+  let sections: string[] = [];
+  for (const job of ganttJobs) {
+    const newSection = [
+      `section ${job.section}`,
+      ...job.steps.map((step) => formatStep(step)),
+    ].join("\n");
+
+    const sectionsSumLength = sumOf(sections, (section) => section.length);
+    if (headerFooterLength + sectionsSumLength + newSection.length > maxChar) {
+      mermaids.push(header + sections.join("\n") + footer);
+      sections = [newSection];
+    } else {
+      sections.push(newSection);
+    }
+  }
+  mermaids.push(header + sections.join("\n") + footer);
+
+  return mermaids;
+};
+
+export const createGantt = (
+  workflow: Workflow,
+  workflowJobs: WorkflowJobs,
+): string => {
+  const title = workflow.name ?? "";
+  const jobs = createGanttJobs(workflow, workflowJobs);
+  return createMermaids(title, jobs).join("\n");
 };
