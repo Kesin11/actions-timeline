@@ -4341,7 +4341,7 @@ var require_util2 = __commonJS({
       const protocol = url.protocol;
       return protocol === "http:" || protocol === "https:";
     }
-    var hasOwn = Object.hasOwn || ((dict, key) => Object.prototype.hasOwnProperty.call(dict, key));
+    var hasOwn2 = Object.hasOwn || ((dict, key) => Object.prototype.hasOwnProperty.call(dict, key));
     module2.exports = {
       isAborted,
       isCancelled,
@@ -4374,7 +4374,7 @@ var require_util2 = __commonJS({
       makeIterator,
       isValidHeaderName,
       isValidHeaderValue,
-      hasOwn,
+      hasOwn: hasOwn2,
       isErrorLike,
       fullyReadBody,
       bytesMatch,
@@ -4411,7 +4411,7 @@ var require_webidl = __commonJS({
   "npm/node_modules/undici/lib/fetch/webidl.js"(exports2, module2) {
     "use strict";
     var { types } = require("util");
-    var { hasOwn, toUSVString } = require_util2();
+    var { hasOwn: hasOwn2, toUSVString } = require_util2();
     var webidl = {};
     webidl.converters = {};
     webidl.util = {};
@@ -4622,7 +4622,7 @@ var require_webidl = __commonJS({
         for (const options of converters) {
           const { key, defaultValue, required, converter } = options;
           if (required === true) {
-            if (!hasOwn(dictionary, key)) {
+            if (!hasOwn2(dictionary, key)) {
               throw webidl.errors.exception({
                 header: "Dictionary",
                 message: `Missing required key "${key}".`
@@ -4630,7 +4630,7 @@ var require_webidl = __commonJS({
             }
           }
           let value = dictionary[key];
-          const hasDefault = hasOwn(options, "defaultValue");
+          const hasDefault = hasOwn2(options, "defaultValue");
           if (hasDefault && value !== null) {
             value = value ?? defaultValue;
           }
@@ -22955,11 +22955,38 @@ var require_dist_node12 = __commonJS({
   }
 });
 
+// npm/src/_dnt.polyfills.ts
+if (!Object.hasOwn) {
+  Object.defineProperty(Object, "hasOwn", {
+    value: function(object, property) {
+      if (object == null) {
+        throw new TypeError("Cannot convert undefined or null to object");
+      }
+      return Object.prototype.hasOwnProperty.call(Object(object), property);
+    },
+    configurable: true,
+    enumerable: false,
+    writable: true
+  });
+}
+
 // npm/src/post.ts
 var import_promises = require("timers/promises");
 var import_process2 = __toESM(require("process"));
 var import_core = __toESM(require_core());
 var github = __toESM(require_github());
+
+// npm/src/deps/deno.land/std@0.211.0/collections/deep_merge.ts
+var { hasOwn } = Object;
+
+// npm/src/deps/deno.land/std@0.211.0/collections/sum_of.ts
+function sumOf(array, selector) {
+  let sum = 0;
+  for (const i of array) {
+    sum += selector(i);
+  }
+  return sum;
+}
 
 // npm/node_modules/date-fns/toDate.mjs
 function toDate(argument) {
@@ -24473,6 +24500,7 @@ function cleanEscapedString(input) {
 }
 
 // npm/src/workflow_gantt.ts
+var MERMAID_MAX_CHAR = 5e4;
 var diffSec = (start, end) => {
   if (!start || !end)
     return 0;
@@ -24567,9 +24595,8 @@ var createWaitingRunnerStep = (workflow, job, jobIndex) => {
     };
   }
 };
-var createGantt = (workflow, workflowJobs) => {
-  const title = workflow.name;
-  const jobs = filterJobs(workflowJobs).map(
+var createGanttJobs = (workflow, workflowJobs) => {
+  return filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs) => {
       const section = escapeName(job.name);
       const waitingRunnerStep = createWaitingRunnerStep(
@@ -24592,20 +24619,39 @@ var createGantt = (workflow, workflowJobs) => {
       return { section, steps: [waitingRunnerStep, ...steps] };
     }
   );
-  return `
+};
+var createMermaids = (title, ganttJobs, maxChar = MERMAID_MAX_CHAR) => {
+  const header = `
 \`\`\`mermaid
 gantt
 title ${title}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
-${jobs.flatMap((job) => {
-    return [
+`;
+  const footer = "\n```";
+  const headerFooterLength = header.length + footer.length;
+  const mermaids = [];
+  let sections = [];
+  for (const job of ganttJobs) {
+    const newSection = [
       `section ${job.section}`,
       ...job.steps.map((step) => formatStep(step))
-    ];
-  }).join("\n")}
-\`\`\`
-`;
+    ].join("\n");
+    const sectionsSumLength = sumOf(sections, (section) => section.length);
+    if (headerFooterLength + sectionsSumLength + newSection.length > maxChar) {
+      mermaids.push(header + sections.join("\n") + footer);
+      sections = [newSection];
+    } else {
+      sections.push(newSection);
+    }
+  }
+  mermaids.push(header + sections.join("\n") + footer);
+  return mermaids;
+};
+var createGantt = (workflow, workflowJobs) => {
+  const title = workflow.name ?? "";
+  const jobs = createGanttJobs(workflow, workflowJobs);
+  return createMermaids(title, jobs).join("\n");
 };
 
 // npm/src/github.ts
