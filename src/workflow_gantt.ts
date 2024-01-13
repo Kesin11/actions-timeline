@@ -1,4 +1,4 @@
-import { sumOf } from "https://deno.land/std@0.211.0/collections/mod.ts";
+import { sumOf } from "https://deno.land/std@0.212.0/collections/mod.ts";
 import { format } from "npm:date-fns@3.2.0";
 import { Workflow, WorkflowJobs } from "./github.ts";
 
