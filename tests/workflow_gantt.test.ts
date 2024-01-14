@@ -1,11 +1,8 @@
 import { assertEquals } from "https://deno.land/std@0.189.0/testing/asserts.ts";
 import {
-  createGantt,
+  createGanttDiagrams,
   createGanttJobs,
-  createMermaids,
-  formatShortElapsedTime,
-  formatStep,
-  ganttStep,
+  createMermaid,
 } from "../src/workflow_gantt.ts";
 import { Workflow, WorkflowJobs } from "../src/github.ts";
 
@@ -121,7 +118,7 @@ ${workflowJobs[0].steps![6].name} (0s) :job0-7, after job0-6, 0s
 ${workflowJobs[0].steps![7].name} (0s) :job0-8, after job0-7, 0s
 \`\`\``;
 
-    assertEquals(createGantt(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs), expect);
   });
 
   await t.step("job has skipped and failure steps", () => {
@@ -199,7 +196,7 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 ${workflowJobs[0].steps![3].name} (0s) :job0-4, after job0-3, 0s
 \`\`\``;
 
-    assertEquals(createGantt(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs), expect);
   });
 
   await t.step("Hide not completed steps", () => {
@@ -265,7 +262,7 @@ Waiting for a runner (6s) :active, job0-0, 00:04:31, 6s
 ${workflowJobs[0].steps![0].name} (1s) :job0-1, after job0-0, 1s
 \`\`\``;
 
-    assertEquals(createGantt(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs), expect);
   });
 });
 
@@ -461,7 +458,7 @@ ${workflowJobs[1].steps![5].name} (0s) :job1-6, after job1-5, 0s
 ${workflowJobs[1].steps![6].name} (0s) :job1-7, after job1-6, 0s
 \`\`\``;
 
-    assertEquals(createGantt(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs), expect);
   });
 
   await t.step("Hide skipped jobs", () => {
@@ -544,7 +541,7 @@ ${workflowJobs[0].steps![1].name} (0s) :job0-2, after job0-1, 0s
 ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 \`\`\``;
 
-    assertEquals(createGantt(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs), expect);
   });
 });
 
@@ -619,7 +616,7 @@ ${expectStepName} (1s) :job0-2, after job0-1, 1s
 ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 \`\`\``;
 
-      assertEquals(createGantt(workflow, workflowJobs), expect);
+      assertEquals(createMermaid(workflow, workflowJobs), expect);
     },
   );
   await t.step("Retried job", () => {
@@ -693,7 +690,7 @@ ${workflowJobs[0].steps![1].name} (0s) :job0-2, after job0-1, 0s
 ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 \`\`\``;
 
-    assertEquals(createGantt(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs), expect);
   });
 
   await t.step(
@@ -770,81 +767,10 @@ ${workflowJobs[0].steps![1].name} (0s) :job0-2, after job0-1, 0s
 ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 \`\`\``;
 
-      assertEquals(createGantt(workflow, workflowJobs), expect);
+      assertEquals(createMermaid(workflow, workflowJobs), expect);
     },
   );
-});
 
-Deno.test("formatStep", async (t) => {
-  const baseStep: ganttStep = {
-    name: "Test step",
-    id: "job0-1",
-    status: "",
-    position: "after job0-0",
-    sec: 1,
-  };
-
-  await t.step("status:empty", () => {
-    const step: ganttStep = { ...baseStep, status: "" };
-    const actual = formatStep(step);
-    const expect = `${step.name} :${step.id}, ${step.position}, ${step.sec}s`;
-    assertEquals(actual, expect);
-  });
-  await t.step("status:done", () => {
-    const step: ganttStep = { ...baseStep, status: "done" };
-    const actual = formatStep(step);
-    const expect =
-      `${step.name} :done, ${step.id}, ${step.position}, ${step.sec}s`;
-    assertEquals(actual, expect);
-  });
-  await t.step("status:crit", () => {
-    const step: ganttStep = { ...baseStep, status: "crit" };
-    const actual = formatStep(step);
-    const expect =
-      `${step.name} :crit, ${step.id}, ${step.position}, ${step.sec}s`;
-    assertEquals(actual, expect);
-  });
-  await t.step("status:active", () => {
-    const step: ganttStep = { ...baseStep, status: "active" };
-    const actual = formatStep(step);
-    const expect =
-      `${step.name} :active, ${step.id}, ${step.position}, ${step.sec}s`;
-    assertEquals(actual, expect);
-  });
-});
-
-Deno.test("formatShortElapsedTime", async (t) => {
-  await t.step("9sec => 9s", () => {
-    const elapsedSec = 9;
-    assertEquals(formatShortElapsedTime(elapsedSec), `9s`);
-  });
-  await t.step("59sec => 59s", () => {
-    const elapsedSec = 59;
-    assertEquals(formatShortElapsedTime(elapsedSec), `59s`);
-  });
-  await t.step("60sec => 1m0s", () => {
-    const elapsedSec = 60;
-    assertEquals(formatShortElapsedTime(elapsedSec), `1m0s`);
-  });
-  await t.step("61sec => 1m1s", () => {
-    const elapsedSec = 61;
-    assertEquals(formatShortElapsedTime(elapsedSec), `1m1s`);
-  });
-  await t.step("3600sec => 1h0m0s", () => {
-    const elapsedSec = 60 * 60; // 1hour
-    assertEquals(formatShortElapsedTime(elapsedSec), `1h0m0s`);
-  });
-  await t.step("3660sec => 1h1m0s", () => {
-    const elapsedSec = 60 * 60 + 60; // 1hour 1min
-    assertEquals(formatShortElapsedTime(elapsedSec), `1h1m0s`);
-  });
-  await t.step("3661sec => 1h1m1s", () => {
-    const elapsedSec = 60 * 60 + 60 + 1; // 1hour 1min 1sec
-    assertEquals(formatShortElapsedTime(elapsedSec), `1h1m1s`);
-  });
-});
-
-Deno.test("createMermaids", async (t) => {
   await t.step(
     "Split gantt when generated gantt characters reached max limit of mermaid.js",
     () => {
@@ -988,7 +914,7 @@ ${workflowJobs[1].steps![3].name} (0s) :job1-4, after job1-3, 0s
       const title = workflow.name ?? "";
       const ganttJobs = createGanttJobs(workflow, workflowJobs);
       const maxCharForTest = mermaid1.length;
-      const actual = createMermaids(title, ganttJobs, maxCharForTest);
+      const actual = createGanttDiagrams(title, ganttJobs, maxCharForTest);
 
       assertEquals(actual, expect);
     },

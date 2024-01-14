@@ -2,7 +2,7 @@ import { setTimeout } from "node:timers/promises";
 import process from "node:process";
 import { debug, getInput, info, summary } from "npm:@actions/core@1.10.1";
 import * as github from "npm:@actions/github@6.0.0";
-import { createGantt } from "./workflow_gantt.ts";
+import { createMermaid } from "./workflow_gantt.ts";
 import {
   createOctokit,
   fetchWorkflow,
@@ -41,7 +41,7 @@ const main = async () => {
   debug(JSON.stringify(workflowJobs, null, 2));
 
   info("Create gantt mermaid diagram...");
-  const gantt = createGantt(workflow, workflowJobs);
+  const gantt = createMermaid(workflow, workflowJobs);
   await summary.addRaw(gantt).write();
   debug(gantt);
 
