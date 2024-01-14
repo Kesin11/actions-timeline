@@ -24499,8 +24499,7 @@ function cleanEscapedString(input) {
   return matched[1].replace(doubleQuoteRegExp, "'");
 }
 
-// npm/src/workflow_gantt.ts
-var MERMAID_MAX_CHAR = 5e4;
+// npm/src/format_util.ts
 var diffSec = (start, end) => {
   if (!start || !end)
     return 0;
@@ -24540,6 +24539,12 @@ var formatName = (name, sec) => {
 var escapeName = (name) => {
   return name.replaceAll(":", "");
 };
+function formatSection(job) {
+  return [
+    `section ${job.section}`,
+    ...job.steps.map((step) => formatStep(step))
+  ].join("\n");
+}
 var convertStepToStatus = (conclusion) => {
   switch (conclusion) {
     case "success":
@@ -24558,6 +24563,9 @@ var convertStepToStatus = (conclusion) => {
       return "active";
   }
 };
+
+// npm/src/workflow_gantt.ts
+var MERMAID_MAX_CHAR = 5e4;
 var filterSteps = (steps) => {
   return steps.filter((step) => step.status === "completed");
 };
@@ -24620,11 +24628,11 @@ var createGanttJobs = (workflow, workflowJobs) => {
     }
   );
 };
-var createMermaids = (title, ganttJobs, maxChar = MERMAID_MAX_CHAR) => {
+var createGanttDiagrams = (title, ganttJobs, maxChar = MERMAID_MAX_CHAR) => {
   const header = `
 \`\`\`mermaid
 gantt
-title ${title}
+title ${escapeName(title)}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
 `;
@@ -24633,10 +24641,7 @@ axisFormat  %H:%M:%S
   const mermaids = [];
   let sections = [];
   for (const job of ganttJobs) {
-    const newSection = [
-      `section ${job.section}`,
-      ...job.steps.map((step) => formatStep(step))
-    ].join("\n");
+    const newSection = formatSection(job);
     const sectionsSumLength = sumOf(sections, (section) => section.length);
     if (headerFooterLength + sectionsSumLength + newSection.length > maxChar) {
       mermaids.push(header + sections.join("\n") + footer);
@@ -24648,10 +24653,10 @@ axisFormat  %H:%M:%S
   mermaids.push(header + sections.join("\n") + footer);
   return mermaids;
 };
-var createGantt = (workflow, workflowJobs) => {
+var createMermaid = (workflow, workflowJobs) => {
   const title = workflow.name ?? "";
   const jobs = createGanttJobs(workflow, workflowJobs);
-  return createMermaids(title, jobs).join("\n");
+  return createGanttDiagrams(title, jobs).join("\n");
 };
 
 // npm/src/github.ts
@@ -24710,7 +24715,7 @@ var main = async () => {
   );
   (0, import_core.debug)(JSON.stringify(workflowJobs, null, 2));
   (0, import_core.info)("Create gantt mermaid diagram...");
-  const gantt = createGantt(workflow, workflowJobs);
+  const gantt = createMermaid(workflow, workflowJobs);
   await import_core.summary.addRaw(gantt).write();
   (0, import_core.debug)(gantt);
   (0, import_core.info)("Complete!");
