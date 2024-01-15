@@ -48,13 +48,7 @@ This action is run on post-processing of the job, so you should register this ac
 
 ## Support GHES
 
-You can set `GITHUB_API_URL` environment variable to use this action with GHES.
-
-```yaml
-- uses: Kesin11/actions-timeline@v2
-  env:
-    GITHUB_API_URL: 'https://github.example.com/api/v3'
-```
+`actions-timeline` can also work on GitHub Enterprise Server(GHES). It needs `GITHUB_API_URL` environment variable to access your GHES. Thanks to GitHub Actions, it sets [default environment variables](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables) so you do not need to make any code changes.
 
 ## Known issues
 
@@ -87,6 +81,7 @@ GET `workflow_job` API response does not contain `created_at` field in [GHES v3.
 ## Setup
 
 ```
+asdf install
 deno task setup:githooks
 ```
 
