@@ -3,7 +3,7 @@ description: setup-deno with dependencies cache
 runs:
   using: "composite"
   steps:
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: ~/.cache/deno
         key: deno-${{ github.job }}-${{ runner.os }}-${{ hashFiles('deno.lock') }}
