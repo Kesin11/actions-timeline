@@ -20148,7 +20148,7 @@ var require_dist_node8 = __commonJS({
     var import_request = require_dist_node5();
     var import_graphql = require_dist_node6();
     var import_auth_token = require_dist_node7();
-    var VERSION = "5.0.2";
+    var VERSION = "5.1.0";
     var noop = () => {
     };
     var consoleWarn = console.warn.bind(console);
@@ -23094,9 +23094,9 @@ function getTimezoneOffsetInMilliseconds(date) {
 function differenceInCalendarDays(dateLeft, dateRight) {
   const startOfDayLeft = startOfDay(dateLeft);
   const startOfDayRight = startOfDay(dateRight);
-  const timestampLeft = startOfDayLeft.getTime() - getTimezoneOffsetInMilliseconds(startOfDayLeft);
-  const timestampRight = startOfDayRight.getTime() - getTimezoneOffsetInMilliseconds(startOfDayRight);
-  return Math.round((timestampLeft - timestampRight) / millisecondsInDay);
+  const timestampLeft = +startOfDayLeft - getTimezoneOffsetInMilliseconds(startOfDayLeft);
+  const timestampRight = +startOfDayRight - getTimezoneOffsetInMilliseconds(startOfDayRight);
+  return Math.trunc((timestampLeft - timestampRight) / millisecondsInDay);
 }
 
 // npm/node_modules/date-fns/startOfISOWeekYear.mjs
@@ -23653,8 +23653,8 @@ function getDayOfYear(date) {
 // npm/node_modules/date-fns/getISOWeek.mjs
 function getISOWeek(date) {
   const _date = toDate(date);
-  const diff = startOfISOWeek(_date).getTime() - startOfISOWeekYear(_date).getTime();
-  return Math.round(diff / millisecondsInWeek) + 1;
+  const diff = +startOfISOWeek(_date) - +startOfISOWeekYear(_date);
+  return Math.trunc(diff / millisecondsInWeek) + 1;
 }
 
 // npm/node_modules/date-fns/getWeekYear.mjs
@@ -23695,8 +23695,8 @@ function startOfWeekYear(date, options) {
 // npm/node_modules/date-fns/getWeek.mjs
 function getWeek(date, options) {
   const _date = toDate(date);
-  const diff = startOfWeek(_date, options).getTime() - startOfWeekYear(_date, options).getTime();
-  return Math.round(diff / millisecondsInWeek) + 1;
+  const diff = +startOfWeek(_date, options) - +startOfWeekYear(_date, options);
+  return Math.trunc(diff / millisecondsInWeek) + 1;
 }
 
 // npm/node_modules/date-fns/_lib/addLeadingZeros.mjs
@@ -23759,7 +23759,7 @@ var lightFormatters = {
   S(date, token) {
     const numberOfDigits = token.length;
     const milliseconds = date.getMilliseconds();
-    const fractionalSeconds = Math.floor(
+    const fractionalSeconds = Math.trunc(
       milliseconds * Math.pow(10, numberOfDigits - 3)
     );
     return addLeadingZeros(fractionalSeconds, token.length);
@@ -24253,9 +24253,8 @@ var formatters = {
     return lightFormatters.S(date, token);
   },
   // Timezone (ISO-8601. If offset is 0, output is always `'Z'`)
-  X: function(date, token, _localize, options) {
-    const originalDate = options._originalDate || date;
-    const timezoneOffset = originalDate.getTimezoneOffset();
+  X: function(date, token, _localize) {
+    const timezoneOffset = date.getTimezoneOffset();
     if (timezoneOffset === 0) {
       return "Z";
     }
@@ -24272,9 +24271,8 @@ var formatters = {
     }
   },
   // Timezone (ISO-8601. If offset is 0, output is `'+00:00'` or equivalent)
-  x: function(date, token, _localize, options) {
-    const originalDate = options._originalDate || date;
-    const timezoneOffset = originalDate.getTimezoneOffset();
+  x: function(date, token, _localize) {
+    const timezoneOffset = date.getTimezoneOffset();
     switch (token) {
       case "x":
         return formatTimezoneWithOptionalMinutes(timezoneOffset);
@@ -24288,9 +24286,8 @@ var formatters = {
     }
   },
   // Timezone (GMT)
-  O: function(date, token, _localize, options) {
-    const originalDate = options._originalDate || date;
-    const timezoneOffset = originalDate.getTimezoneOffset();
+  O: function(date, token, _localize) {
+    const timezoneOffset = date.getTimezoneOffset();
     switch (token) {
       case "O":
       case "OO":
@@ -24302,9 +24299,8 @@ var formatters = {
     }
   },
   // Timezone (specific non-location)
-  z: function(date, token, _localize, options) {
-    const originalDate = options._originalDate || date;
-    const timezoneOffset = originalDate.getTimezoneOffset();
+  z: function(date, token, _localize) {
+    const timezoneOffset = date.getTimezoneOffset();
     switch (token) {
       case "z":
       case "zz":
@@ -24316,22 +24312,20 @@ var formatters = {
     }
   },
   // Seconds timestamp
-  t: function(date, token, _localize, options) {
-    const originalDate = options._originalDate || date;
-    const timestamp = Math.floor(originalDate.getTime() / 1e3);
+  t: function(date, token, _localize) {
+    const timestamp = Math.trunc(date.getTime() / 1e3);
     return addLeadingZeros(timestamp, token.length);
   },
   // Milliseconds timestamp
-  T: function(date, token, _localize, options) {
-    const originalDate = options._originalDate || date;
-    const timestamp = originalDate.getTime();
+  T: function(date, token, _localize) {
+    const timestamp = date.getTime();
     return addLeadingZeros(timestamp, token.length);
   }
 };
 function formatTimezoneShort(offset, delimiter = "") {
   const sign = offset > 0 ? "-" : "+";
   const absOffset = Math.abs(offset);
-  const hours = Math.floor(absOffset / 60);
+  const hours = Math.trunc(absOffset / 60);
   const minutes = absOffset % 60;
   if (minutes === 0) {
     return sign + String(hours);
@@ -24348,7 +24342,7 @@ function formatTimezoneWithOptionalMinutes(offset, delimiter) {
 function formatTimezone(offset, delimiter = "") {
   const sign = offset > 0 ? "-" : "+";
   const absOffset = Math.abs(offset);
-  const hours = addLeadingZeros(Math.floor(absOffset / 60), 2);
+  const hours = addLeadingZeros(Math.trunc(absOffset / 60), 2);
   const minutes = addLeadingZeros(absOffset % 60, 2);
   return sign + hours + delimiter + minutes;
 }
@@ -24446,50 +24440,49 @@ function format(date, formatStr, options) {
   if (!isValid(originalDate)) {
     throw new RangeError("Invalid time value");
   }
-  const formatterOptions = {
-    firstWeekContainsDate,
-    weekStartsOn,
-    locale,
-    _originalDate: originalDate
-  };
-  const result = formatStr.match(longFormattingTokensRegExp).map(function(substring) {
+  let parts = formatStr.match(longFormattingTokensRegExp).map((substring) => {
     const firstCharacter = substring[0];
     if (firstCharacter === "p" || firstCharacter === "P") {
       const longFormatter = longFormatters[firstCharacter];
       return longFormatter(substring, locale.formatLong);
     }
     return substring;
-  }).join("").match(formattingTokensRegExp).map(function(substring) {
+  }).join("").match(formattingTokensRegExp).map((substring) => {
     if (substring === "''") {
-      return "'";
+      return { isToken: false, value: "'" };
     }
     const firstCharacter = substring[0];
     if (firstCharacter === "'") {
-      return cleanEscapedString(substring);
+      return { isToken: false, value: cleanEscapedString(substring) };
     }
-    const formatter = formatters[firstCharacter];
-    if (formatter) {
-      if (!options?.useAdditionalWeekYearTokens && isProtectedWeekYearToken(substring)) {
-        warnOrThrowProtectedError(substring, formatStr, String(date));
-      }
-      if (!options?.useAdditionalDayOfYearTokens && isProtectedDayOfYearToken(substring)) {
-        warnOrThrowProtectedError(substring, formatStr, String(date));
-      }
-      return formatter(
-        originalDate,
-        substring,
-        locale.localize,
-        formatterOptions
-      );
+    if (formatters[firstCharacter]) {
+      return { isToken: true, value: substring };
     }
     if (firstCharacter.match(unescapedLatinCharacterRegExp)) {
       throw new RangeError(
         "Format string contains an unescaped latin alphabet character `" + firstCharacter + "`"
       );
     }
-    return substring;
+    return { isToken: false, value: substring };
+  });
+  if (locale.localize.preprocessor) {
+    parts = locale.localize.preprocessor(originalDate, parts);
+  }
+  const formatterOptions = {
+    firstWeekContainsDate,
+    weekStartsOn,
+    locale
+  };
+  return parts.map((part) => {
+    if (!part.isToken)
+      return part.value;
+    const token = part.value;
+    if (!options?.useAdditionalWeekYearTokens && isProtectedWeekYearToken(token) || !options?.useAdditionalDayOfYearTokens && isProtectedDayOfYearToken(token)) {
+      warnOrThrowProtectedError(token, formatStr, String(date));
+    }
+    const formatter = formatters[token[0]];
+    return formatter(originalDate, token, locale.localize, formatterOptions);
   }).join("");
-  return result;
 }
 function cleanEscapedString(input) {
   const matched = input.match(escapedStringRegExp);
