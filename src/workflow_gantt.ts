@@ -1,4 +1,4 @@
-import { sumOf } from "https://deno.land/std@0.212.0/collections/mod.ts";
+import { sumOf } from "https://deno.land/std@0.213.0/collections/mod.ts";
 import { Workflow, WorkflowJobs } from "./github.ts";
 import {
   convertStepToStatus,
