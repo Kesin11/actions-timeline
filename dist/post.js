@@ -22976,10 +22976,10 @@ var import_process2 = __toESM(require("process"));
 var import_core = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/deno.land/std@0.212.0/collections/deep_merge.ts
+// npm/src/deps/deno.land/std@0.213.0/collections/deep_merge.ts
 var { hasOwn } = Object;
 
-// npm/src/deps/deno.land/std@0.212.0/collections/sum_of.ts
+// npm/src/deps/deno.land/std@0.213.0/collections/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
@@ -23075,19 +23075,20 @@ function startOfDay(date) {
 
 // npm/node_modules/date-fns/_lib/getTimezoneOffsetInMilliseconds.mjs
 function getTimezoneOffsetInMilliseconds(date) {
+  const _date = toDate(date);
   const utcDate = new Date(
     Date.UTC(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-      date.getHours(),
-      date.getMinutes(),
-      date.getSeconds(),
-      date.getMilliseconds()
+      _date.getFullYear(),
+      _date.getMonth(),
+      _date.getDate(),
+      _date.getHours(),
+      _date.getMinutes(),
+      _date.getSeconds(),
+      _date.getMilliseconds()
     )
   );
-  utcDate.setUTCFullYear(date.getFullYear());
-  return date.getTime() - utcDate.getTime();
+  utcDate.setUTCFullYear(_date.getFullYear());
+  return +date - +utcDate;
 }
 
 // npm/node_modules/date-fns/differenceInCalendarDays.mjs
@@ -23096,7 +23097,7 @@ function differenceInCalendarDays(dateLeft, dateRight) {
   const startOfDayRight = startOfDay(dateRight);
   const timestampLeft = +startOfDayLeft - getTimezoneOffsetInMilliseconds(startOfDayLeft);
   const timestampRight = +startOfDayRight - getTimezoneOffsetInMilliseconds(startOfDayRight);
-  return Math.trunc((timestampLeft - timestampRight) / millisecondsInDay);
+  return Math.round((timestampLeft - timestampRight) / millisecondsInDay);
 }
 
 // npm/node_modules/date-fns/startOfISOWeekYear.mjs
@@ -23654,7 +23655,7 @@ function getDayOfYear(date) {
 function getISOWeek(date) {
   const _date = toDate(date);
   const diff = +startOfISOWeek(_date) - +startOfISOWeekYear(_date);
-  return Math.trunc(diff / millisecondsInWeek) + 1;
+  return Math.round(diff / millisecondsInWeek) + 1;
 }
 
 // npm/node_modules/date-fns/getWeekYear.mjs
@@ -23696,7 +23697,7 @@ function startOfWeekYear(date, options) {
 function getWeek(date, options) {
   const _date = toDate(date);
   const diff = +startOfWeek(_date, options) - +startOfWeekYear(_date, options);
-  return Math.trunc(diff / millisecondsInWeek) + 1;
+  return Math.round(diff / millisecondsInWeek) + 1;
 }
 
 // npm/node_modules/date-fns/_lib/addLeadingZeros.mjs
