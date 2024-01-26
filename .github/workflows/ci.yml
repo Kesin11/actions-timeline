@@ -50,7 +50,7 @@ jobs:
       # octocov must needs some coverage files but this job don't exec test, so put dummy file.
       - name: Create dummy coverage
         run: touch coverage.out
-      - uses: k1LoW/octocov-action@v0
+      - uses: k1LoW/octocov-action@v1
         env:
           OCTOCOV_CUSTOM_METRICS_DIST_JS: dist_js_sizes.json
   test:
