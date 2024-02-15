@@ -24538,7 +24538,10 @@ var formatName = (name, sec) => {
   return `${escapeName(name)} (${formatShortElapsedTime(sec)})`;
 };
 var escapeName = (name) => {
-  return name.replaceAll(":", "");
+  let escapedName = name;
+  escapedName = escapedName.replaceAll(":", "");
+  escapedName = escapedName.replaceAll(";", "");
+  return escapedName;
 };
 function formatSection(job) {
   return [
