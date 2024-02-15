@@ -1,6 +1,10 @@
 import { assertEquals } from "https://deno.land/std@0.189.0/testing/asserts.ts";
 import { ganttStep } from "../src/types.ts";
-import { formatShortElapsedTime, formatStep } from "../src/format_util.ts";
+import {
+  escapeName,
+  formatShortElapsedTime,
+  formatStep,
+} from "../src/format_util.ts";
 
 Deno.test(formatStep.name, async (t) => {
   const baseStep: ganttStep = {
@@ -67,5 +71,20 @@ Deno.test(formatShortElapsedTime.name, async (t) => {
   await t.step("3661sec => 1h1m1s", () => {
     const elapsedSec = 60 * 60 + 60 + 1; // 1hour 1min 1sec
     assertEquals(formatShortElapsedTime(elapsedSec), `1h1m1s`);
+  });
+});
+
+Deno.test(escapeName.name, async (t) => {
+  await t.step("Step name has colon", () => {
+    const stepName = "check: deno";
+    const actual = escapeName(stepName);
+    const expect = "check deno";
+    assertEquals(actual, expect);
+  });
+  await t.step("Step has name semicolon", () => {
+    const stepName = `Run if [ "pull_request" = "push" ]; then`;
+    const actual = escapeName(stepName);
+    const expect = `Run if [ "pull_request" = "push" ] then`;
+    assertEquals(actual, expect);
   });
 });

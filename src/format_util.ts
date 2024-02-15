@@ -48,7 +48,10 @@ export const formatName = (name: string, sec: number): string => {
 };
 
 export const escapeName = (name: string): string => {
-  return name.replaceAll(":", "");
+  let escapedName = name;
+  escapedName = escapedName.replaceAll(":", "");
+  escapedName = escapedName.replaceAll(";", "");
+  return escapedName;
 };
 
 export function formatSection(job: ganttJob): string {
