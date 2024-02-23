@@ -13,6 +13,14 @@ export type WorkflowJobs =
   ][
     "data"
   ]["jobs"];
+type WorkflowUrl = {
+  origin: string;
+  host: string;
+  owner: string;
+  repo: string;
+  runId: number;
+  runAttempt?: number;
+};
 
 export const createOctokit = (token: string): Octokit => {
   const baseUrl = process.env.GITHUB_API_URL ?? "https://api.github.com";
@@ -53,4 +61,21 @@ export const fetchWorkflowRunJobs = async (
     per_page: 100,
   });
   return workflowJob.data.jobs;
+};
+
+export const parseWorkflowRunUrl = (runUrl: string): WorkflowUrl => {
+  const url = new URL(runUrl);
+  const path = url.pathname.split("/");
+  const owner = path[1];
+  const repo = path[2];
+  const runId = Number(path[5]);
+  const runAttempt = path[6] === "attempts" ? Number(path[7]) : undefined;
+  return {
+    origin: url.origin,
+    host: url.host,
+    owner,
+    repo,
+    runId,
+    runAttempt: runAttempt,
+  };
 };
