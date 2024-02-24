@@ -1,6 +1,5 @@
 {
   "tasks": {
-    "setup:githooks": "git config --local core.hooksPath .githooks",
     "bundle": "deno run -A scripts/build.ts",
     "bundle:commit": "deno task bundle && git add -u dist && git commit -m 'deno task bundle'"
   },

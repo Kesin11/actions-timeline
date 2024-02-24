@@ -4,14 +4,14 @@ import { debug, getInput, info, summary } from "npm:@actions/core@1.10.1";
 import * as github from "npm:@actions/github@6.0.0";
 import { createMermaid } from "./workflow_gantt.ts";
 import {
-  createOctokit,
+  createOctokitForAction,
   fetchWorkflow,
   fetchWorkflowRunJobs,
 } from "./github.ts";
 
 const main = async () => {
   const token = getInput("github-token", { required: true });
-  const octokit = createOctokit(token);
+  const octokit = createOctokitForAction(token);
 
   info("Wait for workflow API result stability...");
   await setTimeout(1000);

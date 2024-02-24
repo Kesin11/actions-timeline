@@ -24727,7 +24727,7 @@ var createMermaid = (workflow, workflowJobs) => {
 // npm/src/github.ts
 var import_rest = __toESM(require_dist_node12());
 var import_process = __toESM(require("process"));
-var createOctokit = (token) => {
+var createOctokitForAction = (token) => {
   const baseUrl = import_process.default.env.GITHUB_API_URL ?? "https://api.github.com";
   return new import_rest.Octokit({
     auth: token,
@@ -24757,7 +24757,7 @@ var fetchWorkflowRunJobs = async (octokit, owner, repo, runId, runAttempt) => {
 // npm/src/post.ts
 var main = async () => {
   const token = (0, import_core.getInput)("github-token", { required: true });
-  const octokit = createOctokit(token);
+  const octokit = createOctokitForAction(token);
   (0, import_core.info)("Wait for workflow API result stability...");
   await (0, import_promises.setTimeout)(1e3);
   (0, import_core.info)("Fetch workflow...");

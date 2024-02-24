@@ -58,8 +58,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-deno-with-cache
-      - id: test
-        run: deno test
+      - run: deno test
+      - name: CLI somke test
+        run: |
+          RUN_URL=$(gh run list -L 1 -w release --json url --jq .[].url)
+          deno run --allow-net --allow-write cli.ts -t "${GITHUB_TOKEN}" -o output.md $RUN_URL
+          cat output.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   run_self:
     runs-on: ubuntu-latest
