@@ -11,6 +11,10 @@ const { options, args } = await new Command()
   .name("actions-timeline-cli")
   .description("Command line tool of actions-timeline")
   .option("-t, --token <token:string>", "GitHub token. ex: $(gh auth token)")
+  .option(
+    "-o, --output <output:file>",
+    "Output md file path. If not set output to STDOUT. ex: output.md",
+  )
   .arguments("<url:string>")
   .parse(Deno.args);
 const url = args[0];
@@ -34,4 +38,8 @@ const workflowJobs = await fetchWorkflowRunJobs(
 );
 const gantt = createMermaid(workflow, workflowJobs);
 
-console.log(gantt);
+if (options.output) {
+  await Deno.writeTextFile(options.output, gantt);
+} else {
+  console.log(gantt);
+}
