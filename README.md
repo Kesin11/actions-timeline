@@ -107,6 +107,20 @@ deno run --allow-net --allow-write \
   https://github.com/Kesin11/actions-timeline/actions/runs/8021493760/attempts/1 \
   -t $(gh auth token) \
   -o output.md
+
+# Fetch latest attempt if ommit attempts
+deno run --allow-net --allow-write \
+  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+  https://github.com/Kesin11/actions-timeline/actions/runs/8021493760/ \
+  -t $(gh auth token) \
+  -o output.md
+
+# GHES
+deno run --allow-net --allow-write \
+  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+  https://YOUR_ENTERPRISE_HOST/OWNER/REPO/actions/runs/RUN_ID/attempts/1 \
+  -t $(gh auth token -h YOUR_ENTERPRISE_HOST) \
+  -o output.md
 ```
 
 `cli.ts` just outputs the markdown to file or STDOUT, so you have to use other
