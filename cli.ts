@@ -1,7 +1,7 @@
 import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.3/command/mod.ts";
 import { createMermaid } from "./src/workflow_gantt.ts";
 import {
-  createOctokit,
+  createOctokitForCli,
   fetchWorkflow,
   fetchWorkflowRunJobs,
 } from "./src/github.ts";
@@ -17,10 +17,14 @@ const { options, args } = await new Command()
   )
   .arguments("<url:string>")
   .parse(Deno.args);
-const url = args[0];
 
-const octokit = createOctokit(options.token);
+const url = args[0];
 const runUrl = parseWorkflowRunUrl(url);
+
+const octokit = createOctokitForCli({
+  token: options.token,
+  origin: runUrl.origin,
+});
 
 const workflow = await fetchWorkflow(
   octokit,

@@ -15,17 +15,28 @@ export type WorkflowJobs =
   ]["jobs"];
 type WorkflowUrl = {
   origin: string;
-  host: string;
   owner: string;
   repo: string;
   runId: number;
   runAttempt?: number;
 };
 
-export const createOctokit = (token?: string): Octokit => {
+export const createOctokitForAction = (token: string): Octokit => {
   const baseUrl = process.env.GITHUB_API_URL ?? "https://api.github.com";
   return new Octokit({
     auth: token,
+    baseUrl,
+  });
+};
+
+export const createOctokitForCli = (
+  options: { token?: string; origin?: string },
+): Octokit => {
+  const baseUrl = (options.origin === "https://github.com")
+    ? "https://api.github.com" // gitHub.com
+    : `${options.origin}/api/v3`; // GHES
+  return new Octokit({
+    auth: options.token,
     baseUrl,
   });
 };
@@ -72,7 +83,6 @@ export const parseWorkflowRunUrl = (runUrl: string): WorkflowUrl => {
   const runAttempt = path[6] === "attempts" ? Number(path[7]) : undefined;
   return {
     origin: url.origin,
-    host: url.host,
     owner,
     repo,
     runId,

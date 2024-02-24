@@ -8,7 +8,6 @@ Deno.test(parseWorkflowRunUrl.name, async (t) => {
     const actual = parseWorkflowRunUrl(url);
     const expect = {
       origin: "https://github.com",
-      host: "github.com",
       owner: "Kesin11",
       repo: "actions-timeline",
       runId: 1000000000,
@@ -23,7 +22,6 @@ Deno.test(parseWorkflowRunUrl.name, async (t) => {
     const actual = parseWorkflowRunUrl(url);
     const expect = {
       origin: "https://github.com",
-      host: "github.com",
       owner: "Kesin11",
       repo: "actions-timeline",
       runId: 1000000000,
@@ -38,7 +36,6 @@ Deno.test(parseWorkflowRunUrl.name, async (t) => {
     const actual = parseWorkflowRunUrl(url);
     const expect = {
       origin: "https://your_host.github.com",
-      host: "your_host.github.com",
       owner: "Kesin11",
       repo: "actions-timeline",
       runId: 1000000000,
