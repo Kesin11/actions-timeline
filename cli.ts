@@ -3,6 +3,7 @@ import { createMermaid } from "./src/workflow_gantt.ts";
 import {
   createOctokitForCli,
   fetchWorkflow,
+  fetchWorkflowLatestAttempt,
   fetchWorkflowRunJobs,
 } from "./src/github.ts";
 import { parseWorkflowRunUrl } from "./src/github.ts";
@@ -26,19 +27,27 @@ const octokit = createOctokitForCli({
   origin: runUrl.origin,
 });
 
+const runAttempt = runUrl.runAttempt ??
+  await fetchWorkflowLatestAttempt(
+    octokit,
+    runUrl.owner,
+    runUrl.repo,
+    runUrl.runId,
+  );
+
 const workflow = await fetchWorkflow(
   octokit,
   runUrl.owner,
   runUrl.repo,
   runUrl.runId,
-  runUrl.runAttempt ?? 1,
+  runAttempt,
 );
 const workflowJobs = await fetchWorkflowRunJobs(
   octokit,
   runUrl.owner,
   runUrl.repo,
   runUrl.runId,
-  runUrl.runAttempt ?? 1,
+  runAttempt,
 );
 const gantt = createMermaid(workflow, workflowJobs);
 

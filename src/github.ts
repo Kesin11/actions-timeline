@@ -57,6 +57,20 @@ export const fetchWorkflow = async (
   return workflow.data;
 };
 
+export const fetchWorkflowLatestAttempt = async (
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  runId: number,
+): Promise<number> => {
+  const workflow = await octokit.rest.actions.getWorkflowRun({
+    owner,
+    repo,
+    run_id: runId,
+  });
+  return workflow.data.run_attempt ?? 1;
+};
+
 export const fetchWorkflowRunJobs = async (
   octokit: Octokit,
   owner: string,
