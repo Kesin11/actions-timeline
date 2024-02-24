@@ -22,7 +22,7 @@ type WorkflowUrl = {
   runAttempt?: number;
 };
 
-export const createOctokit = (token: string): Octokit => {
+export const createOctokit = (token?: string): Octokit => {
   const baseUrl = process.env.GITHUB_API_URL ?? "https://api.github.com";
   return new Octokit({
     auth: token,
