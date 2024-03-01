@@ -1955,7 +1955,7 @@ var require_Dicer = __commonJS({
       if (this._headerFirst && this._isPreamble) {
         if (!this._part) {
           this._part = new PartStream(this._partOpts);
-          if (this._events.preamble) {
+          if (this.listenerCount("preamble") !== 0) {
             this.emit("preamble", this._part);
           } else {
             this._ignore();
@@ -2018,7 +2018,7 @@ var require_Dicer = __commonJS({
           }
         }
         if (this._dashes === 2) {
-          if (start + i < end && this._events.trailer) {
+          if (start + i < end && this.listenerCount("trailer") !== 0) {
             this.emit("trailer", data.slice(start + i, end));
           }
           this.reset();
@@ -2041,9 +2041,9 @@ var require_Dicer = __commonJS({
         this._part._read = function(n) {
           self._unpause();
         };
-        if (this._isPreamble && this._events.preamble) {
+        if (this._isPreamble && this.listenerCount("preamble") !== 0) {
           this.emit("preamble", this._part);
-        } else if (this._isPreamble !== true && this._events.part) {
+        } else if (this._isPreamble !== true && this.listenerCount("part") !== 0) {
           this.emit("part", this._part);
         } else {
           this._ignore();
@@ -2205,7 +2205,7 @@ var require_decodeText = __commonJS({
         if (textDecoders.has(exports2.toString())) {
           try {
             return textDecoders.get(exports2).decode(data);
-          } catch (e) {
+          } catch {
           }
         }
         return typeof data === "string" ? data : data.toString();
@@ -2988,7 +2988,7 @@ var require_multipart = __commonJS({
               return skipPart(part);
             }
             ++nfiles;
-            if (!boy._events.file) {
+            if (boy.listenerCount("file") === 0) {
               self.parser._ignore();
               return;
             }
@@ -22468,7 +22468,7 @@ var require_dist_node10 = __commonJS({
       paginatingEndpoints: () => paginatingEndpoints
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var VERSION = "9.2.0";
+    var VERSION = "9.2.1";
     function normalizePaginatedListResponse(response) {
       if (!response.data) {
         return {
@@ -22958,7 +22958,7 @@ var require_dist_node11 = __commonJS({
       requestLog: () => requestLog
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var VERSION = "4.0.0";
+    var VERSION = "4.0.1";
     function requestLog(octokit) {
       octokit.hook.wrap("request", (request, options) => {
         octokit.log.debug("request", options);
@@ -23044,10 +23044,10 @@ var import_process2 = __toESM(require("process"));
 var import_core = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/deno.land/std@0.217.0/collections/deep_merge.ts
+// npm/src/deps/deno.land/std@0.218.2/collections/deep_merge.ts
 var { hasOwn } = Object;
 
-// npm/src/deps/deno.land/std@0.217.0/collections/sum_of.ts
+// npm/src/deps/deno.land/std@0.218.2/collections/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
