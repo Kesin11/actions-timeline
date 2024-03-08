@@ -17948,7 +17948,7 @@ var require_lib = __commonJS({
         if (this._keepAlive && useProxy) {
           agent = this._proxyAgent;
         }
-        if (this._keepAlive && !useProxy) {
+        if (!useProxy) {
           agent = this._agent;
         }
         if (agent) {
@@ -17977,13 +17977,10 @@ var require_lib = __commonJS({
           agent = tunnelAgent(agentOptions);
           this._proxyAgent = agent;
         }
-        if (this._keepAlive && !agent) {
+        if (!agent) {
           const options = { keepAlive: this._keepAlive, maxSockets };
           agent = usingSsl ? new https.Agent(options) : new http.Agent(options);
           this._agent = agent;
-        }
-        if (!agent) {
-          agent = usingSsl ? https.globalAgent : http.globalAgent;
         }
         if (usingSsl && this._ignoreSslError) {
           agent.options = Object.assign(agent.options || {}, {
@@ -20310,7 +20307,7 @@ var require_dist_node9 = __commonJS({
       restEndpointMethods: () => restEndpointMethods
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var VERSION = "10.4.0";
+    var VERSION = "10.4.1";
     var Endpoints = {
       actions: {
         addCustomLabelsToSelfHostedRunnerForOrg: [
@@ -23044,10 +23041,10 @@ var import_process2 = __toESM(require("process"));
 var import_core = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/deno.land/std@0.218.2/collections/deep_merge.ts
+// npm/src/deps/deno.land/std@0.219.0/collections/deep_merge.ts
 var { hasOwn } = Object;
 
-// npm/src/deps/deno.land/std@0.218.2/collections/sum_of.ts
+// npm/src/deps/deno.land/std@0.219.0/collections/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
