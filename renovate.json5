@@ -1,27 +1,32 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "github>Kesin11/renovate-config:oss",
-    ":prConcurrentLimit10",
-    "schedule:weekends"
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'github>Kesin11/renovate-config:oss',
+    ':prConcurrentLimit10',
+    'schedule:weekends',
   ],
-  "regexManagers": [
-    // ref: https://blog.s2n.tech/articles/renovate-deno
+  customManagers: [
     {
-      "fileMatch": ["\\.tsx?$"],
-      "matchStrings": [
-        "(?:im|ex)port(?:.|\\s)+?from\\s*['\"](?<depName>https://deno.land/.+?)@v?(?<currentValue>[\\.\\d]+).*?['\"]",
-        "(?:@deno-types=)['\"](?<depName>https://deno.land/.+?)@v?(?<currentValue>[\\.\\d]+).*?['\"]",
+      customType: 'regex',
+      fileMatch: [
+        '\\.tsx?$',
       ],
-      "datasourceTemplate": "deno"
+      matchStrings: [
+        '(?:im|ex)port(?:.|\\s)+?from\\s*[\'"](?<depName>https://deno.land/.+?)@v?(?<currentValue>[\\.\\d]+).*?[\'"]',
+        '(?:@deno-types=)[\'"](?<depName>https://deno.land/.+?)@v?(?<currentValue>[\\.\\d]+).*?[\'"]',
+      ],
+      datasourceTemplate: 'deno',
     },
     {
-      "fileMatch": ["\\.tsx?$"],
-      "matchStrings": [
-        "(?:im|ex)port(?:.|\\s)+?from\\s*['\"]npm:(?<depName>.+?)@.*?(?<currentValue>[\\.\\d]+).*?['\"]",
-        "(?:@deno-types=)['\"]npm:(?<depName>.+?)@.*?(?<currentValue>[\\.\\d]+).*?['\"]",
+      customType: 'regex',
+      fileMatch: [
+        '\\.tsx?$',
       ],
-      "datasourceTemplate": "npm"
-    }
-  ]
+      matchStrings: [
+        '(?:im|ex)port(?:.|\\s)+?from\\s*[\'"]npm:(?<depName>.+?)@.*?(?<currentValue>[\\.\\d]+).*?[\'"]',
+        '(?:@deno-types=)[\'"]npm:(?<depName>.+?)@.*?(?<currentValue>[\\.\\d]+).*?[\'"]',
+      ],
+      datasourceTemplate: 'npm',
+    },
+  ],
 }
