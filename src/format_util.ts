@@ -1,4 +1,4 @@
-import { format } from "npm:date-fns@3.3.1";
+import { format } from "npm:date-fns@3.5.0";
 import type { ganttJob, ganttStep, StepConclusion } from "./types.ts";
 
 export const diffSec = (
