@@ -23041,10 +23041,10 @@ var import_process2 = __toESM(require("process"));
 var import_core = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/deno.land/std@0.219.0/collections/deep_merge.ts
+// npm/src/deps/deno.land/std@0.220.1/collections/deep_merge.ts
 var { hasOwn } = Object;
 
-// npm/src/deps/deno.land/std@0.219.0/collections/sum_of.ts
+// npm/src/deps/deno.land/std@0.220.1/collections/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
