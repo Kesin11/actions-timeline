@@ -23180,7 +23180,7 @@ var require_dist_node12 = __commonJS({
     var import_plugin_request_log = require_dist_node11();
     var import_plugin_paginate_rest = require_dist_node10();
     var import_plugin_rest_endpoint_methods = require_dist_node9();
-    var VERSION = "20.0.2";
+    var VERSION = "20.1.0";
     var Octokit2 = import_core2.Octokit.plugin(
       import_plugin_request_log.requestLog,
       import_plugin_rest_endpoint_methods.legacyRestEndpointMethods,
