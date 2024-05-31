@@ -1,6 +1,6 @@
 // @octokit/rest@20 dropped support for node16. However, node16 bundled in actions/runner and still supported.
 // So, we use @octokit/rest@19.
-import { Octokit, RestEndpointMethodTypes } from "npm:@octokit/rest@20.1.0";
+import { Octokit, RestEndpointMethodTypes } from "npm:@octokit/rest@20.1.1";
 import process from "node:process";
 
 export type Workflow =
