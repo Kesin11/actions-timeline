@@ -1452,31 +1452,31 @@ var require_util = __commonJS({
     function isBuffer(buffer) {
       return buffer instanceof Uint8Array || Buffer.isBuffer(buffer);
     }
-    function validateHandler(handler, method, upgrade) {
-      if (!handler || typeof handler !== "object") {
+    function validateHandler(handler2, method, upgrade) {
+      if (!handler2 || typeof handler2 !== "object") {
         throw new InvalidArgumentError("handler must be an object");
       }
-      if (typeof handler.onConnect !== "function") {
+      if (typeof handler2.onConnect !== "function") {
         throw new InvalidArgumentError("invalid onConnect method");
       }
-      if (typeof handler.onError !== "function") {
+      if (typeof handler2.onError !== "function") {
         throw new InvalidArgumentError("invalid onError method");
       }
-      if (typeof handler.onBodySent !== "function" && handler.onBodySent !== void 0) {
+      if (typeof handler2.onBodySent !== "function" && handler2.onBodySent !== void 0) {
         throw new InvalidArgumentError("invalid onBodySent method");
       }
       if (upgrade || method === "CONNECT") {
-        if (typeof handler.onUpgrade !== "function") {
+        if (typeof handler2.onUpgrade !== "function") {
           throw new InvalidArgumentError("invalid onUpgrade method");
         }
       } else {
-        if (typeof handler.onHeaders !== "function") {
+        if (typeof handler2.onHeaders !== "function") {
           throw new InvalidArgumentError("invalid onHeaders method");
         }
-        if (typeof handler.onData !== "function") {
+        if (typeof handler2.onData !== "function") {
           throw new InvalidArgumentError("invalid onData method");
         }
-        if (typeof handler.onComplete !== "function") {
+        if (typeof handler2.onComplete !== "function") {
           throw new InvalidArgumentError("invalid onComplete method");
         }
       }
@@ -1519,14 +1519,14 @@ var require_util = __commonJS({
       if (ReadableStream.from) {
         return ReadableStream.from(convertIterableToBuffer(iterable));
       }
-      let iterator;
+      let iterator2;
       return new ReadableStream(
         {
           async start() {
-            iterator = iterable[Symbol.asyncIterator]();
+            iterator2 = iterable[Symbol.asyncIterator]();
           },
           async pull(controller) {
-            const { done, value } = await iterator.next();
+            const { done, value } = await iterator2.next();
             if (done) {
               queueMicrotask(() => {
                 controller.close();
@@ -1538,7 +1538,7 @@ var require_util = __commonJS({
             return controller.desiredSize > 0;
           },
           async cancel(reason) {
-            await iterator.return();
+            await iterator2.return();
           }
         },
         0
@@ -3971,11 +3971,11 @@ var require_util2 = __commonJS({
       }
       return location;
     }
-    function requestCurrentURL(request) {
-      return request.urlList[request.urlList.length - 1];
+    function requestCurrentURL(request2) {
+      return request2.urlList[request2.urlList.length - 1];
     }
-    function requestBadPort(request) {
-      const url = requestCurrentURL(request);
+    function requestBadPort(request2) {
+      const url = requestCurrentURL(request2);
       if (urlIsHttpHttpsScheme(url) && badPortsSet.has(url.port)) {
         return "blocked";
       }
@@ -4042,7 +4042,7 @@ var require_util2 = __commonJS({
       }
       return true;
     }
-    function setRequestReferrerPolicyOnRedirect(request, actualResponse) {
+    function setRequestReferrerPolicyOnRedirect(request2, actualResponse) {
       const { headersList } = actualResponse;
       const policyHeader = (headersList.get("referrer-policy") ?? "").split(",");
       let policy = "";
@@ -4056,7 +4056,7 @@ var require_util2 = __commonJS({
         }
       }
       if (policy !== "") {
-        request.referrerPolicy = policy;
+        request2.referrerPolicy = policy;
       }
     }
     function crossOriginResourcePolicyCheck() {
@@ -4073,33 +4073,33 @@ var require_util2 = __commonJS({
       header = httpRequest.mode;
       httpRequest.headersList.set("sec-fetch-mode", header);
     }
-    function appendRequestOriginHeader(request) {
-      let serializedOrigin = request.origin;
-      if (request.responseTainting === "cors" || request.mode === "websocket") {
+    function appendRequestOriginHeader(request2) {
+      let serializedOrigin = request2.origin;
+      if (request2.responseTainting === "cors" || request2.mode === "websocket") {
         if (serializedOrigin) {
-          request.headersList.append("origin", serializedOrigin);
+          request2.headersList.append("origin", serializedOrigin);
         }
-      } else if (request.method !== "GET" && request.method !== "HEAD") {
-        switch (request.referrerPolicy) {
+      } else if (request2.method !== "GET" && request2.method !== "HEAD") {
+        switch (request2.referrerPolicy) {
           case "no-referrer":
             serializedOrigin = null;
             break;
           case "no-referrer-when-downgrade":
           case "strict-origin":
           case "strict-origin-when-cross-origin":
-            if (request.origin && urlHasHttpsScheme(request.origin) && !urlHasHttpsScheme(requestCurrentURL(request))) {
+            if (request2.origin && urlHasHttpsScheme(request2.origin) && !urlHasHttpsScheme(requestCurrentURL(request2))) {
               serializedOrigin = null;
             }
             break;
           case "same-origin":
-            if (!sameOrigin(request, requestCurrentURL(request))) {
+            if (!sameOrigin(request2, requestCurrentURL(request2))) {
               serializedOrigin = null;
             }
             break;
           default:
         }
         if (serializedOrigin) {
-          request.headersList.append("origin", serializedOrigin);
+          request2.headersList.append("origin", serializedOrigin);
         }
       }
     }
@@ -4131,26 +4131,26 @@ var require_util2 = __commonJS({
         referrerPolicy: policyContainer.referrerPolicy
       };
     }
-    function determineRequestsReferrer(request) {
-      const policy = request.referrerPolicy;
+    function determineRequestsReferrer(request2) {
+      const policy = request2.referrerPolicy;
       assert(policy);
       let referrerSource = null;
-      if (request.referrer === "client") {
+      if (request2.referrer === "client") {
         const globalOrigin = getGlobalOrigin();
         if (!globalOrigin || globalOrigin.origin === "null") {
           return "no-referrer";
         }
         referrerSource = new URL(globalOrigin);
-      } else if (request.referrer instanceof URL) {
-        referrerSource = request.referrer;
+      } else if (request2.referrer instanceof URL) {
+        referrerSource = request2.referrer;
       }
       let referrerURL = stripURLForReferrer(referrerSource);
       const referrerOrigin = stripURLForReferrer(referrerSource, true);
       if (referrerURL.toString().length > 4096) {
         referrerURL = referrerOrigin;
       }
-      const areSameOrigin = sameOrigin(request, referrerURL);
-      const isNonPotentiallyTrustWorthy = isURLPotentiallyTrustworthy(referrerURL) && !isURLPotentiallyTrustworthy(request.url);
+      const areSameOrigin = sameOrigin(request2, referrerURL);
+      const isNonPotentiallyTrustWorthy = isURLPotentiallyTrustworthy(referrerURL) && !isURLPotentiallyTrustworthy(request2.url);
       switch (policy) {
         case "origin":
           return referrerOrigin != null ? referrerOrigin : stripURLForReferrer(referrerSource, true);
@@ -4161,7 +4161,7 @@ var require_util2 = __commonJS({
         case "origin-when-cross-origin":
           return areSameOrigin ? referrerURL : referrerOrigin;
         case "strict-origin-when-cross-origin": {
-          const currentURL = requestCurrentURL(request);
+          const currentURL = requestCurrentURL(request2);
           if (sameOrigin(referrerURL, currentURL)) {
             return referrerURL;
           }
@@ -4307,7 +4307,7 @@ var require_util2 = __commonJS({
       }
       return true;
     }
-    function tryUpgradeRequestToAPotentiallyTrustworthyURL(request) {
+    function tryUpgradeRequestToAPotentiallyTrustworthyURL(request2) {
     }
     function sameOrigin(A, B) {
       if (A.origin === B.origin && A.origin === "null") {
@@ -4360,11 +4360,11 @@ var require_util2 = __commonJS({
       return result;
     }
     var esIteratorPrototype = Object.getPrototypeOf(Object.getPrototypeOf([][Symbol.iterator]()));
-    function makeIterator(iterator, name, kind) {
+    function makeIterator(iterator2, name, kind) {
       const object = {
         index: 0,
         kind,
-        target: iterator
+        target: iterator2
       };
       const i = {
         next() {
@@ -5682,13 +5682,13 @@ Content-Type: ${value.type || "application/octet-stream"}\r
         length = Buffer.byteLength(source);
       }
       if (action != null) {
-        let iterator;
+        let iterator2;
         stream = new ReadableStream({
           async start() {
-            iterator = action(object)[Symbol.asyncIterator]();
+            iterator2 = action(object)[Symbol.asyncIterator]();
           },
           async pull(controller) {
-            const { value, done } = await iterator.next();
+            const { value, done } = await iterator2.next();
             if (done) {
               queueMicrotask(() => {
                 controller.close();
@@ -5701,7 +5701,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
             return controller.desiredSize > 0;
           },
           async cancel(reason) {
-            await iterator.return();
+            await iterator2.return();
           },
           type: void 0
         });
@@ -5964,7 +5964,7 @@ var require_request = __commonJS({
         reset,
         throwOnError,
         expectContinue
-      }, handler) {
+      }, handler2) {
         if (typeof path !== "string") {
           throw new InvalidArgumentError("path must be a string");
         } else if (path[0] !== "/" && !(path.startsWith("http://") || path.startsWith("https://")) && method !== "CONNECT") {
@@ -6078,9 +6078,9 @@ var require_request = __commonJS({
           this.headers += `content-type: ${body.type}\r
 `;
         }
-        util.validateHandler(handler, method, upgrade);
+        util.validateHandler(handler2, method, upgrade);
         this.servername = util.getServerName(this.host);
-        this[kHandler] = handler;
+        this[kHandler] = handler2;
         if (channels.create.hasSubscribers) {
           channels.create.publish({ request: this });
         }
@@ -6182,31 +6182,31 @@ var require_request = __commonJS({
         processHeader(this, key, value);
         return this;
       }
-      static [kHTTP1BuildRequest](origin, opts, handler) {
-        return new _Request(origin, opts, handler);
+      static [kHTTP1BuildRequest](origin, opts, handler2) {
+        return new _Request(origin, opts, handler2);
       }
-      static [kHTTP2BuildRequest](origin, opts, handler) {
+      static [kHTTP2BuildRequest](origin, opts, handler2) {
         const headers = opts.headers;
         opts = { ...opts, headers: null };
-        const request = new _Request(origin, opts, handler);
-        request.headers = {};
+        const request2 = new _Request(origin, opts, handler2);
+        request2.headers = {};
         if (Array.isArray(headers)) {
           if (headers.length % 2 !== 0) {
             throw new InvalidArgumentError("headers array must be even");
           }
           for (let i = 0; i < headers.length; i += 2) {
-            processHeader(request, headers[i], headers[i + 1], true);
+            processHeader(request2, headers[i], headers[i + 1], true);
           }
         } else if (headers && typeof headers === "object") {
           const keys = Object.keys(headers);
           for (let i = 0; i < keys.length; i++) {
             const key = keys[i];
-            processHeader(request, key, headers[key], true);
+            processHeader(request2, key, headers[key], true);
           }
         } else if (headers != null) {
           throw new InvalidArgumentError("headers must be an object or an array");
         }
-        return request;
+        return request2;
       }
       static [kHTTP2CopyHeaders](raw) {
         const rawHeaders = raw.split("\r\n");
@@ -6231,26 +6231,26 @@ var require_request = __commonJS({
       return skipAppend ? val : `${key}: ${val}\r
 `;
     }
-    function processHeader(request, key, val, skipAppend = false) {
+    function processHeader(request2, key, val, skipAppend = false) {
       if (val && (typeof val === "object" && !Array.isArray(val))) {
         throw new InvalidArgumentError(`invalid ${key} header`);
       } else if (val === void 0) {
         return;
       }
-      if (request.host === null && key.length === 4 && key.toLowerCase() === "host") {
+      if (request2.host === null && key.length === 4 && key.toLowerCase() === "host") {
         if (headerCharRegex.exec(val) !== null) {
           throw new InvalidArgumentError(`invalid ${key} header`);
         }
-        request.host = val;
-      } else if (request.contentLength === null && key.length === 14 && key.toLowerCase() === "content-length") {
-        request.contentLength = parseInt(val, 10);
-        if (!Number.isFinite(request.contentLength)) {
+        request2.host = val;
+      } else if (request2.contentLength === null && key.length === 14 && key.toLowerCase() === "content-length") {
+        request2.contentLength = parseInt(val, 10);
+        if (!Number.isFinite(request2.contentLength)) {
           throw new InvalidArgumentError("invalid content-length header");
         }
-      } else if (request.contentType === null && key.length === 12 && key.toLowerCase() === "content-type") {
-        request.contentType = val;
-        if (skipAppend) request.headers[key] = processHeaderValue(key, val, skipAppend);
-        else request.headers += processHeaderValue(key, val);
+      } else if (request2.contentType === null && key.length === 12 && key.toLowerCase() === "content-type") {
+        request2.contentType = val;
+        if (skipAppend) request2.headers[key] = processHeaderValue(key, val, skipAppend);
+        else request2.headers += processHeaderValue(key, val);
       } else if (key.length === 17 && key.toLowerCase() === "transfer-encoding") {
         throw new InvalidArgumentError("invalid transfer-encoding header");
       } else if (key.length === 10 && key.toLowerCase() === "connection") {
@@ -6258,7 +6258,7 @@ var require_request = __commonJS({
         if (value !== "close" && value !== "keep-alive") {
           throw new InvalidArgumentError("invalid connection header");
         } else if (value === "close") {
-          request.reset = true;
+          request2.reset = true;
         }
       } else if (key.length === 10 && key.toLowerCase() === "keep-alive") {
         throw new InvalidArgumentError("invalid keep-alive header");
@@ -6272,15 +6272,15 @@ var require_request = __commonJS({
         if (Array.isArray(val)) {
           for (let i = 0; i < val.length; i++) {
             if (skipAppend) {
-              if (request.headers[key]) request.headers[key] += `,${processHeaderValue(key, val[i], skipAppend)}`;
-              else request.headers[key] = processHeaderValue(key, val[i], skipAppend);
+              if (request2.headers[key]) request2.headers[key] += `,${processHeaderValue(key, val[i], skipAppend)}`;
+              else request2.headers[key] = processHeaderValue(key, val[i], skipAppend);
             } else {
-              request.headers += processHeaderValue(key, val[i]);
+              request2.headers += processHeaderValue(key, val[i]);
             }
           }
         } else {
-          if (skipAppend) request.headers[key] = processHeaderValue(key, val, skipAppend);
-          else request.headers += processHeaderValue(key, val);
+          if (skipAppend) request2.headers[key] = processHeaderValue(key, val, skipAppend);
+          else request2.headers += processHeaderValue(key, val);
         }
       }
     }
@@ -6431,20 +6431,20 @@ var require_dispatcher_base = __commonJS({
           queueMicrotask(onDestroyed);
         });
       }
-      [kInterceptedDispatch](opts, handler) {
+      [kInterceptedDispatch](opts, handler2) {
         if (!this[kInterceptors] || this[kInterceptors].length === 0) {
           this[kInterceptedDispatch] = this[kDispatch];
-          return this[kDispatch](opts, handler);
+          return this[kDispatch](opts, handler2);
         }
         let dispatch = this[kDispatch].bind(this);
         for (let i = this[kInterceptors].length - 1; i >= 0; i--) {
           dispatch = this[kInterceptors][i](dispatch);
         }
         this[kInterceptedDispatch] = dispatch;
-        return dispatch(opts, handler);
+        return dispatch(opts, handler2);
       }
-      dispatch(opts, handler) {
-        if (!handler || typeof handler !== "object") {
+      dispatch(opts, handler2) {
+        if (!handler2 || typeof handler2 !== "object") {
           throw new InvalidArgumentError("handler must be an object");
         }
         try {
@@ -6457,12 +6457,12 @@ var require_dispatcher_base = __commonJS({
           if (this[kClosed]) {
             throw new ClientClosedError();
           }
-          return this[kInterceptedDispatch](opts, handler);
+          return this[kInterceptedDispatch](opts, handler2);
         } catch (err) {
-          if (typeof handler.onError !== "function") {
+          if (typeof handler2.onError !== "function") {
             throw new InvalidArgumentError("invalid onError method");
           }
-          handler.onError(err);
+          handler2.onError(err);
           return false;
         }
       }
@@ -6991,17 +6991,17 @@ var require_RedirectHandler = __commonJS({
       }
     };
     var RedirectHandler = class {
-      constructor(dispatch, maxRedirections, opts, handler) {
+      constructor(dispatch, maxRedirections, opts, handler2) {
         if (maxRedirections != null && (!Number.isInteger(maxRedirections) || maxRedirections < 0)) {
           throw new InvalidArgumentError("maxRedirections must be a positive number");
         }
-        util.validateHandler(handler, opts.method, opts.upgrade);
+        util.validateHandler(handler2, opts.method, opts.upgrade);
         this.dispatch = dispatch;
         this.location = null;
         this.abort = null;
         this.opts = { ...opts, maxRedirections: 0 };
         this.maxRedirections = maxRedirections;
-        this.handler = handler;
+        this.handler = handler2;
         this.history = [];
         if (util.isStream(this.opts.body)) {
           if (util.bodyLength(this.opts.body) === 0) {
@@ -7125,12 +7125,12 @@ var require_redirectInterceptor = __commonJS({
     var RedirectHandler = require_RedirectHandler();
     function createRedirectInterceptor({ maxRedirections: defaultMaxRedirections }) {
       return (dispatch) => {
-        return function Intercept(opts, handler) {
+        return function Intercept(opts, handler2) {
           const { maxRedirections = defaultMaxRedirections } = opts;
           if (!maxRedirections) {
-            return dispatch(opts, handler);
+            return dispatch(opts, handler2);
           }
-          const redirectHandler = new RedirectHandler(dispatch, maxRedirections, opts, handler);
+          const redirectHandler = new RedirectHandler(dispatch, maxRedirections, opts, handler2);
           opts = { ...opts, maxRedirections: 0 };
           return dispatch(opts, redirectHandler);
         };
@@ -7442,12 +7442,12 @@ var require_client = __commonJS({
         connect(this);
         this.once("connect", cb);
       }
-      [kDispatch](opts, handler) {
+      [kDispatch](opts, handler2) {
         const origin = opts.origin || this[kUrl].origin;
-        const request = this[kHTTPConnVersion] === "h2" ? Request[kHTTP2BuildRequest](origin, opts, handler) : Request[kHTTP1BuildRequest](origin, opts, handler);
-        this[kQueue].push(request);
+        const request2 = this[kHTTPConnVersion] === "h2" ? Request[kHTTP2BuildRequest](origin, opts, handler2) : Request[kHTTP1BuildRequest](origin, opts, handler2);
+        this[kQueue].push(request2);
         if (this[kResuming]) {
-        } else if (util.bodyLength(request.body) == null && util.isIterable(request.body)) {
+        } else if (util.bodyLength(request2.body) == null && util.isIterable(request2.body)) {
           this[kResuming] = 1;
           process.nextTick(resume, this);
         } else {
@@ -7471,8 +7471,8 @@ var require_client = __commonJS({
         return new Promise((resolve) => {
           const requests = this[kQueue].splice(this[kPendingIdx]);
           for (let i = 0; i < requests.length; i++) {
-            const request = requests[i];
-            errorRequest(this, request, err);
+            const request2 = requests[i];
+            errorRequest(this, request2, err);
           }
           const callback = () => {
             if (this[kClosedResolve]) {
@@ -7520,13 +7520,13 @@ var require_client = __commonJS({
         assert(this[kPending] === 0);
         const requests = client[kQueue].splice(client[kRunningIdx]);
         for (let i = 0; i < requests.length; i++) {
-          const request = requests[i];
-          errorRequest(this, request, err);
+          const request2 = requests[i];
+          errorRequest(this, request2, err);
         }
       } else if (client[kRunning] > 0) {
-        const request = client[kQueue][client[kRunningIdx]];
+        const request2 = client[kQueue][client[kRunningIdx]];
         client[kQueue][client[kRunningIdx]++] = null;
-        errorRequest(client, request, err);
+        errorRequest(client, request2, err);
       }
       client[kPendingIdx] = client[kRunningIdx];
       assert(client[kRunning] === 0);
@@ -7734,8 +7734,8 @@ var require_client = __commonJS({
         if (socket.destroyed) {
           return -1;
         }
-        const request = client[kQueue][client[kRunningIdx]];
-        if (!request) {
+        const request2 = client[kQueue][client[kRunningIdx]];
+        if (!request2) {
           return -1;
         }
       }
@@ -7775,12 +7775,12 @@ var require_client = __commonJS({
       onUpgrade(head) {
         const { upgrade, client, socket, headers, statusCode } = this;
         assert(upgrade);
-        const request = client[kQueue][client[kRunningIdx]];
-        assert(request);
+        const request2 = client[kQueue][client[kRunningIdx]];
+        assert(request2);
         assert(!socket.destroyed);
         assert(socket === client[kSocket]);
         assert(!this.paused);
-        assert(request.upgrade || request.method === "CONNECT");
+        assert(request2.upgrade || request2.method === "CONNECT");
         this.statusCode = null;
         this.statusText = "";
         this.shouldKeepAlive = null;
@@ -7797,7 +7797,7 @@ var require_client = __commonJS({
         client[kQueue][client[kRunningIdx]++] = null;
         client.emit("disconnect", client[kUrl], [client], new InformationalError("upgrade"));
         try {
-          request.onUpgrade(statusCode, headers, socket);
+          request2.onUpgrade(statusCode, headers, socket);
         } catch (err) {
           util.destroy(socket, err);
         }
@@ -7808,8 +7808,8 @@ var require_client = __commonJS({
         if (socket.destroyed) {
           return -1;
         }
-        const request = client[kQueue][client[kRunningIdx]];
-        if (!request) {
+        const request2 = client[kQueue][client[kRunningIdx]];
+        if (!request2) {
           return -1;
         }
         assert(!this.upgrade);
@@ -7818,23 +7818,23 @@ var require_client = __commonJS({
           util.destroy(socket, new SocketError("bad response", util.getSocketInfo(socket)));
           return -1;
         }
-        if (upgrade && !request.upgrade) {
+        if (upgrade && !request2.upgrade) {
           util.destroy(socket, new SocketError("bad upgrade", util.getSocketInfo(socket)));
           return -1;
         }
         assert.strictEqual(this.timeoutType, TIMEOUT_HEADERS);
         this.statusCode = statusCode;
         this.shouldKeepAlive = shouldKeepAlive || // Override llhttp value which does not allow keepAlive for HEAD.
-        request.method === "HEAD" && !socket[kReset] && this.connection.toLowerCase() === "keep-alive";
+        request2.method === "HEAD" && !socket[kReset] && this.connection.toLowerCase() === "keep-alive";
         if (this.statusCode >= 200) {
-          const bodyTimeout = request.bodyTimeout != null ? request.bodyTimeout : client[kBodyTimeout];
+          const bodyTimeout = request2.bodyTimeout != null ? request2.bodyTimeout : client[kBodyTimeout];
           this.setTimeout(bodyTimeout, TIMEOUT_BODY);
         } else if (this.timeout) {
           if (this.timeout.refresh) {
             this.timeout.refresh();
           }
         }
-        if (request.method === "CONNECT") {
+        if (request2.method === "CONNECT") {
           assert(client[kRunning] === 1);
           this.upgrade = true;
           return 2;
@@ -7865,11 +7865,11 @@ var require_client = __commonJS({
         } else {
           socket[kReset] = true;
         }
-        const pause = request.onHeaders(statusCode, headers, this.resume, statusText) === false;
-        if (request.aborted) {
+        const pause = request2.onHeaders(statusCode, headers, this.resume, statusText) === false;
+        if (request2.aborted) {
           return -1;
         }
-        if (request.method === "HEAD") {
+        if (request2.method === "HEAD") {
           return 1;
         }
         if (statusCode < 200) {
@@ -7886,8 +7886,8 @@ var require_client = __commonJS({
         if (socket.destroyed) {
           return -1;
         }
-        const request = client[kQueue][client[kRunningIdx]];
-        assert(request);
+        const request2 = client[kQueue][client[kRunningIdx]];
+        assert(request2);
         assert.strictEqual(this.timeoutType, TIMEOUT_BODY);
         if (this.timeout) {
           if (this.timeout.refresh) {
@@ -7900,7 +7900,7 @@ var require_client = __commonJS({
           return -1;
         }
         this.bytesRead += buf.length;
-        if (request.onData(buf) === false) {
+        if (request2.onData(buf) === false) {
           return constants.ERROR.PAUSED;
         }
       }
@@ -7912,8 +7912,8 @@ var require_client = __commonJS({
         if (upgrade) {
           return;
         }
-        const request = client[kQueue][client[kRunningIdx]];
-        assert(request);
+        const request2 = client[kQueue][client[kRunningIdx]];
+        assert(request2);
         assert(statusCode >= 100);
         this.statusCode = null;
         this.statusText = "";
@@ -7927,11 +7927,11 @@ var require_client = __commonJS({
         if (statusCode < 200) {
           return;
         }
-        if (request.method !== "HEAD" && contentLength && bytesRead !== parseInt(contentLength, 10)) {
+        if (request2.method !== "HEAD" && contentLength && bytesRead !== parseInt(contentLength, 10)) {
           util.destroy(socket, new ResponseContentLengthMismatchError());
           return -1;
         }
-        request.onComplete(headers);
+        request2.onComplete(headers);
         client[kQueue][client[kRunningIdx]++] = null;
         if (socket[kWriting]) {
           assert.strictEqual(client[kRunning], 0);
@@ -7989,8 +7989,8 @@ var require_client = __commonJS({
         assert(client[kPendingIdx] === client[kRunningIdx]);
         const requests = client[kQueue].splice(client[kRunningIdx]);
         for (let i = 0; i < requests.length; i++) {
-          const request = requests[i];
-          errorRequest(client, request, err);
+          const request2 = requests[i];
+          errorRequest(client, request2, err);
         }
         assert(client[kSize] === 0);
       }
@@ -8020,13 +8020,13 @@ var require_client = __commonJS({
         assert(client[kPending] === 0);
         const requests = client[kQueue].splice(client[kRunningIdx]);
         for (let i = 0; i < requests.length; i++) {
-          const request = requests[i];
-          errorRequest(client, request, err);
+          const request2 = requests[i];
+          errorRequest(client, request2, err);
         }
       } else if (client[kRunning] > 0 && err.code !== "UND_ERR_INFO") {
-        const request = client[kQueue][client[kRunningIdx]];
+        const request2 = client[kQueue][client[kRunningIdx]];
         client[kQueue][client[kRunningIdx]++] = null;
-        errorRequest(client, request, err);
+        errorRequest(client, request2, err);
       }
       client[kPendingIdx] = client[kRunningIdx];
       assert(client[kRunning] === 0);
@@ -8159,8 +8159,8 @@ var require_client = __commonJS({
         if (err.code === "ERR_TLS_CERT_ALTNAME_INVALID") {
           assert(client[kRunning] === 0);
           while (client[kPending] > 0 && client[kQueue][client[kPendingIdx]].servername === client[kServerName]) {
-            const request = client[kQueue][client[kPendingIdx]++];
-            errorRequest(client, request, err);
+            const request2 = client[kQueue][client[kPendingIdx]++];
+            errorRequest(client, request2, err);
           }
         } else {
           onError(client, err);
@@ -8214,8 +8214,8 @@ var require_client = __commonJS({
             }
           } else if (client[kRunning] > 0 && socket[kParser].statusCode < 200) {
             if (socket[kParser].timeoutType !== TIMEOUT_HEADERS) {
-              const request2 = client[kQueue][client[kRunningIdx]];
-              const headersTimeout = request2.headersTimeout != null ? request2.headersTimeout : client[kHeadersTimeout];
+              const request3 = client[kQueue][client[kRunningIdx]];
+              const headersTimeout = request3.headersTimeout != null ? request3.headersTimeout : client[kHeadersTimeout];
               socket[kParser].setTimeout(headersTimeout, TIMEOUT_HEADERS);
             }
           }
@@ -8237,13 +8237,13 @@ var require_client = __commonJS({
         if (client[kRunning] >= (client[kPipelining] || 1)) {
           return;
         }
-        const request = client[kQueue][client[kPendingIdx]];
-        if (client[kUrl].protocol === "https:" && client[kServerName] !== request.servername) {
+        const request2 = client[kQueue][client[kPendingIdx]];
+        if (client[kUrl].protocol === "https:" && client[kServerName] !== request2.servername) {
           if (client[kRunning] > 0) {
             return;
           }
-          client[kServerName] = request.servername;
-          if (socket && socket.servername !== request.servername) {
+          client[kServerName] = request2.servername;
+          if (socket && socket.servername !== request2.servername) {
             util.destroy(socket, new InformationalError("servername changed"));
             return;
           }
@@ -8258,16 +8258,16 @@ var require_client = __commonJS({
         if (socket.destroyed || socket[kWriting] || socket[kReset] || socket[kBlocking]) {
           return;
         }
-        if (client[kRunning] > 0 && !request.idempotent) {
+        if (client[kRunning] > 0 && !request2.idempotent) {
           return;
         }
-        if (client[kRunning] > 0 && (request.upgrade || request.method === "CONNECT")) {
+        if (client[kRunning] > 0 && (request2.upgrade || request2.method === "CONNECT")) {
           return;
         }
-        if (client[kRunning] > 0 && util.bodyLength(request.body) !== 0 && (util.isStream(request.body) || util.isAsyncIterable(request.body))) {
+        if (client[kRunning] > 0 && util.bodyLength(request2.body) !== 0 && (util.isStream(request2.body) || util.isAsyncIterable(request2.body))) {
           return;
         }
-        if (!request.aborted && write(client, request)) {
+        if (!request2.aborted && write(client, request2)) {
           client[kPendingIdx]++;
         } else {
           client[kQueue].splice(client[kPendingIdx], 1);
@@ -8277,12 +8277,12 @@ var require_client = __commonJS({
     function shouldSendContentLength(method) {
       return method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && method !== "TRACE" && method !== "CONNECT";
     }
-    function write(client, request) {
+    function write(client, request2) {
       if (client[kHTTPConnVersion] === "h2") {
-        writeH2(client, client[kHTTP2Session], request);
+        writeH2(client, client[kHTTP2Session], request2);
         return;
       }
-      const { body, method, path, host, upgrade, headers, blocking, reset } = request;
+      const { body, method, path, host, upgrade, headers, blocking, reset } = request2;
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH";
       if (body && typeof body.read === "function") {
         body.read(0);
@@ -8290,31 +8290,31 @@ var require_client = __commonJS({
       const bodyLength = util.bodyLength(body);
       let contentLength = bodyLength;
       if (contentLength === null) {
-        contentLength = request.contentLength;
+        contentLength = request2.contentLength;
       }
       if (contentLength === 0 && !expectsPayload) {
         contentLength = null;
       }
-      if (shouldSendContentLength(method) && contentLength > 0 && request.contentLength !== null && request.contentLength !== contentLength) {
+      if (shouldSendContentLength(method) && contentLength > 0 && request2.contentLength !== null && request2.contentLength !== contentLength) {
         if (client[kStrictContentLength]) {
-          errorRequest(client, request, new RequestContentLengthMismatchError());
+          errorRequest(client, request2, new RequestContentLengthMismatchError());
           return false;
         }
         process.emitWarning(new RequestContentLengthMismatchError());
       }
       const socket = client[kSocket];
       try {
-        request.onConnect((err) => {
-          if (request.aborted || request.completed) {
+        request2.onConnect((err) => {
+          if (request2.aborted || request2.completed) {
             return;
           }
-          errorRequest(client, request, err || new RequestAbortedError());
+          errorRequest(client, request2, err || new RequestAbortedError());
           util.destroy(socket, new InformationalError("aborted"));
         });
       } catch (err) {
-        errorRequest(client, request, err);
+        errorRequest(client, request2, err);
       }
-      if (request.aborted) {
+      if (request2.aborted) {
         return false;
       }
       if (method === "HEAD") {
@@ -8353,7 +8353,7 @@ upgrade: ${upgrade}\r
         header += headers;
       }
       if (channels.sendHeaders.hasSubscribers) {
-        channels.sendHeaders.publish({ request, headers: header, socket });
+        channels.sendHeaders.publish({ request: request2, headers: header, socket });
       }
       if (!body || bodyLength === 0) {
         if (contentLength === 0) {
@@ -8365,7 +8365,7 @@ upgrade: ${upgrade}\r
           socket.write(`${header}\r
 `, "latin1");
         }
-        request.onRequestSent();
+        request2.onRequestSent();
       } else if (util.isBuffer(body)) {
         assert(contentLength === body.byteLength, "buffer body must have content length");
         socket.cork();
@@ -8374,46 +8374,46 @@ upgrade: ${upgrade}\r
 `, "latin1");
         socket.write(body);
         socket.uncork();
-        request.onBodySent(body);
-        request.onRequestSent();
+        request2.onBodySent(body);
+        request2.onRequestSent();
         if (!expectsPayload) {
           socket[kReset] = true;
         }
       } else if (util.isBlobLike(body)) {
         if (typeof body.stream === "function") {
-          writeIterable({ body: body.stream(), client, request, socket, contentLength, header, expectsPayload });
+          writeIterable({ body: body.stream(), client, request: request2, socket, contentLength, header, expectsPayload });
         } else {
-          writeBlob({ body, client, request, socket, contentLength, header, expectsPayload });
+          writeBlob({ body, client, request: request2, socket, contentLength, header, expectsPayload });
         }
       } else if (util.isStream(body)) {
-        writeStream({ body, client, request, socket, contentLength, header, expectsPayload });
+        writeStream({ body, client, request: request2, socket, contentLength, header, expectsPayload });
       } else if (util.isIterable(body)) {
-        writeIterable({ body, client, request, socket, contentLength, header, expectsPayload });
+        writeIterable({ body, client, request: request2, socket, contentLength, header, expectsPayload });
       } else {
         assert(false);
       }
       return true;
     }
-    function writeH2(client, session, request) {
-      const { body, method, path, host, upgrade, expectContinue, signal, headers: reqHeaders } = request;
+    function writeH2(client, session, request2) {
+      const { body, method, path, host, upgrade, expectContinue, signal, headers: reqHeaders } = request2;
       let headers;
       if (typeof reqHeaders === "string") headers = Request[kHTTP2CopyHeaders](reqHeaders.trim());
       else headers = reqHeaders;
       if (upgrade) {
-        errorRequest(client, request, new Error("Upgrade not supported for H2"));
+        errorRequest(client, request2, new Error("Upgrade not supported for H2"));
         return false;
       }
       try {
-        request.onConnect((err) => {
-          if (request.aborted || request.completed) {
+        request2.onConnect((err) => {
+          if (request2.aborted || request2.completed) {
             return;
           }
-          errorRequest(client, request, err || new RequestAbortedError());
+          errorRequest(client, request2, err || new RequestAbortedError());
         });
       } catch (err) {
-        errorRequest(client, request, err);
+        errorRequest(client, request2, err);
       }
-      if (request.aborted) {
+      if (request2.aborted) {
         return false;
       }
       let stream;
@@ -8424,11 +8424,11 @@ upgrade: ${upgrade}\r
         session.ref();
         stream = session.request(headers, { endStream: false, signal });
         if (stream.id && !stream.pending) {
-          request.onUpgrade(null, null, stream);
+          request2.onUpgrade(null, null, stream);
           ++h2State.openStreams;
         } else {
           stream.once("ready", () => {
-            request.onUpgrade(null, null, stream);
+            request2.onUpgrade(null, null, stream);
             ++h2State.openStreams;
           });
         }
@@ -8446,14 +8446,14 @@ upgrade: ${upgrade}\r
       }
       let contentLength = util.bodyLength(body);
       if (contentLength == null) {
-        contentLength = request.contentLength;
+        contentLength = request2.contentLength;
       }
       if (contentLength === 0 || !expectsPayload) {
         contentLength = null;
       }
-      if (shouldSendContentLength(method) && contentLength > 0 && request.contentLength != null && request.contentLength !== contentLength) {
+      if (shouldSendContentLength(method) && contentLength > 0 && request2.contentLength != null && request2.contentLength !== contentLength) {
         if (client[kStrictContentLength]) {
-          errorRequest(client, request, new RequestContentLengthMismatchError());
+          errorRequest(client, request2, new RequestContentLengthMismatchError());
           return false;
         }
         process.emitWarning(new RequestContentLengthMismatchError());
@@ -8478,15 +8478,15 @@ upgrade: ${upgrade}\r
       ++h2State.openStreams;
       stream.once("response", (headers2) => {
         const { [HTTP2_HEADER_STATUS]: statusCode, ...realHeaders } = headers2;
-        if (request.onHeaders(Number(statusCode), realHeaders, stream.resume.bind(stream), "") === false) {
+        if (request2.onHeaders(Number(statusCode), realHeaders, stream.resume.bind(stream), "") === false) {
           stream.pause();
         }
       });
       stream.once("end", () => {
-        request.onComplete([]);
+        request2.onComplete([]);
       });
       stream.on("data", (chunk) => {
-        if (request.onData(chunk) === false) {
+        if (request2.onData(chunk) === false) {
           stream.pause();
         }
       });
@@ -8504,7 +8504,7 @@ upgrade: ${upgrade}\r
       });
       stream.once("frameError", (type, code) => {
         const err = new InformationalError(`HTTP/2: "frameError" received - type ${type}, code ${code}`);
-        errorRequest(client, request, err);
+        errorRequest(client, request2, err);
         if (client[kHTTP2Session] && !client[kHTTP2Session].destroyed && !this.closed && !this.destroyed) {
           h2State.streams -= 1;
           util.destroy(stream, err);
@@ -8513,20 +8513,20 @@ upgrade: ${upgrade}\r
       return true;
       function writeBodyH2() {
         if (!body) {
-          request.onRequestSent();
+          request2.onRequestSent();
         } else if (util.isBuffer(body)) {
           assert(contentLength === body.byteLength, "buffer body must have content length");
           stream.cork();
           stream.write(body);
           stream.uncork();
           stream.end();
-          request.onBodySent(body);
-          request.onRequestSent();
+          request2.onBodySent(body);
+          request2.onRequestSent();
         } else if (util.isBlobLike(body)) {
           if (typeof body.stream === "function") {
             writeIterable({
               client,
-              request,
+              request: request2,
               contentLength,
               h2stream: stream,
               expectsPayload,
@@ -8538,7 +8538,7 @@ upgrade: ${upgrade}\r
             writeBlob({
               body,
               client,
-              request,
+              request: request2,
               contentLength,
               expectsPayload,
               h2stream: stream,
@@ -8550,7 +8550,7 @@ upgrade: ${upgrade}\r
           writeStream({
             body,
             client,
-            request,
+            request: request2,
             contentLength,
             expectsPayload,
             socket: client[kSocket],
@@ -8561,7 +8561,7 @@ upgrade: ${upgrade}\r
           writeIterable({
             body,
             client,
-            request,
+            request: request2,
             contentLength,
             expectsPayload,
             header: "",
@@ -8573,11 +8573,11 @@ upgrade: ${upgrade}\r
         }
       }
     }
-    function writeStream({ h2stream, body, client, request, socket, contentLength, header, expectsPayload }) {
+    function writeStream({ h2stream, body, client, request: request2, socket, contentLength, header, expectsPayload }) {
       assert(contentLength !== 0 || client[kRunning] === 0, "stream body cannot be pipelined");
       if (client[kHTTPConnVersion] === "h2") {
         let onPipeData = function(chunk) {
-          request.onBodySent(chunk);
+          request2.onBodySent(chunk);
         };
         const pipe = pipeline(
           body,
@@ -8587,7 +8587,7 @@ upgrade: ${upgrade}\r
               util.destroy(body, err);
               util.destroy(h2stream, err);
             } else {
-              request.onRequestSent();
+              request2.onRequestSent();
             }
           }
         );
@@ -8599,7 +8599,7 @@ upgrade: ${upgrade}\r
         return;
       }
       let finished = false;
-      const writer = new AsyncWriter({ socket, request, contentLength, client, expectsPayload, header });
+      const writer = new AsyncWriter({ socket, request: request2, contentLength, client, expectsPayload, header });
       const onData = function(chunk) {
         if (finished) {
           return;
@@ -8655,7 +8655,7 @@ upgrade: ${upgrade}\r
       }
       socket.on("drain", onDrain).on("error", onFinished);
     }
-    async function writeBlob({ h2stream, body, client, request, socket, contentLength, header, expectsPayload }) {
+    async function writeBlob({ h2stream, body, client, request: request2, socket, contentLength, header, expectsPayload }) {
       assert(contentLength === body.size, "blob body must have content length");
       const isH2 = client[kHTTPConnVersion] === "h2";
       try {
@@ -8675,8 +8675,8 @@ upgrade: ${upgrade}\r
           socket.write(buffer);
           socket.uncork();
         }
-        request.onBodySent(buffer);
-        request.onRequestSent();
+        request2.onBodySent(buffer);
+        request2.onRequestSent();
         if (!expectsPayload) {
           socket[kReset] = true;
         }
@@ -8685,7 +8685,7 @@ upgrade: ${upgrade}\r
         util.destroy(isH2 ? h2stream : socket, err);
       }
     }
-    async function writeIterable({ h2stream, body, client, request, socket, contentLength, header, expectsPayload }) {
+    async function writeIterable({ h2stream, body, client, request: request2, socket, contentLength, header, expectsPayload }) {
       assert(contentLength !== 0 || client[kRunning] === 0, "iterator body cannot be pipelined");
       let callback = null;
       function onDrain() {
@@ -8711,7 +8711,7 @@ upgrade: ${upgrade}\r
               throw socket[kError];
             }
             const res = h2stream.write(chunk);
-            request.onBodySent(chunk);
+            request2.onBodySent(chunk);
             if (!res) {
               await waitForDrain();
             }
@@ -8719,14 +8719,14 @@ upgrade: ${upgrade}\r
         } catch (err) {
           h2stream.destroy(err);
         } finally {
-          request.onRequestSent();
+          request2.onRequestSent();
           h2stream.end();
           h2stream.off("close", onDrain).off("drain", onDrain);
         }
         return;
       }
       socket.on("close", onDrain).on("drain", onDrain);
-      const writer = new AsyncWriter({ socket, request, contentLength, client, expectsPayload, header });
+      const writer = new AsyncWriter({ socket, request: request2, contentLength, client, expectsPayload, header });
       try {
         for await (const chunk of body) {
           if (socket[kError]) {
@@ -8744,9 +8744,9 @@ upgrade: ${upgrade}\r
       }
     }
     var AsyncWriter = class {
-      constructor({ socket, request, contentLength, client, expectsPayload, header }) {
+      constructor({ socket, request: request2, contentLength, client, expectsPayload, header }) {
         this.socket = socket;
-        this.request = request;
+        this.request = request2;
         this.contentLength = contentLength;
         this.client = client;
         this.bytesWritten = 0;
@@ -8755,7 +8755,7 @@ upgrade: ${upgrade}\r
         socket[kWriting] = true;
       }
       write(chunk) {
-        const { socket, request, contentLength, client, bytesWritten, expectsPayload, header } = this;
+        const { socket, request: request2, contentLength, client, bytesWritten, expectsPayload, header } = this;
         if (socket[kError]) {
           throw socket[kError];
         }
@@ -8794,7 +8794,7 @@ ${len.toString(16)}\r
         this.bytesWritten += len;
         const ret = socket.write(chunk);
         socket.uncork();
-        request.onBodySent(chunk);
+        request2.onBodySent(chunk);
         if (!ret) {
           if (socket[kParser].timeout && socket[kParser].timeoutType === TIMEOUT_HEADERS) {
             if (socket[kParser].timeout.refresh) {
@@ -8805,8 +8805,8 @@ ${len.toString(16)}\r
         return ret;
       }
       end() {
-        const { socket, contentLength, client, bytesWritten, expectsPayload, header, request } = this;
-        request.onRequestSent();
+        const { socket, contentLength, client, bytesWritten, expectsPayload, header, request: request2 } = this;
+        request2.onRequestSent();
         socket[kWriting] = false;
         if (socket[kError]) {
           throw socket[kError];
@@ -8849,10 +8849,10 @@ ${len.toString(16)}\r
         }
       }
     };
-    function errorRequest(client, request, err) {
+    function errorRequest(client, request2, err) {
       try {
-        request.onError(err);
-        assert(request.aborted);
+        request2.onError(err);
+        assert(request2.aborted);
       } catch (err2) {
         client.emit("error", err2);
       }
@@ -9060,13 +9060,13 @@ var require_pool_base = __commonJS({
         }
         return Promise.all(this[kClients].map((c) => c.destroy(err)));
       }
-      [kDispatch](opts, handler) {
+      [kDispatch](opts, handler2) {
         const dispatcher = this[kGetDispatcher]();
         if (!dispatcher) {
           this[kNeedDrain] = true;
-          this[kQueue].push({ opts, handler });
+          this[kQueue].push({ opts, handler: handler2 });
           this[kQueued]++;
-        } else if (!dispatcher.dispatch(opts, handler)) {
+        } else if (!dispatcher.dispatch(opts, handler2)) {
           dispatcher[kNeedDrain] = true;
           this[kNeedDrain] = !this[kGetDispatcher]();
         }
@@ -9441,7 +9441,7 @@ var require_agent = __commonJS({
         }
         return ret;
       }
-      [kDispatch](opts, handler) {
+      [kDispatch](opts, handler2) {
         let key;
         if (opts.origin && (typeof opts.origin === "string" || opts.origin instanceof URL)) {
           key = String(opts.origin);
@@ -9455,7 +9455,7 @@ var require_agent = __commonJS({
           this[kClients].set(key, new WeakRef2(dispatcher));
           this[kFinalizer].register(dispatcher, key);
         }
-        return dispatcher.dispatch(opts, handler);
+        return dispatcher.dispatch(opts, handler2);
       }
       async [kClose]() {
         const closePromises = [];
@@ -9497,7 +9497,7 @@ var require_readable = __commonJS({
     var kBody = Symbol("kBody");
     var kAbort = Symbol("abort");
     var kContentType = Symbol("kContentType");
-    var noop = () => {
+    var noop2 = () => {
     };
     module2.exports = class BodyReadable extends Readable {
       constructor({
@@ -9619,7 +9619,7 @@ var require_readable = __commonJS({
         return new Promise((resolve, reject) => {
           const signalListenerCleanup = signal ? util.addAbortListener(signal, () => {
             this.destroy();
-          }) : noop;
+          }) : noop2;
           this.on("close", function() {
             signalListenerCleanup();
             if (signal && signal.aborted) {
@@ -9627,7 +9627,7 @@ var require_readable = __commonJS({
             } else {
               resolve(null);
             }
-          }).on("error", noop).on("data", function(chunk) {
+          }).on("error", noop2).on("data", function(chunk) {
             limit -= chunk.length;
             if (limit <= 0) {
               this.destroy();
@@ -9957,10 +9957,10 @@ var require_api_request = __commonJS({
         }
       }
     };
-    function request(opts, callback) {
+    function request2(opts, callback) {
       if (callback === void 0) {
         return new Promise((resolve, reject) => {
-          request.call(this, opts, (err, data) => {
+          request2.call(this, opts, (err, data) => {
             return err ? reject(err) : resolve(data);
           });
         });
@@ -9975,7 +9975,7 @@ var require_api_request = __commonJS({
         queueMicrotask(() => callback(err, { opaque }));
       }
     }
-    module2.exports = request;
+    module2.exports = request2;
     module2.exports.RequestHandler = RequestHandler;
   }
 });
@@ -10206,11 +10206,11 @@ var require_api_pipeline = __commonJS({
       }
     };
     var PipelineHandler = class extends AsyncResource {
-      constructor(opts, handler) {
+      constructor(opts, handler2) {
         if (!opts || typeof opts !== "object") {
           throw new InvalidArgumentError("invalid opts");
         }
-        if (typeof handler !== "function") {
+        if (typeof handler2 !== "function") {
           throw new InvalidArgumentError("invalid handler");
         }
         const { signal, method, opaque, onInfo, responseHeaders } = opts;
@@ -10226,7 +10226,7 @@ var require_api_pipeline = __commonJS({
         super("UNDICI_PIPELINE");
         this.opaque = opaque || null;
         this.responseHeaders = responseHeaders || null;
-        this.handler = handler;
+        this.handler = handler2;
         this.abort = null;
         this.context = null;
         this.onInfo = onInfo || null;
@@ -10279,7 +10279,7 @@ var require_api_pipeline = __commonJS({
         this.context = context2;
       }
       onHeaders(statusCode, rawHeaders, resume) {
-        const { opaque, handler, context: context2 } = this;
+        const { opaque, handler: handler2, context: context2 } = this;
         if (statusCode < 200) {
           if (this.onInfo) {
             const headers = this.responseHeaders === "raw" ? util.parseRawHeaders(rawHeaders) : util.parseHeaders(rawHeaders);
@@ -10292,7 +10292,7 @@ var require_api_pipeline = __commonJS({
         try {
           this.handler = null;
           const headers = this.responseHeaders === "raw" ? util.parseRawHeaders(rawHeaders) : util.parseHeaders(rawHeaders);
-          body = this.runInAsyncScope(handler, null, {
+          body = this.runInAsyncScope(handler2, null, {
             statusCode,
             headers,
             opaque,
@@ -10339,9 +10339,9 @@ var require_api_pipeline = __commonJS({
         util.destroy(ret, err);
       }
     };
-    function pipeline(opts, handler) {
+    function pipeline(opts, handler2) {
       try {
-        const pipelineHandler = new PipelineHandler(opts, handler);
+        const pipelineHandler = new PipelineHandler(opts, handler2);
         this.dispatch({ ...opts, body: pipelineHandler.req }, pipelineHandler);
         return pipelineHandler.ret;
       } catch (err) {
@@ -10689,7 +10689,7 @@ var require_mock_utils = __commonJS({
       const headersMatch = matchHeaders(mockDispatch2, headers);
       return pathMatch && methodMatch && bodyMatch && headersMatch;
     }
-    function getResponseData(data) {
+    function getResponseData2(data) {
       if (Buffer.isBuffer(data)) {
         return data;
       } else if (typeof data === "object") {
@@ -10764,7 +10764,7 @@ var require_mock_utils = __commonJS({
       }
       return Buffer.concat(buffers).toString("utf8");
     }
-    function mockDispatch(opts, handler) {
+    function mockDispatch(opts, handler2) {
       const key = buildKey(opts);
       const mockDispatch2 = getMockDispatch(this[kDispatches], key);
       mockDispatch2.timesInvoked++;
@@ -10777,7 +10777,7 @@ var require_mock_utils = __commonJS({
       mockDispatch2.pending = timesInvoked < times;
       if (error !== null) {
         deleteMockDispatch(this[kDispatches], key);
-        handler.onError(error);
+        handler2.onError(error);
         return true;
       }
       if (typeof delay === "number" && delay > 0) {
@@ -10794,13 +10794,13 @@ var require_mock_utils = __commonJS({
           body.then((newData) => handleReply(mockDispatches, newData));
           return;
         }
-        const responseData = getResponseData(body);
+        const responseData = getResponseData2(body);
         const responseHeaders = generateKeyValues(headers);
         const responseTrailers = generateKeyValues(trailers);
-        handler.abort = nop;
-        handler.onHeaders(statusCode, responseHeaders, resume, getStatusText(statusCode));
-        handler.onData(Buffer.from(responseData));
-        handler.onComplete(responseTrailers);
+        handler2.abort = nop;
+        handler2.onHeaders(statusCode, responseHeaders, resume, getStatusText(statusCode));
+        handler2.onData(Buffer.from(responseData));
+        handler2.onComplete(responseTrailers);
         deleteMockDispatch(mockDispatches, key);
       }
       function resume() {
@@ -10811,10 +10811,10 @@ var require_mock_utils = __commonJS({
       const agent = this[kMockAgent];
       const origin = this[kOrigin];
       const originalDispatch = this[kOriginalDispatch];
-      return function dispatch(opts, handler) {
+      return function dispatch(opts, handler2) {
         if (agent.isMockActive) {
           try {
-            mockDispatch.call(this, opts, handler);
+            mockDispatch.call(this, opts, handler2);
           } catch (error) {
             if (error instanceof MockNotMatchedError) {
               const netConnect = agent[kGetNetConnect]();
@@ -10822,7 +10822,7 @@ var require_mock_utils = __commonJS({
                 throw new MockNotMatchedError(`${error.message}: subsequent request to origin ${origin} was not allowed (net.connect disabled)`);
               }
               if (checkNetConnect(netConnect, origin)) {
-                originalDispatch.call(this, opts, handler);
+                originalDispatch.call(this, opts, handler2);
               } else {
                 throw new MockNotMatchedError(`${error.message}: subsequent request to origin ${origin} was not allowed (net.connect is not enabled for this origin)`);
               }
@@ -10831,7 +10831,7 @@ var require_mock_utils = __commonJS({
             }
           }
         } else {
-          originalDispatch.call(this, opts, handler);
+          originalDispatch.call(this, opts, handler2);
         }
       };
     }
@@ -10851,7 +10851,7 @@ var require_mock_utils = __commonJS({
       }
     }
     module2.exports = {
-      getResponseData,
+      getResponseData: getResponseData2,
       getMockDispatch,
       addMockDispatch,
       deleteMockDispatch,
@@ -10873,7 +10873,7 @@ var require_mock_utils = __commonJS({
 var require_mock_interceptor = __commonJS({
   "npm/node_modules/undici/lib/mock/mock-interceptor.js"(exports2, module2) {
     "use strict";
-    var { getResponseData, buildKey, addMockDispatch } = require_mock_utils();
+    var { getResponseData: getResponseData2, buildKey, addMockDispatch } = require_mock_utils();
     var {
       kDispatches,
       kDispatchKey,
@@ -10945,7 +10945,7 @@ var require_mock_interceptor = __commonJS({
         this[kContentLength] = false;
       }
       createMockScopeDispatchData(statusCode, data, responseOptions = {}) {
-        const responseData = getResponseData(data);
+        const responseData = getResponseData2(data);
         const contentLength = this[kContentLength] ? { "content-length": responseData.length } : {};
         const headers = { ...this[kDefaultHeaders], ...contentLength, ...responseOptions.headers };
         const trailers = { ...this[kDefaultTrailers], ...responseOptions.trailers };
@@ -11259,9 +11259,9 @@ var require_mock_agent = __commonJS({
         }
         return dispatcher;
       }
-      dispatch(opts, handler) {
+      dispatch(opts, handler2) {
         this.get(opts.origin);
-        return this[kAgent].dispatch(opts, handler);
+        return this[kAgent].dispatch(opts, handler2);
       }
       async close() {
         await this[kAgent].close();
@@ -11453,7 +11453,7 @@ var require_proxy_agent = __commonJS({
           }
         });
       }
-      dispatch(opts, handler) {
+      dispatch(opts, handler2) {
         const { host } = new URL3(opts.origin);
         const headers = buildHeaders(opts.headers);
         throwIfProxyAuthIsSent(headers);
@@ -11465,7 +11465,7 @@ var require_proxy_agent = __commonJS({
               host
             }
           },
-          handler
+          handler2
         );
       }
       async [kClose]() {
@@ -11800,8 +11800,8 @@ var require_DecoratorHandler = __commonJS({
   "npm/node_modules/undici/lib/handler/DecoratorHandler.js"(exports2, module2) {
     "use strict";
     module2.exports = class DecoratorHandler {
-      constructor(handler) {
-        this.handler = handler;
+      constructor(handler2) {
+        this.handler = handler2;
       }
       onConnect(...args) {
         return this.handler.onConnect(...args);
@@ -12649,7 +12649,7 @@ var require_request2 = __commonJS({
             policyContainer: makePolicyContainer()
           }
         };
-        let request = null;
+        let request2 = null;
         let fallbackMode = null;
         const baseUrl = this[kRealm].settingsObject.baseUrl;
         let signal = null;
@@ -12665,17 +12665,17 @@ var require_request2 = __commonJS({
               "Request cannot be constructed from a URL that includes credentials: " + input
             );
           }
-          request = makeRequest({ urlList: [parsedURL] });
+          request2 = makeRequest({ urlList: [parsedURL] });
           fallbackMode = "cors";
         } else {
           assert(input instanceof _Request);
-          request = input[kState];
+          request2 = input[kState];
           signal = input[kSignal];
         }
         const origin = this[kRealm].settingsObject.origin;
         let window = "client";
-        if (request.window?.constructor?.name === "EnvironmentSettingsObject" && sameOrigin(request.window, origin)) {
-          window = request.window;
+        if (request2.window?.constructor?.name === "EnvironmentSettingsObject" && sameOrigin(request2.window, origin)) {
+          window = request2.window;
         }
         if (init.window != null) {
           throw new TypeError(`'window' option '${window}' must be null`);
@@ -12683,66 +12683,66 @@ var require_request2 = __commonJS({
         if ("window" in init) {
           window = "no-window";
         }
-        request = makeRequest({
+        request2 = makeRequest({
           // URL request’s URL.
           // undici implementation note: this is set as the first item in request's urlList in makeRequest
           // method request’s method.
-          method: request.method,
+          method: request2.method,
           // header list A copy of request’s header list.
           // undici implementation note: headersList is cloned in makeRequest
-          headersList: request.headersList,
+          headersList: request2.headersList,
           // unsafe-request flag Set.
-          unsafeRequest: request.unsafeRequest,
+          unsafeRequest: request2.unsafeRequest,
           // client This’s relevant settings object.
           client: this[kRealm].settingsObject,
           // window window.
           window,
           // priority request’s priority.
-          priority: request.priority,
+          priority: request2.priority,
           // origin request’s origin. The propagation of the origin is only significant for navigation requests
           // being handled by a service worker. In this scenario a request can have an origin that is different
           // from the current client.
-          origin: request.origin,
+          origin: request2.origin,
           // referrer request’s referrer.
-          referrer: request.referrer,
+          referrer: request2.referrer,
           // referrer policy request’s referrer policy.
-          referrerPolicy: request.referrerPolicy,
+          referrerPolicy: request2.referrerPolicy,
           // mode request’s mode.
-          mode: request.mode,
+          mode: request2.mode,
           // credentials mode request’s credentials mode.
-          credentials: request.credentials,
+          credentials: request2.credentials,
           // cache mode request’s cache mode.
-          cache: request.cache,
+          cache: request2.cache,
           // redirect mode request’s redirect mode.
-          redirect: request.redirect,
+          redirect: request2.redirect,
           // integrity metadata request’s integrity metadata.
-          integrity: request.integrity,
+          integrity: request2.integrity,
           // keepalive request’s keepalive.
-          keepalive: request.keepalive,
+          keepalive: request2.keepalive,
           // reload-navigation flag request’s reload-navigation flag.
-          reloadNavigation: request.reloadNavigation,
+          reloadNavigation: request2.reloadNavigation,
           // history-navigation flag request’s history-navigation flag.
-          historyNavigation: request.historyNavigation,
+          historyNavigation: request2.historyNavigation,
           // URL list A clone of request’s URL list.
-          urlList: [...request.urlList]
+          urlList: [...request2.urlList]
         });
         const initHasKey = Object.keys(init).length !== 0;
         if (initHasKey) {
-          if (request.mode === "navigate") {
-            request.mode = "same-origin";
+          if (request2.mode === "navigate") {
+            request2.mode = "same-origin";
           }
-          request.reloadNavigation = false;
-          request.historyNavigation = false;
-          request.origin = "client";
-          request.referrer = "client";
-          request.referrerPolicy = "";
-          request.url = request.urlList[request.urlList.length - 1];
-          request.urlList = [request.url];
+          request2.reloadNavigation = false;
+          request2.historyNavigation = false;
+          request2.origin = "client";
+          request2.referrer = "client";
+          request2.referrerPolicy = "";
+          request2.url = request2.urlList[request2.urlList.length - 1];
+          request2.urlList = [request2.url];
         }
         if (init.referrer !== void 0) {
           const referrer = init.referrer;
           if (referrer === "") {
-            request.referrer = "no-referrer";
+            request2.referrer = "no-referrer";
           } else {
             let parsedReferrer;
             try {
@@ -12751,14 +12751,14 @@ var require_request2 = __commonJS({
               throw new TypeError(`Referrer "${referrer}" is not a valid URL.`, { cause: err });
             }
             if (parsedReferrer.protocol === "about:" && parsedReferrer.hostname === "client" || origin && !sameOrigin(parsedReferrer, this[kRealm].settingsObject.baseUrl)) {
-              request.referrer = "client";
+              request2.referrer = "client";
             } else {
-              request.referrer = parsedReferrer;
+              request2.referrer = parsedReferrer;
             }
           }
         }
         if (init.referrerPolicy !== void 0) {
-          request.referrerPolicy = init.referrerPolicy;
+          request2.referrerPolicy = init.referrerPolicy;
         }
         let mode;
         if (init.mode !== void 0) {
@@ -12773,27 +12773,27 @@ var require_request2 = __commonJS({
           });
         }
         if (mode != null) {
-          request.mode = mode;
+          request2.mode = mode;
         }
         if (init.credentials !== void 0) {
-          request.credentials = init.credentials;
+          request2.credentials = init.credentials;
         }
         if (init.cache !== void 0) {
-          request.cache = init.cache;
+          request2.cache = init.cache;
         }
-        if (request.cache === "only-if-cached" && request.mode !== "same-origin") {
+        if (request2.cache === "only-if-cached" && request2.mode !== "same-origin") {
           throw new TypeError(
             "'only-if-cached' can be set only with 'same-origin' mode"
           );
         }
         if (init.redirect !== void 0) {
-          request.redirect = init.redirect;
+          request2.redirect = init.redirect;
         }
         if (init.integrity != null) {
-          request.integrity = String(init.integrity);
+          request2.integrity = String(init.integrity);
         }
         if (init.keepalive !== void 0) {
-          request.keepalive = Boolean(init.keepalive);
+          request2.keepalive = Boolean(init.keepalive);
         }
         if (init.method !== void 0) {
           let method = init.method;
@@ -12804,12 +12804,12 @@ var require_request2 = __commonJS({
             throw new TypeError(`'${method}' HTTP method is unsupported.`);
           }
           method = normalizeMethodRecord[method] ?? normalizeMethod(method);
-          request.method = method;
+          request2.method = method;
         }
         if (init.signal !== void 0) {
           signal = init.signal;
         }
-        this[kState] = request;
+        this[kState] = request2;
         const ac = new AbortController();
         this[kSignal] = ac.signal;
         this[kSignal][kRealm] = this[kRealm];
@@ -12843,13 +12843,13 @@ var require_request2 = __commonJS({
           }
         }
         this[kHeaders] = new Headers(kConstruct);
-        this[kHeaders][kHeadersList] = request.headersList;
+        this[kHeaders][kHeadersList] = request2.headersList;
         this[kHeaders][kGuard] = "request";
         this[kHeaders][kRealm] = this[kRealm];
         if (mode === "no-cors") {
-          if (!corsSafeListedMethodsSet.has(request.method)) {
+          if (!corsSafeListedMethodsSet.has(request2.method)) {
             throw new TypeError(
-              `'${request.method} is unsupported in no-cors mode.`
+              `'${request2.method} is unsupported in no-cors mode.`
             );
           }
           this[kHeaders][kGuard] = "request-no-cors";
@@ -12868,14 +12868,14 @@ var require_request2 = __commonJS({
           }
         }
         const inputBody = input instanceof _Request ? input[kState].body : null;
-        if ((init.body != null || inputBody != null) && (request.method === "GET" || request.method === "HEAD")) {
+        if ((init.body != null || inputBody != null) && (request2.method === "GET" || request2.method === "HEAD")) {
           throw new TypeError("Request with GET/HEAD method cannot have body.");
         }
         let initBody = null;
         if (init.body != null) {
           const [extractedBody, contentType] = extractBody(
             init.body,
-            request.keepalive
+            request2.keepalive
           );
           initBody = extractedBody;
           if (contentType && !this[kHeaders][kHeadersList].contains("content-type")) {
@@ -12887,12 +12887,12 @@ var require_request2 = __commonJS({
           if (initBody != null && init.duplex == null) {
             throw new TypeError("RequestInit: duplex option is required when sending a body.");
           }
-          if (request.mode !== "same-origin" && request.mode !== "cors") {
+          if (request2.mode !== "same-origin" && request2.mode !== "cors") {
             throw new TypeError(
               'If request is made from ReadableStream, mode should be "same-origin" or "cors"'
             );
           }
-          request.useCORSPreflightFlag = true;
+          request2.useCORSPreflightFlag = true;
         }
         let finalBody = inputOrInitBody;
         if (initBody == null && inputBody != null) {
@@ -13062,7 +13062,7 @@ var require_request2 = __commonJS({
     };
     mixinBody(Request);
     function makeRequest(init) {
-      const request = {
+      const request2 = {
         method: "GET",
         localURLsOnly: false,
         unsafeRequest: false,
@@ -13101,13 +13101,13 @@ var require_request2 = __commonJS({
         ...init,
         headersList: init.headersList ? new HeadersList(init.headersList) : new HeadersList()
       };
-      request.url = request.urlList[0];
-      return request;
+      request2.url = request2.urlList[0];
+      return request2;
     }
-    function cloneRequest(request) {
-      const newRequest = makeRequest({ ...request, body: null });
-      if (request.body != null) {
-        newRequest.body = cloneBody(request.body);
+    function cloneRequest(request2) {
+      const newRequest = makeRequest({ ...request2, body: null });
+      if (request2.body != null) {
+        newRequest.body = cloneBody(request2.body);
       }
       return newRequest;
     }
@@ -13340,14 +13340,14 @@ var require_fetch = __commonJS({
         p.reject(e);
         return p.promise;
       }
-      const request = requestObject[kState];
+      const request2 = requestObject[kState];
       if (requestObject.signal.aborted) {
-        abortFetch(p, request, null, requestObject.signal.reason);
+        abortFetch(p, request2, null, requestObject.signal.reason);
         return p.promise;
       }
-      const globalObject = request.client.globalObject;
+      const globalObject = request2.client.globalObject;
       if (globalObject?.constructor?.name === "ServiceWorkerGlobalScope") {
-        request.serviceWorkers = "none";
+        request2.serviceWorkers = "none";
       }
       let responseObject = null;
       const relevantRealm = null;
@@ -13359,7 +13359,7 @@ var require_fetch = __commonJS({
           locallyAborted = true;
           assert(controller != null);
           controller.abort(requestObject.signal.reason);
-          abortFetch(p, request, responseObject, requestObject.signal.reason);
+          abortFetch(p, request2, responseObject, requestObject.signal.reason);
         }
       );
       const handleFetchDone = (response) => finalizeAndReportTiming(response, "fetch");
@@ -13368,7 +13368,7 @@ var require_fetch = __commonJS({
           return Promise.resolve();
         }
         if (response.aborted) {
-          abortFetch(p, request, responseObject, controller.serializedAbortReason);
+          abortFetch(p, request2, responseObject, controller.serializedAbortReason);
           return Promise.resolve();
         }
         if (response.type === "error") {
@@ -13386,7 +13386,7 @@ var require_fetch = __commonJS({
         p.resolve(responseObject);
       };
       controller = fetching({
-        request,
+        request: request2,
         processResponseEndOfBody: handleFetchDone,
         processResponse,
         dispatcher: init.dispatcher ?? getGlobalDispatcher()
@@ -13431,13 +13431,13 @@ var require_fetch = __commonJS({
         performance.markResourceTiming(timingInfo, originalURL.href, initiatorType, globalThis2, cacheState);
       }
     }
-    function abortFetch(p, request, responseObject, error) {
+    function abortFetch(p, request2, responseObject, error) {
       if (!error) {
         error = new DOMException2("The operation was aborted.", "AbortError");
       }
       p.reject(error);
-      if (request.body != null && isReadable(request.body?.stream)) {
-        request.body.stream.cancel(error).catch((err) => {
+      if (request2.body != null && isReadable(request2.body?.stream)) {
+        request2.body.stream.cancel(error).catch((err) => {
           if (err.code === "ERR_INVALID_STATE") {
             return;
           }
@@ -13458,7 +13458,7 @@ var require_fetch = __commonJS({
       }
     }
     function fetching({
-      request,
+      request: request2,
       processRequestBodyChunkLength,
       processRequestEndOfBody,
       processResponse,
@@ -13470,9 +13470,9 @@ var require_fetch = __commonJS({
     }) {
       let taskDestination = null;
       let crossOriginIsolatedCapability = false;
-      if (request.client != null) {
-        taskDestination = request.client.globalObject;
-        crossOriginIsolatedCapability = request.client.crossOriginIsolatedCapability;
+      if (request2.client != null) {
+        taskDestination = request2.client.globalObject;
+        crossOriginIsolatedCapability = request2.client.crossOriginIsolatedCapability;
       }
       const currenTime = coarsenedSharedCurrentTime(crossOriginIsolatedCapability);
       const timingInfo = createOpaqueTimingInfo({
@@ -13480,7 +13480,7 @@ var require_fetch = __commonJS({
       });
       const fetchParams = {
         controller: new Fetch(dispatcher),
-        request,
+        request: request2,
         timingInfo,
         processRequestBodyChunkLength,
         processRequestEndOfBody,
@@ -13490,32 +13490,32 @@ var require_fetch = __commonJS({
         taskDestination,
         crossOriginIsolatedCapability
       };
-      assert(!request.body || request.body.stream);
-      if (request.window === "client") {
-        request.window = request.client?.globalObject?.constructor?.name === "Window" ? request.client : "no-window";
+      assert(!request2.body || request2.body.stream);
+      if (request2.window === "client") {
+        request2.window = request2.client?.globalObject?.constructor?.name === "Window" ? request2.client : "no-window";
       }
-      if (request.origin === "client") {
-        request.origin = request.client?.origin;
+      if (request2.origin === "client") {
+        request2.origin = request2.client?.origin;
       }
-      if (request.policyContainer === "client") {
-        if (request.client != null) {
-          request.policyContainer = clonePolicyContainer(
-            request.client.policyContainer
+      if (request2.policyContainer === "client") {
+        if (request2.client != null) {
+          request2.policyContainer = clonePolicyContainer(
+            request2.client.policyContainer
           );
         } else {
-          request.policyContainer = makePolicyContainer();
+          request2.policyContainer = makePolicyContainer();
         }
       }
-      if (!request.headersList.contains("accept")) {
+      if (!request2.headersList.contains("accept")) {
         const value = "*/*";
-        request.headersList.append("accept", value);
+        request2.headersList.append("accept", value);
       }
-      if (!request.headersList.contains("accept-language")) {
-        request.headersList.append("accept-language", "*");
+      if (!request2.headersList.contains("accept-language")) {
+        request2.headersList.append("accept-language", "*");
       }
-      if (request.priority === null) {
+      if (request2.priority === null) {
       }
-      if (subresourceSet.has(request.destination)) {
+      if (subresourceSet.has(request2.destination)) {
       }
       mainFetch(fetchParams).catch((err) => {
         fetchParams.controller.terminate(err);
@@ -13523,50 +13523,50 @@ var require_fetch = __commonJS({
       return fetchParams.controller;
     }
     async function mainFetch(fetchParams, recursive = false) {
-      const request = fetchParams.request;
+      const request2 = fetchParams.request;
       let response = null;
-      if (request.localURLsOnly && !urlIsLocal(requestCurrentURL(request))) {
+      if (request2.localURLsOnly && !urlIsLocal(requestCurrentURL(request2))) {
         response = makeNetworkError("local URLs only");
       }
-      tryUpgradeRequestToAPotentiallyTrustworthyURL(request);
-      if (requestBadPort(request) === "blocked") {
+      tryUpgradeRequestToAPotentiallyTrustworthyURL(request2);
+      if (requestBadPort(request2) === "blocked") {
         response = makeNetworkError("bad port");
       }
-      if (request.referrerPolicy === "") {
-        request.referrerPolicy = request.policyContainer.referrerPolicy;
+      if (request2.referrerPolicy === "") {
+        request2.referrerPolicy = request2.policyContainer.referrerPolicy;
       }
-      if (request.referrer !== "no-referrer") {
-        request.referrer = determineRequestsReferrer(request);
+      if (request2.referrer !== "no-referrer") {
+        request2.referrer = determineRequestsReferrer(request2);
       }
       if (response === null) {
         response = await (async () => {
-          const currentURL = requestCurrentURL(request);
+          const currentURL = requestCurrentURL(request2);
           if (
             // - request’s current URL’s origin is same origin with request’s origin,
             //   and request’s response tainting is "basic"
-            sameOrigin(currentURL, request.url) && request.responseTainting === "basic" || // request’s current URL’s scheme is "data"
+            sameOrigin(currentURL, request2.url) && request2.responseTainting === "basic" || // request’s current URL’s scheme is "data"
             currentURL.protocol === "data:" || // - request’s mode is "navigate" or "websocket"
-            (request.mode === "navigate" || request.mode === "websocket")
+            (request2.mode === "navigate" || request2.mode === "websocket")
           ) {
-            request.responseTainting = "basic";
+            request2.responseTainting = "basic";
             return await schemeFetch(fetchParams);
           }
-          if (request.mode === "same-origin") {
+          if (request2.mode === "same-origin") {
             return makeNetworkError('request mode cannot be "same-origin"');
           }
-          if (request.mode === "no-cors") {
-            if (request.redirect !== "follow") {
+          if (request2.mode === "no-cors") {
+            if (request2.redirect !== "follow") {
               return makeNetworkError(
                 'redirect mode cannot be "follow" for "no-cors" request'
               );
             }
-            request.responseTainting = "opaque";
+            request2.responseTainting = "opaque";
             return await schemeFetch(fetchParams);
           }
-          if (!urlIsHttpHttpsScheme(requestCurrentURL(request))) {
+          if (!urlIsHttpHttpsScheme(requestCurrentURL(request2))) {
             return makeNetworkError("URL scheme must be a HTTP(S) scheme");
           }
-          request.responseTainting = "cors";
+          request2.responseTainting = "cors";
           return await httpFetch(fetchParams);
         })();
       }
@@ -13574,13 +13574,13 @@ var require_fetch = __commonJS({
         return response;
       }
       if (response.status !== 0 && !response.internalResponse) {
-        if (request.responseTainting === "cors") {
+        if (request2.responseTainting === "cors") {
         }
-        if (request.responseTainting === "basic") {
+        if (request2.responseTainting === "basic") {
           response = filterResponse(response, "basic");
-        } else if (request.responseTainting === "cors") {
+        } else if (request2.responseTainting === "cors") {
           response = filterResponse(response, "cors");
-        } else if (request.responseTainting === "opaque") {
+        } else if (request2.responseTainting === "opaque") {
           response = filterResponse(response, "opaque");
         } else {
           assert(false);
@@ -13588,26 +13588,26 @@ var require_fetch = __commonJS({
       }
       let internalResponse = response.status === 0 ? response : response.internalResponse;
       if (internalResponse.urlList.length === 0) {
-        internalResponse.urlList.push(...request.urlList);
+        internalResponse.urlList.push(...request2.urlList);
       }
-      if (!request.timingAllowFailed) {
+      if (!request2.timingAllowFailed) {
         response.timingAllowPassed = true;
       }
-      if (response.type === "opaque" && internalResponse.status === 206 && internalResponse.rangeRequested && !request.headers.contains("range")) {
+      if (response.type === "opaque" && internalResponse.status === 206 && internalResponse.rangeRequested && !request2.headers.contains("range")) {
         response = internalResponse = makeNetworkError();
       }
-      if (response.status !== 0 && (request.method === "HEAD" || request.method === "CONNECT" || nullBodyStatus.includes(internalResponse.status))) {
+      if (response.status !== 0 && (request2.method === "HEAD" || request2.method === "CONNECT" || nullBodyStatus.includes(internalResponse.status))) {
         internalResponse.body = null;
         fetchParams.controller.dump = true;
       }
-      if (request.integrity) {
+      if (request2.integrity) {
         const processBodyError = (reason) => fetchFinale(fetchParams, makeNetworkError(reason));
-        if (request.responseTainting === "opaque" || response.body == null) {
+        if (request2.responseTainting === "opaque" || response.body == null) {
           processBodyError(response.error);
           return;
         }
         const processBody = (bytes) => {
-          if (!bytesMatch(bytes, request.integrity)) {
+          if (!bytesMatch(bytes, request2.integrity)) {
             processBodyError("integrity mismatch");
             return;
           }
@@ -13623,8 +13623,8 @@ var require_fetch = __commonJS({
       if (isCancelled(fetchParams) && fetchParams.request.redirectCount === 0) {
         return Promise.resolve(makeAppropriateNetworkError(fetchParams));
       }
-      const { request } = fetchParams;
-      const { protocol: scheme } = requestCurrentURL(request);
+      const { request: request2 } = fetchParams;
+      const { protocol: scheme } = requestCurrentURL(request2);
       switch (scheme) {
         case "about:": {
           return Promise.resolve(makeNetworkError("about scheme is not supported"));
@@ -13633,12 +13633,12 @@ var require_fetch = __commonJS({
           if (!resolveObjectURL) {
             resolveObjectURL = require("buffer").resolveObjectURL;
           }
-          const blobURLEntry = requestCurrentURL(request);
+          const blobURLEntry = requestCurrentURL(request2);
           if (blobURLEntry.search.length !== 0) {
             return Promise.resolve(makeNetworkError("NetworkError when attempting to fetch resource."));
           }
           const blobURLEntryObject = resolveObjectURL(blobURLEntry.toString());
-          if (request.method !== "GET" || !isBlobLike(blobURLEntryObject)) {
+          if (request2.method !== "GET" || !isBlobLike(blobURLEntryObject)) {
             return Promise.resolve(makeNetworkError("invalid method"));
           }
           const bodyWithType = safelyExtractBody(blobURLEntryObject);
@@ -13656,7 +13656,7 @@ var require_fetch = __commonJS({
           return Promise.resolve(response);
         }
         case "data:": {
-          const currentURL = requestCurrentURL(request);
+          const currentURL = requestCurrentURL(request2);
           const dataURLStruct = dataURLProcessor(currentURL);
           if (dataURLStruct === "failure") {
             return Promise.resolve(makeNetworkError("failed to fetch the data URL"));
@@ -13738,41 +13738,41 @@ var require_fetch = __commonJS({
       }
     }
     async function httpFetch(fetchParams) {
-      const request = fetchParams.request;
+      const request2 = fetchParams.request;
       let response = null;
       let actualResponse = null;
       const timingInfo = fetchParams.timingInfo;
-      if (request.serviceWorkers === "all") {
+      if (request2.serviceWorkers === "all") {
       }
       if (response === null) {
-        if (request.redirect === "follow") {
-          request.serviceWorkers = "none";
+        if (request2.redirect === "follow") {
+          request2.serviceWorkers = "none";
         }
         actualResponse = response = await httpNetworkOrCacheFetch(fetchParams);
-        if (request.responseTainting === "cors" && corsCheck(request, response) === "failure") {
+        if (request2.responseTainting === "cors" && corsCheck(request2, response) === "failure") {
           return makeNetworkError("cors failure");
         }
-        if (TAOCheck(request, response) === "failure") {
-          request.timingAllowFailed = true;
+        if (TAOCheck(request2, response) === "failure") {
+          request2.timingAllowFailed = true;
         }
       }
-      if ((request.responseTainting === "opaque" || response.type === "opaque") && crossOriginResourcePolicyCheck(
-        request.origin,
-        request.client,
-        request.destination,
+      if ((request2.responseTainting === "opaque" || response.type === "opaque") && crossOriginResourcePolicyCheck(
+        request2.origin,
+        request2.client,
+        request2.destination,
         actualResponse
       ) === "blocked") {
         return makeNetworkError("blocked");
       }
       if (redirectStatusSet.has(actualResponse.status)) {
-        if (request.redirect !== "manual") {
+        if (request2.redirect !== "manual") {
           fetchParams.controller.connection.destroy();
         }
-        if (request.redirect === "error") {
+        if (request2.redirect === "error") {
           response = makeNetworkError("unexpected redirect");
-        } else if (request.redirect === "manual") {
+        } else if (request2.redirect === "manual") {
           response = actualResponse;
-        } else if (request.redirect === "follow") {
+        } else if (request2.redirect === "follow") {
           response = await httpRedirectFetch(fetchParams, response);
         } else {
           assert(false);
@@ -13782,13 +13782,13 @@ var require_fetch = __commonJS({
       return response;
     }
     function httpRedirectFetch(fetchParams, response) {
-      const request = fetchParams.request;
+      const request2 = fetchParams.request;
       const actualResponse = response.internalResponse ? response.internalResponse : response;
       let locationURL;
       try {
         locationURL = responseLocationURL(
           actualResponse,
-          requestCurrentURL(request).hash
+          requestCurrentURL(request2).hash
         );
         if (locationURL == null) {
           return response;
@@ -13799,63 +13799,63 @@ var require_fetch = __commonJS({
       if (!urlIsHttpHttpsScheme(locationURL)) {
         return Promise.resolve(makeNetworkError("URL scheme must be a HTTP(S) scheme"));
       }
-      if (request.redirectCount === 20) {
+      if (request2.redirectCount === 20) {
         return Promise.resolve(makeNetworkError("redirect count exceeded"));
       }
-      request.redirectCount += 1;
-      if (request.mode === "cors" && (locationURL.username || locationURL.password) && !sameOrigin(request, locationURL)) {
+      request2.redirectCount += 1;
+      if (request2.mode === "cors" && (locationURL.username || locationURL.password) && !sameOrigin(request2, locationURL)) {
         return Promise.resolve(makeNetworkError('cross origin not allowed for request mode "cors"'));
       }
-      if (request.responseTainting === "cors" && (locationURL.username || locationURL.password)) {
+      if (request2.responseTainting === "cors" && (locationURL.username || locationURL.password)) {
         return Promise.resolve(makeNetworkError(
           'URL cannot contain credentials for request mode "cors"'
         ));
       }
-      if (actualResponse.status !== 303 && request.body != null && request.body.source == null) {
+      if (actualResponse.status !== 303 && request2.body != null && request2.body.source == null) {
         return Promise.resolve(makeNetworkError());
       }
-      if ([301, 302].includes(actualResponse.status) && request.method === "POST" || actualResponse.status === 303 && !GET_OR_HEAD.includes(request.method)) {
-        request.method = "GET";
-        request.body = null;
+      if ([301, 302].includes(actualResponse.status) && request2.method === "POST" || actualResponse.status === 303 && !GET_OR_HEAD.includes(request2.method)) {
+        request2.method = "GET";
+        request2.body = null;
         for (const headerName of requestBodyHeader) {
-          request.headersList.delete(headerName);
+          request2.headersList.delete(headerName);
         }
       }
-      if (!sameOrigin(requestCurrentURL(request), locationURL)) {
-        request.headersList.delete("authorization");
-        request.headersList.delete("proxy-authorization", true);
-        request.headersList.delete("cookie");
-        request.headersList.delete("host");
+      if (!sameOrigin(requestCurrentURL(request2), locationURL)) {
+        request2.headersList.delete("authorization");
+        request2.headersList.delete("proxy-authorization", true);
+        request2.headersList.delete("cookie");
+        request2.headersList.delete("host");
       }
-      if (request.body != null) {
-        assert(request.body.source != null);
-        request.body = safelyExtractBody(request.body.source)[0];
+      if (request2.body != null) {
+        assert(request2.body.source != null);
+        request2.body = safelyExtractBody(request2.body.source)[0];
       }
       const timingInfo = fetchParams.timingInfo;
       timingInfo.redirectEndTime = timingInfo.postRedirectStartTime = coarsenedSharedCurrentTime(fetchParams.crossOriginIsolatedCapability);
       if (timingInfo.redirectStartTime === 0) {
         timingInfo.redirectStartTime = timingInfo.startTime;
       }
-      request.urlList.push(locationURL);
-      setRequestReferrerPolicyOnRedirect(request, actualResponse);
+      request2.urlList.push(locationURL);
+      setRequestReferrerPolicyOnRedirect(request2, actualResponse);
       return mainFetch(fetchParams, true);
     }
     async function httpNetworkOrCacheFetch(fetchParams, isAuthenticationFetch = false, isNewConnectionFetch = false) {
-      const request = fetchParams.request;
+      const request2 = fetchParams.request;
       let httpFetchParams = null;
       let httpRequest = null;
       let response = null;
       const httpCache = null;
       const revalidatingFlag = false;
-      if (request.window === "no-window" && request.redirect === "error") {
+      if (request2.window === "no-window" && request2.redirect === "error") {
         httpFetchParams = fetchParams;
-        httpRequest = request;
+        httpRequest = request2;
       } else {
-        httpRequest = makeRequest(request);
+        httpRequest = makeRequest(request2);
         httpFetchParams = { ...fetchParams };
         httpFetchParams.request = httpRequest;
       }
-      const includeCredentials = request.credentials === "include" || request.credentials === "same-origin" && request.responseTainting === "basic";
+      const includeCredentials = request2.credentials === "include" || request2.credentials === "same-origin" && request2.responseTainting === "basic";
       const contentLength = httpRequest.body ? httpRequest.body.length : null;
       let contentLengthHeaderValue = null;
       if (httpRequest.body == null && ["POST", "PUT"].includes(httpRequest.method)) {
@@ -13932,7 +13932,7 @@ var require_fetch = __commonJS({
       }
       response.requestIncludesCredentials = includeCredentials;
       if (response.status === 407) {
-        if (request.window === "no-window") {
+        if (request2.window === "no-window") {
           return makeNetworkError();
         }
         if (isCancelled(fetchParams)) {
@@ -13944,7 +13944,7 @@ var require_fetch = __commonJS({
         // response’s status is 421
         response.status === 421 && // isNewConnectionFetch is false
         !isNewConnectionFetch && // request’s body is null, or request’s body is non-null and request’s body’s source is non-null
-        (request.body == null || request.body.source != null)
+        (request2.body == null || request2.body.source != null)
       ) {
         if (isCancelled(fetchParams)) {
           return makeAppropriateNetworkError(fetchParams);
@@ -13972,21 +13972,21 @@ var require_fetch = __commonJS({
           }
         }
       };
-      const request = fetchParams.request;
+      const request2 = fetchParams.request;
       let response = null;
       const timingInfo = fetchParams.timingInfo;
       const httpCache = null;
       if (httpCache == null) {
-        request.cache = "no-store";
+        request2.cache = "no-store";
       }
       const newConnection = forceNewConnection ? "yes" : "no";
-      if (request.mode === "websocket") {
+      if (request2.mode === "websocket") {
       } else {
       }
       let requestBody = null;
-      if (request.body == null && fetchParams.processRequestEndOfBody) {
+      if (request2.body == null && fetchParams.processRequestEndOfBody) {
         queueMicrotask(() => fetchParams.processRequestEndOfBody());
-      } else if (request.body != null) {
+      } else if (request2.body != null) {
         const processBodyChunk = async function* (bytes) {
           if (isCancelled(fetchParams)) {
             return;
@@ -14014,7 +14014,7 @@ var require_fetch = __commonJS({
         };
         requestBody = async function* () {
           try {
-            for await (const bytes of request.body.stream) {
+            for await (const bytes of request2.body.stream) {
               yield* processBodyChunk(bytes);
             }
             processEndOfBody();
@@ -14028,8 +14028,8 @@ var require_fetch = __commonJS({
         if (socket) {
           response = makeResponse({ status, statusText, headersList, socket });
         } else {
-          const iterator = body[Symbol.asyncIterator]();
-          fetchParams.controller.next = () => iterator.next();
+          const iterator2 = body[Symbol.asyncIterator]();
+          fetchParams.controller.next = () => iterator2.next();
           response = makeResponse({ status, statusText, headersList });
         }
       } catch (err) {
@@ -14126,17 +14126,17 @@ var require_fetch = __commonJS({
       }
       return response;
       async function dispatch({ body }) {
-        const url = requestCurrentURL(request);
+        const url = requestCurrentURL(request2);
         const agent = fetchParams.controller.dispatcher;
         return new Promise((resolve, reject) => agent.dispatch(
           {
             path: url.pathname + url.search,
             origin: url.origin,
-            method: request.method,
-            body: fetchParams.controller.dispatcher.isMockActive ? request.body && (request.body.source || request.body.stream) : body,
-            headers: request.headersList.entries,
+            method: request2.method,
+            body: fetchParams.controller.dispatcher.isMockActive ? request2.body && (request2.body.source || request2.body.stream) : body,
+            headers: request2.headersList.entries,
             maxRedirections: 0,
-            upgrade: request.mode === "websocket" ? "websocket" : void 0
+            upgrade: request2.mode === "websocket" ? "websocket" : void 0
           },
           {
             body: null,
@@ -14182,8 +14182,8 @@ var require_fetch = __commonJS({
               }
               this.body = new Readable({ read: resume });
               const decoders = [];
-              const willFollow = request.redirect === "follow" && location && redirectStatusSet.has(status);
-              if (request.method !== "HEAD" && request.method !== "CONNECT" && !nullBodyStatus.includes(status) && !willFollow) {
+              const willFollow = request2.redirect === "follow" && location && redirectStatusSet.has(status);
+              if (request2.method !== "HEAD" && request2.method !== "CONNECT" && !nullBodyStatus.includes(status) && !willFollow) {
                 for (const coding of codings) {
                   if (coding === "x-gzip" || coding === "gzip") {
                     decoders.push(zlib.createGunzip({
@@ -15153,34 +15153,34 @@ var require_cache = __commonJS({
         }
         this.#relevantRequestResponseList = arguments[1];
       }
-      async match(request, options = {}) {
+      async match(request2, options = {}) {
         webidl.brandCheck(this, _Cache);
         webidl.argumentLengthCheck(arguments, 1, { header: "Cache.match" });
-        request = webidl.converters.RequestInfo(request);
+        request2 = webidl.converters.RequestInfo(request2);
         options = webidl.converters.CacheQueryOptions(options);
-        const p = await this.matchAll(request, options);
+        const p = await this.matchAll(request2, options);
         if (p.length === 0) {
           return;
         }
         return p[0];
       }
-      async matchAll(request = void 0, options = {}) {
+      async matchAll(request2 = void 0, options = {}) {
         webidl.brandCheck(this, _Cache);
-        if (request !== void 0) request = webidl.converters.RequestInfo(request);
+        if (request2 !== void 0) request2 = webidl.converters.RequestInfo(request2);
         options = webidl.converters.CacheQueryOptions(options);
         let r = null;
-        if (request !== void 0) {
-          if (request instanceof Request) {
-            r = request[kState];
+        if (request2 !== void 0) {
+          if (request2 instanceof Request) {
+            r = request2[kState];
             if (r.method !== "GET" && !options.ignoreMethod) {
               return [];
             }
-          } else if (typeof request === "string") {
-            r = new Request(request)[kState];
+          } else if (typeof request2 === "string") {
+            r = new Request(request2)[kState];
           }
         }
         const responses = [];
-        if (request === void 0) {
+        if (request2 === void 0) {
           for (const requestResponse of this.#relevantRequestResponseList) {
             responses.push(requestResponse[1]);
           }
@@ -15202,11 +15202,11 @@ var require_cache = __commonJS({
         }
         return Object.freeze(responseList);
       }
-      async add(request) {
+      async add(request2) {
         webidl.brandCheck(this, _Cache);
         webidl.argumentLengthCheck(arguments, 1, { header: "Cache.add" });
-        request = webidl.converters.RequestInfo(request);
-        const requests = [request];
+        request2 = webidl.converters.RequestInfo(request2);
+        const requests = [request2];
         const responseArrayPromise = this.addAll(requests);
         return await responseArrayPromise;
       }
@@ -15216,11 +15216,11 @@ var require_cache = __commonJS({
         requests = webidl.converters["sequence<RequestInfo>"](requests);
         const responsePromises = [];
         const requestList = [];
-        for (const request of requests) {
-          if (typeof request === "string") {
+        for (const request2 of requests) {
+          if (typeof request2 === "string") {
             continue;
           }
-          const r = request[kState];
+          const r = request2[kState];
           if (!urlIsHttpHttpsScheme(r.url) || r.method !== "GET") {
             throw webidl.errors.exception({
               header: "Cache.addAll",
@@ -15229,8 +15229,8 @@ var require_cache = __commonJS({
           }
         }
         const fetchControllers = [];
-        for (const request of requests) {
-          const r = new Request(request)[kState];
+        for (const request2 of requests) {
+          const r = new Request(request2)[kState];
           if (!urlIsHttpHttpsScheme(r.url)) {
             throw webidl.errors.exception({
               header: "Cache.addAll",
@@ -15308,16 +15308,16 @@ var require_cache = __commonJS({
         });
         return cacheJobPromise.promise;
       }
-      async put(request, response) {
+      async put(request2, response) {
         webidl.brandCheck(this, _Cache);
         webidl.argumentLengthCheck(arguments, 2, { header: "Cache.put" });
-        request = webidl.converters.RequestInfo(request);
+        request2 = webidl.converters.RequestInfo(request2);
         response = webidl.converters.Response(response);
         let innerRequest = null;
-        if (request instanceof Request) {
-          innerRequest = request[kState];
+        if (request2 instanceof Request) {
+          innerRequest = request2[kState];
         } else {
-          innerRequest = new Request(request)[kState];
+          innerRequest = new Request(request2)[kState];
         }
         if (!urlIsHttpHttpsScheme(innerRequest.url) || innerRequest.method !== "GET") {
           throw webidl.errors.exception({
@@ -15388,20 +15388,20 @@ var require_cache = __commonJS({
         });
         return cacheJobPromise.promise;
       }
-      async delete(request, options = {}) {
+      async delete(request2, options = {}) {
         webidl.brandCheck(this, _Cache);
         webidl.argumentLengthCheck(arguments, 1, { header: "Cache.delete" });
-        request = webidl.converters.RequestInfo(request);
+        request2 = webidl.converters.RequestInfo(request2);
         options = webidl.converters.CacheQueryOptions(options);
         let r = null;
-        if (request instanceof Request) {
-          r = request[kState];
+        if (request2 instanceof Request) {
+          r = request2[kState];
           if (r.method !== "GET" && !options.ignoreMethod) {
             return false;
           }
         } else {
-          assert(typeof request === "string");
-          r = new Request(request)[kState];
+          assert(typeof request2 === "string");
+          r = new Request(request2)[kState];
         }
         const operations = [];
         const operation = {
@@ -15433,24 +15433,24 @@ var require_cache = __commonJS({
        * @param {import('../../types/cache').CacheQueryOptions} options
        * @returns {readonly Request[]}
        */
-      async keys(request = void 0, options = {}) {
+      async keys(request2 = void 0, options = {}) {
         webidl.brandCheck(this, _Cache);
-        if (request !== void 0) request = webidl.converters.RequestInfo(request);
+        if (request2 !== void 0) request2 = webidl.converters.RequestInfo(request2);
         options = webidl.converters.CacheQueryOptions(options);
         let r = null;
-        if (request !== void 0) {
-          if (request instanceof Request) {
-            r = request[kState];
+        if (request2 !== void 0) {
+          if (request2 instanceof Request) {
+            r = request2[kState];
             if (r.method !== "GET" && !options.ignoreMethod) {
               return [];
             }
-          } else if (typeof request === "string") {
-            r = new Request(request)[kState];
+          } else if (typeof request2 === "string") {
+            r = new Request(request2)[kState];
           }
         }
         const promise = createDeferredPromise();
         const requests = [];
-        if (request === void 0) {
+        if (request2 === void 0) {
           for (const requestResponse of this.#relevantRequestResponseList) {
             requests.push(requestResponse[0]);
           }
@@ -15462,12 +15462,12 @@ var require_cache = __commonJS({
         }
         queueMicrotask(() => {
           const requestList = [];
-          for (const request2 of requests) {
+          for (const request3 of requests) {
             const requestObject = new Request("https://a");
-            requestObject[kState] = request2;
-            requestObject[kHeaders][kHeadersList] = request2.headersList;
+            requestObject[kState] = request3;
+            requestObject[kHeaders][kHeadersList] = request3.headersList;
             requestObject[kHeaders][kGuard] = "immutable";
-            requestObject[kRealm] = request2.client;
+            requestObject[kRealm] = request3.client;
             requestList.push(requestObject);
           }
           promise.resolve(Object.freeze(requestList));
@@ -15582,9 +15582,9 @@ var require_cache = __commonJS({
        * @param {import('../../types/cache').CacheQueryOptions | undefined} options
        * @returns {boolean}
        */
-      #requestMatchesCachedItem(requestQuery, request, response = null, options) {
+      #requestMatchesCachedItem(requestQuery, request2, response = null, options) {
         const queryURL = new URL(requestQuery.url);
-        const cachedURL = new URL(request.url);
+        const cachedURL = new URL(request2.url);
         if (options?.ignoreSearch) {
           cachedURL.search = "";
           queryURL.search = "";
@@ -15600,7 +15600,7 @@ var require_cache = __commonJS({
           if (fieldValue === "*") {
             return false;
           }
-          const requestValue = request.headersList.get(fieldValue);
+          const requestValue = request2.headersList.get(fieldValue);
           const queryValue = requestQuery.headersList.get(fieldValue);
           if (requestValue !== queryValue) {
             return false;
@@ -15676,21 +15676,21 @@ var require_cachestorage = __commonJS({
           webidl.illegalConstructor();
         }
       }
-      async match(request, options = {}) {
+      async match(request2, options = {}) {
         webidl.brandCheck(this, _CacheStorage);
         webidl.argumentLengthCheck(arguments, 1, { header: "CacheStorage.match" });
-        request = webidl.converters.RequestInfo(request);
+        request2 = webidl.converters.RequestInfo(request2);
         options = webidl.converters.MultiCacheQueryOptions(options);
         if (options.cacheName != null) {
           if (this.#caches.has(options.cacheName)) {
             const cacheList = this.#caches.get(options.cacheName);
             const cache = new Cache(kConstruct, cacheList);
-            return await cache.match(request, options);
+            return await cache.match(request2, options);
           }
         } else {
           for (const cacheList of this.#caches.values()) {
             const cache = new Cache(kConstruct, cacheList);
-            const response = await cache.match(request, options);
+            const response = await cache.match(request2, options);
             if (response !== void 0) {
               return response;
             }
@@ -16628,7 +16628,7 @@ var require_connection = __commonJS({
     function establishWebSocketConnection(url, protocols, ws, onEstablish, options) {
       const requestURL = url;
       requestURL.protocol = url.protocol === "ws:" ? "http:" : "https:";
-      const request = makeRequest({
+      const request2 = makeRequest({
         urlList: [requestURL],
         serviceWorkers: "none",
         referrer: "no-referrer",
@@ -16639,17 +16639,17 @@ var require_connection = __commonJS({
       });
       if (options.headers) {
         const headersList = new Headers(options.headers)[kHeadersList];
-        request.headersList = headersList;
+        request2.headersList = headersList;
       }
       const keyValue = crypto4.randomBytes(16).toString("base64");
-      request.headersList.append("sec-websocket-key", keyValue);
-      request.headersList.append("sec-websocket-version", "13");
+      request2.headersList.append("sec-websocket-key", keyValue);
+      request2.headersList.append("sec-websocket-version", "13");
       for (const protocol of protocols) {
-        request.headersList.append("sec-websocket-protocol", protocol);
+        request2.headersList.append("sec-websocket-protocol", protocol);
       }
       const permessageDeflate = "";
       const controller = fetching({
-        request,
+        request: request2,
         useParallelQueue: true,
         dispatcher: options.dispatcher ?? getGlobalDispatcher(),
         processResponse(response) {
@@ -16681,7 +16681,7 @@ var require_connection = __commonJS({
             return;
           }
           const secProtocol = response.headersList.get("Sec-WebSocket-Protocol");
-          if (secProtocol !== null && secProtocol !== request.headersList.get("Sec-WebSocket-Protocol")) {
+          if (secProtocol !== null && secProtocol !== request2.headersList.get("Sec-WebSocket-Protocol")) {
             failWebsocketConnection(ws, "Protocol was not set in the opening handshake.");
             return;
           }
@@ -17488,9 +17488,9 @@ var require_undici = __commonJS({
     module2.exports.buildConnector = buildConnector;
     module2.exports.errors = errors;
     function makeDispatcher(fn) {
-      return (url, opts, handler) => {
+      return (url, opts, handler2) => {
         if (typeof opts === "function") {
-          handler = opts;
+          handler2 = opts;
           opts = null;
         }
         if (!url || typeof url !== "string" && typeof url !== "object" && !(url instanceof URL)) {
@@ -17523,7 +17523,7 @@ var require_undici = __commonJS({
           origin: url.origin,
           path: url.search ? `${url.pathname}${url.search}` : url.pathname,
           method: opts.method || (opts.body ? "PUT" : "GET")
-        }, handler);
+        }, handler2);
       };
     }
     module2.exports.setGlobalDispatcher = setGlobalDispatcher;
@@ -17753,7 +17753,7 @@ var require_lib = __commonJS({
     }
     exports2.isHttps = isHttps;
     var HttpClient = class {
-      constructor(userAgent, handlers, requestOptions) {
+      constructor(userAgent2, handlers, requestOptions) {
         this._ignoreSslError = false;
         this._allowRedirects = true;
         this._allowRedirectDowngrade = false;
@@ -17762,7 +17762,7 @@ var require_lib = __commonJS({
         this._maxRetries = 1;
         this._keepAlive = false;
         this._disposed = false;
-        this.userAgent = userAgent;
+        this.userAgent = userAgent2;
         this.handlers = handlers || [];
         this.requestOptions = requestOptions;
         if (requestOptions) {
@@ -17887,9 +17887,9 @@ var require_lib = __commonJS({
             response = yield this.requestRaw(info2, data);
             if (response && response.message && response.message.statusCode === HttpCodes.Unauthorized) {
               let authenticationHandler;
-              for (const handler of this.handlers) {
-                if (handler.canHandleAuthentication(response)) {
-                  authenticationHandler = handler;
+              for (const handler2 of this.handlers) {
+                if (handler2.canHandleAuthentication(response)) {
+                  authenticationHandler = handler2;
                   break;
                 }
               }
@@ -18047,22 +18047,22 @@ var require_lib = __commonJS({
         }
         info2.options.agent = this._getAgent(info2.parsedUrl);
         if (this.handlers) {
-          for (const handler of this.handlers) {
-            handler.prepareRequest(info2.options);
+          for (const handler2 of this.handlers) {
+            handler2.prepareRequest(info2.options);
           }
         }
         return info2;
       }
       _mergeHeaders(headers) {
         if (this.requestOptions && this.requestOptions.headers) {
-          return Object.assign({}, lowercaseKeys(this.requestOptions.headers), lowercaseKeys(headers || {}));
+          return Object.assign({}, lowercaseKeys2(this.requestOptions.headers), lowercaseKeys2(headers || {}));
         }
-        return lowercaseKeys(headers || {});
+        return lowercaseKeys2(headers || {});
       }
       _getExistingOrDefaultHeader(additionalHeaders, header, _default) {
         let clientHeader;
         if (this.requestOptions && this.requestOptions.headers) {
-          clientHeader = lowercaseKeys(this.requestOptions.headers)[header];
+          clientHeader = lowercaseKeys2(this.requestOptions.headers)[header];
         }
         return additionalHeaders[header] || clientHeader || _default;
       }
@@ -18197,7 +18197,7 @@ var require_lib = __commonJS({
       }
     };
     exports2.HttpClient = HttpClient;
-    var lowercaseKeys = (obj) => Object.keys(obj).reduce((c, k) => (c[k.toLowerCase()] = obj[k], c), {});
+    var lowercaseKeys2 = (obj) => Object.keys(obj).reduce((c, k) => (c[k.toLowerCase()] = obj[k], c), {});
   }
 });
 
@@ -19125,7 +19125,7 @@ var require_dist_node = __commonJS({
   "npm/node_modules/universal-user-agent/dist-node/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    function getUserAgent() {
+    function getUserAgent2() {
       if (typeof navigator === "object" && "userAgent" in navigator) {
         return navigator.userAgent;
       }
@@ -19134,15 +19134,15 @@ var require_dist_node = __commonJS({
       }
       return "<environment undetectable>";
     }
-    exports2.getUserAgent = getUserAgent;
+    exports2.getUserAgent = getUserAgent2;
   }
 });
 
 // npm/node_modules/before-after-hook/lib/register.js
 var require_register = __commonJS({
   "npm/node_modules/before-after-hook/lib/register.js"(exports2, module2) {
-    module2.exports = register;
-    function register(state, name, method, options) {
+    module2.exports = register2;
+    function register2(state, name, method, options) {
       if (typeof method !== "function") {
         throw new Error("method for before hook must be a function");
       }
@@ -19151,7 +19151,7 @@ var require_register = __commonJS({
       }
       if (Array.isArray(name)) {
         return name.reverse().reduce(function(callback, name2) {
-          return register.bind(null, state, name2, callback, options);
+          return register2.bind(null, state, name2, callback, options);
         }, method)();
       }
       return Promise.resolve().then(function() {
@@ -19169,19 +19169,19 @@ var require_register = __commonJS({
 // npm/node_modules/before-after-hook/lib/add.js
 var require_add = __commonJS({
   "npm/node_modules/before-after-hook/lib/add.js"(exports2, module2) {
-    module2.exports = addHook;
-    function addHook(state, kind, name, hook) {
-      var orig = hook;
+    module2.exports = addHook2;
+    function addHook2(state, kind, name, hook2) {
+      var orig = hook2;
       if (!state.registry[name]) {
         state.registry[name] = [];
       }
       if (kind === "before") {
-        hook = function(method, options) {
+        hook2 = function(method, options) {
           return Promise.resolve().then(orig.bind(null, options)).then(method.bind(null, options));
         };
       }
       if (kind === "after") {
-        hook = function(method, options) {
+        hook2 = function(method, options) {
           var result;
           return Promise.resolve().then(method.bind(null, options)).then(function(result_) {
             result = result_;
@@ -19192,14 +19192,14 @@ var require_add = __commonJS({
         };
       }
       if (kind === "error") {
-        hook = function(method, options) {
+        hook2 = function(method, options) {
           return Promise.resolve().then(method.bind(null, options)).catch(function(error) {
             return orig(error, options);
           });
         };
       }
       state.registry[name].push({
-        hook,
+        hook: hook2,
         orig
       });
     }
@@ -19209,8 +19209,8 @@ var require_add = __commonJS({
 // npm/node_modules/before-after-hook/lib/remove.js
 var require_remove = __commonJS({
   "npm/node_modules/before-after-hook/lib/remove.js"(exports2, module2) {
-    module2.exports = removeHook;
-    function removeHook(state, name, method) {
+    module2.exports = removeHook2;
+    function removeHook2(state, name, method) {
       if (!state.registry[name]) {
         return;
       }
@@ -19228,21 +19228,21 @@ var require_remove = __commonJS({
 // npm/node_modules/before-after-hook/index.js
 var require_before_after_hook = __commonJS({
   "npm/node_modules/before-after-hook/index.js"(exports2, module2) {
-    var register = require_register();
-    var addHook = require_add();
-    var removeHook = require_remove();
-    var bind = Function.bind;
-    var bindable = bind.bind(bind);
-    function bindApi(hook, state, name) {
-      var removeHookRef = bindable(removeHook, null).apply(
+    var register2 = require_register();
+    var addHook2 = require_add();
+    var removeHook2 = require_remove();
+    var bind2 = Function.bind;
+    var bindable2 = bind2.bind(bind2);
+    function bindApi2(hook2, state, name) {
+      var removeHookRef = bindable2(removeHook2, null).apply(
         null,
         name ? [state, name] : [state]
       );
-      hook.api = { remove: removeHookRef };
-      hook.remove = removeHookRef;
+      hook2.api = { remove: removeHookRef };
+      hook2.remove = removeHookRef;
       ["before", "error", "after", "wrap"].forEach(function(kind) {
         var args = name ? [state, kind, name] : [state, kind];
-        hook[kind] = hook.api[kind] = bindable(addHook, null).apply(null, args);
+        hook2[kind] = hook2.api[kind] = bindable2(addHook2, null).apply(null, args);
       });
     }
     function HookSingular() {
@@ -19250,17 +19250,17 @@ var require_before_after_hook = __commonJS({
       var singularHookState = {
         registry: {}
       };
-      var singularHook = register.bind(null, singularHookState, singularHookName);
-      bindApi(singularHook, singularHookState, singularHookName);
+      var singularHook = register2.bind(null, singularHookState, singularHookName);
+      bindApi2(singularHook, singularHookState, singularHookName);
       return singularHook;
     }
     function HookCollection() {
       var state = {
         registry: {}
       };
-      var hook = register.bind(null, state);
-      bindApi(hook, state);
-      return hook;
+      var hook2 = register2.bind(null, state);
+      bindApi2(hook2, state);
+      return hook2;
     }
     var collectionHookDeprecationMessageDisplayed = false;
     function Hook() {
@@ -19304,24 +19304,24 @@ var require_dist_node2 = __commonJS({
     var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
     var dist_src_exports = {};
     __export2(dist_src_exports, {
-      endpoint: () => endpoint
+      endpoint: () => endpoint2
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var import_universal_user_agent = require_dist_node();
-    var VERSION = "9.0.5";
-    var userAgent = `octokit-endpoint.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
-    var DEFAULTS = {
+    var import_universal_user_agent5 = require_dist_node();
+    var VERSION9 = "9.0.5";
+    var userAgent2 = `octokit-endpoint.js/${VERSION9} ${(0, import_universal_user_agent5.getUserAgent)()}`;
+    var DEFAULTS2 = {
       method: "GET",
       baseUrl: "https://api.github.com",
       headers: {
         accept: "application/vnd.github.v3+json",
-        "user-agent": userAgent
+        "user-agent": userAgent2
       },
       mediaType: {
         format: ""
       }
     };
-    function lowercaseKeys(object) {
+    function lowercaseKeys2(object) {
       if (!object) {
         return {};
       }
@@ -19330,7 +19330,7 @@ var require_dist_node2 = __commonJS({
         return newObj;
       }, {});
     }
-    function isPlainObject(value) {
+    function isPlainObject3(value) {
       if (typeof value !== "object" || value === null)
         return false;
       if (Object.prototype.toString.call(value) !== "[object Object]")
@@ -19341,21 +19341,21 @@ var require_dist_node2 = __commonJS({
       const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
       return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
     }
-    function mergeDeep(defaults, options) {
+    function mergeDeep2(defaults, options) {
       const result = Object.assign({}, defaults);
       Object.keys(options).forEach((key) => {
-        if (isPlainObject(options[key])) {
+        if (isPlainObject3(options[key])) {
           if (!(key in defaults))
             Object.assign(result, { [key]: options[key] });
           else
-            result[key] = mergeDeep(defaults[key], options[key]);
+            result[key] = mergeDeep2(defaults[key], options[key]);
         } else {
           Object.assign(result, { [key]: options[key] });
         }
       });
       return result;
     }
-    function removeUndefinedProperties(obj) {
+    function removeUndefinedProperties2(obj) {
       for (const key in obj) {
         if (obj[key] === void 0) {
           delete obj[key];
@@ -19363,17 +19363,17 @@ var require_dist_node2 = __commonJS({
       }
       return obj;
     }
-    function merge(defaults, route, options) {
+    function merge2(defaults, route, options) {
       if (typeof route === "string") {
         let [method, url] = route.split(" ");
         options = Object.assign(url ? { method, url } : { url: method }, options);
       } else {
         options = Object.assign({}, route);
       }
-      options.headers = lowercaseKeys(options.headers);
-      removeUndefinedProperties(options);
-      removeUndefinedProperties(options.headers);
-      const mergedOptions = mergeDeep(defaults || {}, options);
+      options.headers = lowercaseKeys2(options.headers);
+      removeUndefinedProperties2(options);
+      removeUndefinedProperties2(options.headers);
+      const mergedOptions = mergeDeep2(defaults || {}, options);
       if (options.url === "/graphql") {
         if (defaults && defaults.mediaType.previews?.length) {
           mergedOptions.mediaType.previews = defaults.mediaType.previews.filter(
@@ -19384,7 +19384,7 @@ var require_dist_node2 = __commonJS({
       }
       return mergedOptions;
     }
-    function addQueryParameters(url, parameters) {
+    function addQueryParameters2(url, parameters) {
       const separator = /\?/.test(url) ? "&" : "?";
       const names = Object.keys(parameters);
       if (names.length === 0) {
@@ -19397,18 +19397,18 @@ var require_dist_node2 = __commonJS({
         return `${name}=${encodeURIComponent(parameters[name])}`;
       }).join("&");
     }
-    var urlVariableRegex = /\{[^}]+\}/g;
-    function removeNonChars(variableName) {
+    var urlVariableRegex2 = /\{[^}]+\}/g;
+    function removeNonChars2(variableName) {
       return variableName.replace(/^\W+|\W+$/g, "").split(/,/);
     }
-    function extractUrlVariableNames(url) {
-      const matches = url.match(urlVariableRegex);
+    function extractUrlVariableNames2(url) {
+      const matches = url.match(urlVariableRegex2);
       if (!matches) {
         return [];
       }
-      return matches.map(removeNonChars).reduce((a, b) => a.concat(b), []);
+      return matches.map(removeNonChars2).reduce((a, b) => a.concat(b), []);
     }
-    function omit(object, keysToOmit) {
+    function omit2(object, keysToOmit) {
       const result = { __proto__: null };
       for (const key of Object.keys(object)) {
         if (keysToOmit.indexOf(key) === -1) {
@@ -19417,7 +19417,7 @@ var require_dist_node2 = __commonJS({
       }
       return result;
     }
-    function encodeReserved(str) {
+    function encodeReserved2(str) {
       return str.split(/(%[0-9A-Fa-f]{2})/g).map(function(part) {
         if (!/%[0-9A-Fa-f]/.test(part)) {
           part = encodeURI(part).replace(/%5B/g, "[").replace(/%5D/g, "]");
@@ -19425,67 +19425,67 @@ var require_dist_node2 = __commonJS({
         return part;
       }).join("");
     }
-    function encodeUnreserved(str) {
+    function encodeUnreserved2(str) {
       return encodeURIComponent(str).replace(/[!'()*]/g, function(c) {
         return "%" + c.charCodeAt(0).toString(16).toUpperCase();
       });
     }
-    function encodeValue(operator, value, key) {
-      value = operator === "+" || operator === "#" ? encodeReserved(value) : encodeUnreserved(value);
+    function encodeValue2(operator, value, key) {
+      value = operator === "+" || operator === "#" ? encodeReserved2(value) : encodeUnreserved2(value);
       if (key) {
-        return encodeUnreserved(key) + "=" + value;
+        return encodeUnreserved2(key) + "=" + value;
       } else {
         return value;
       }
     }
-    function isDefined(value) {
+    function isDefined2(value) {
       return value !== void 0 && value !== null;
     }
-    function isKeyOperator(operator) {
+    function isKeyOperator2(operator) {
       return operator === ";" || operator === "&" || operator === "?";
     }
-    function getValues(context2, operator, key, modifier) {
+    function getValues2(context2, operator, key, modifier) {
       var value = context2[key], result = [];
-      if (isDefined(value) && value !== "") {
+      if (isDefined2(value) && value !== "") {
         if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
           value = value.toString();
           if (modifier && modifier !== "*") {
             value = value.substring(0, parseInt(modifier, 10));
           }
           result.push(
-            encodeValue(operator, value, isKeyOperator(operator) ? key : "")
+            encodeValue2(operator, value, isKeyOperator2(operator) ? key : "")
           );
         } else {
           if (modifier === "*") {
             if (Array.isArray(value)) {
-              value.filter(isDefined).forEach(function(value2) {
+              value.filter(isDefined2).forEach(function(value2) {
                 result.push(
-                  encodeValue(operator, value2, isKeyOperator(operator) ? key : "")
+                  encodeValue2(operator, value2, isKeyOperator2(operator) ? key : "")
                 );
               });
             } else {
               Object.keys(value).forEach(function(k) {
-                if (isDefined(value[k])) {
-                  result.push(encodeValue(operator, value[k], k));
+                if (isDefined2(value[k])) {
+                  result.push(encodeValue2(operator, value[k], k));
                 }
               });
             }
           } else {
             const tmp = [];
             if (Array.isArray(value)) {
-              value.filter(isDefined).forEach(function(value2) {
-                tmp.push(encodeValue(operator, value2));
+              value.filter(isDefined2).forEach(function(value2) {
+                tmp.push(encodeValue2(operator, value2));
               });
             } else {
               Object.keys(value).forEach(function(k) {
-                if (isDefined(value[k])) {
-                  tmp.push(encodeUnreserved(k));
-                  tmp.push(encodeValue(operator, value[k].toString()));
+                if (isDefined2(value[k])) {
+                  tmp.push(encodeUnreserved2(k));
+                  tmp.push(encodeValue2(operator, value[k].toString()));
                 }
               });
             }
-            if (isKeyOperator(operator)) {
-              result.push(encodeUnreserved(key) + "=" + tmp.join(","));
+            if (isKeyOperator2(operator)) {
+              result.push(encodeUnreserved2(key) + "=" + tmp.join(","));
             } else if (tmp.length !== 0) {
               result.push(tmp.join(","));
             }
@@ -19493,23 +19493,23 @@ var require_dist_node2 = __commonJS({
         }
       } else {
         if (operator === ";") {
-          if (isDefined(value)) {
-            result.push(encodeUnreserved(key));
+          if (isDefined2(value)) {
+            result.push(encodeUnreserved2(key));
           }
         } else if (value === "" && (operator === "&" || operator === "?")) {
-          result.push(encodeUnreserved(key) + "=");
+          result.push(encodeUnreserved2(key) + "=");
         } else if (value === "") {
           result.push("");
         }
       }
       return result;
     }
-    function parseUrl(template) {
+    function parseUrl2(template) {
       return {
-        expand: expand.bind(null, template)
+        expand: expand2.bind(null, template)
       };
     }
-    function expand(template, context2) {
+    function expand2(template, context2) {
       var operators = ["+", "#", ".", "/", ";", "?", "&"];
       template = template.replace(
         /\{([^\{\}]+)\}|([^\{\}]+)/g,
@@ -19523,7 +19523,7 @@ var require_dist_node2 = __commonJS({
             }
             expression.split(/,/g).forEach(function(variable) {
               var tmp = /([^:\*]*)(?::(\d+)|(\*))?/.exec(variable);
-              values.push(getValues(context2, operator, tmp[1], tmp[2] || tmp[3]));
+              values.push(getValues2(context2, operator, tmp[1], tmp[2] || tmp[3]));
             });
             if (operator && operator !== "+") {
               var separator = ",";
@@ -19537,7 +19537,7 @@ var require_dist_node2 = __commonJS({
               return values.join(",");
             }
           } else {
-            return encodeReserved(literal);
+            return encodeReserved2(literal);
           }
         }
       );
@@ -19547,12 +19547,12 @@ var require_dist_node2 = __commonJS({
         return template.replace(/\/$/, "");
       }
     }
-    function parse2(options) {
+    function parse3(options) {
       let method = options.method.toUpperCase();
       let url = (options.url || "/").replace(/:([a-z]\w+)/g, "{$1}");
       let headers = Object.assign({}, options.headers);
       let body;
-      let parameters = omit(options, [
+      let parameters = omit2(options, [
         "method",
         "baseUrl",
         "url",
@@ -19560,13 +19560,13 @@ var require_dist_node2 = __commonJS({
         "request",
         "mediaType"
       ]);
-      const urlVariableNames = extractUrlVariableNames(url);
-      url = parseUrl(url).expand(parameters);
+      const urlVariableNames = extractUrlVariableNames2(url);
+      url = parseUrl2(url).expand(parameters);
       if (!/^http/.test(url)) {
         url = options.baseUrl + url;
       }
       const omittedParameters = Object.keys(options).filter((option) => urlVariableNames.includes(option)).concat("baseUrl");
-      const remainingParameters = omit(parameters, omittedParameters);
+      const remainingParameters = omit2(parameters, omittedParameters);
       const isBinaryRequest = /application\/octet-stream/i.test(headers.accept);
       if (!isBinaryRequest) {
         if (options.mediaType.format) {
@@ -19588,7 +19588,7 @@ var require_dist_node2 = __commonJS({
         }
       }
       if (["GET", "HEAD"].includes(method)) {
-        url = addQueryParameters(url, remainingParameters);
+        url = addQueryParameters2(url, remainingParameters);
       } else {
         if ("data" in remainingParameters) {
           body = remainingParameters.data;
@@ -19610,20 +19610,20 @@ var require_dist_node2 = __commonJS({
         options.request ? { request: options.request } : null
       );
     }
-    function endpointWithDefaults(defaults, route, options) {
-      return parse2(merge(defaults, route, options));
+    function endpointWithDefaults2(defaults, route, options) {
+      return parse3(merge2(defaults, route, options));
     }
-    function withDefaults(oldDefaults, newDefaults) {
-      const DEFAULTS2 = merge(oldDefaults, newDefaults);
-      const endpoint2 = endpointWithDefaults.bind(null, DEFAULTS2);
-      return Object.assign(endpoint2, {
-        DEFAULTS: DEFAULTS2,
-        defaults: withDefaults.bind(null, DEFAULTS2),
-        merge: merge.bind(null, DEFAULTS2),
-        parse: parse2
+    function withDefaults4(oldDefaults, newDefaults) {
+      const DEFAULTS22 = merge2(oldDefaults, newDefaults);
+      const endpoint22 = endpointWithDefaults2.bind(null, DEFAULTS22);
+      return Object.assign(endpoint22, {
+        DEFAULTS: DEFAULTS22,
+        defaults: withDefaults4.bind(null, DEFAULTS22),
+        merge: merge2.bind(null, DEFAULTS22),
+        parse: parse3
       });
     }
-    var endpoint = withDefaults(null, DEFAULTS);
+    var endpoint2 = withDefaults4(null, DEFAULTS2);
   }
 });
 
@@ -19752,14 +19752,14 @@ var require_dist_node4 = __commonJS({
     var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
     var dist_src_exports = {};
     __export2(dist_src_exports, {
-      RequestError: () => RequestError
+      RequestError: () => RequestError2
     });
     module2.exports = __toCommonJS2(dist_src_exports);
     var import_deprecation = require_dist_node3();
     var import_once = __toESM2(require_once());
     var logOnceCode = (0, import_once.default)((deprecation) => console.warn(deprecation));
     var logOnceHeaders = (0, import_once.default)((deprecation) => console.warn(deprecation));
-    var RequestError = class extends Error {
+    var RequestError2 = class extends Error {
       constructor(message2, statusCode, options) {
         super(message2);
         if (Error.captureStackTrace) {
@@ -19834,13 +19834,13 @@ var require_dist_node5 = __commonJS({
     var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
     var dist_src_exports = {};
     __export2(dist_src_exports, {
-      request: () => request
+      request: () => request2
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var import_endpoint = require_dist_node2();
-    var import_universal_user_agent = require_dist_node();
-    var VERSION = "8.4.0";
-    function isPlainObject(value) {
+    var import_endpoint2 = require_dist_node2();
+    var import_universal_user_agent5 = require_dist_node();
+    var VERSION9 = "8.4.0";
+    function isPlainObject3(value) {
       if (typeof value !== "object" || value === null)
         return false;
       if (Object.prototype.toString.call(value) !== "[object Object]")
@@ -19851,15 +19851,15 @@ var require_dist_node5 = __commonJS({
       const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
       return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
     }
-    var import_request_error = require_dist_node4();
-    function getBufferResponse(response) {
+    var import_request_error2 = require_dist_node4();
+    function getBufferResponse2(response) {
       return response.arrayBuffer();
     }
-    function fetchWrapper(requestOptions) {
+    function fetchWrapper2(requestOptions) {
       var _a, _b, _c, _d;
       const log = requestOptions.request && requestOptions.request.log ? requestOptions.request.log : console;
       const parseSuccessResponseBody = ((_a = requestOptions.request) == null ? void 0 : _a.parseSuccessResponseBody) !== false;
-      if (isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
+      if (isPlainObject3(requestOptions.body) || Array.isArray(requestOptions.body)) {
         requestOptions.body = JSON.stringify(requestOptions.body);
       }
       let headers = {};
@@ -19903,7 +19903,7 @@ var require_dist_node5 = __commonJS({
           if (status < 400) {
             return;
           }
-          throw new import_request_error.RequestError(response.statusText, status, {
+          throw new import_request_error2.RequestError(response.statusText, status, {
             response: {
               url,
               status,
@@ -19914,19 +19914,19 @@ var require_dist_node5 = __commonJS({
           });
         }
         if (status === 304) {
-          throw new import_request_error.RequestError("Not modified", status, {
+          throw new import_request_error2.RequestError("Not modified", status, {
             response: {
               url,
               status,
               headers,
-              data: await getResponseData(response)
+              data: await getResponseData2(response)
             },
             request: requestOptions
           });
         }
         if (status >= 400) {
-          const data = await getResponseData(response);
-          const error = new import_request_error.RequestError(toErrorMessage(data), status, {
+          const data = await getResponseData2(response);
+          const error = new import_request_error2.RequestError(toErrorMessage2(data), status, {
             response: {
               url,
               status,
@@ -19937,7 +19937,7 @@ var require_dist_node5 = __commonJS({
           });
           throw error;
         }
-        return parseSuccessResponseBody ? await getResponseData(response) : response.body;
+        return parseSuccessResponseBody ? await getResponseData2(response) : response.body;
       }).then((data) => {
         return {
           status,
@@ -19946,7 +19946,7 @@ var require_dist_node5 = __commonJS({
           data
         };
       }).catch((error) => {
-        if (error instanceof import_request_error.RequestError)
+        if (error instanceof import_request_error2.RequestError)
           throw error;
         else if (error.name === "AbortError")
           throw error;
@@ -19958,12 +19958,12 @@ var require_dist_node5 = __commonJS({
             message2 = error.cause;
           }
         }
-        throw new import_request_error.RequestError(message2, 500, {
+        throw new import_request_error2.RequestError(message2, 500, {
           request: requestOptions
         });
       });
     }
-    async function getResponseData(response) {
+    async function getResponseData2(response) {
       const contentType = response.headers.get("content-type");
       if (/application\/json/.test(contentType)) {
         return response.json().catch(() => response.text()).catch(() => "");
@@ -19971,9 +19971,9 @@ var require_dist_node5 = __commonJS({
       if (!contentType || /^text\/|charset=utf-8$/.test(contentType)) {
         return response.text();
       }
-      return getBufferResponse(response);
+      return getBufferResponse2(response);
     }
-    function toErrorMessage(data) {
+    function toErrorMessage2(data) {
       if (typeof data === "string")
         return data;
       let suffix;
@@ -19990,32 +19990,32 @@ var require_dist_node5 = __commonJS({
       }
       return `Unknown error: ${JSON.stringify(data)}`;
     }
-    function withDefaults(oldEndpoint, newDefaults) {
+    function withDefaults4(oldEndpoint, newDefaults) {
       const endpoint2 = oldEndpoint.defaults(newDefaults);
       const newApi = function(route, parameters) {
         const endpointOptions = endpoint2.merge(route, parameters);
         if (!endpointOptions.request || !endpointOptions.request.hook) {
-          return fetchWrapper(endpoint2.parse(endpointOptions));
+          return fetchWrapper2(endpoint2.parse(endpointOptions));
         }
-        const request2 = (route2, parameters2) => {
-          return fetchWrapper(
+        const request22 = (route2, parameters2) => {
+          return fetchWrapper2(
             endpoint2.parse(endpoint2.merge(route2, parameters2))
           );
         };
-        Object.assign(request2, {
+        Object.assign(request22, {
           endpoint: endpoint2,
-          defaults: withDefaults.bind(null, endpoint2)
+          defaults: withDefaults4.bind(null, endpoint2)
         });
-        return endpointOptions.request.hook(request2, endpointOptions);
+        return endpointOptions.request.hook(request22, endpointOptions);
       };
       return Object.assign(newApi, {
         endpoint: endpoint2,
-        defaults: withDefaults.bind(null, endpoint2)
+        defaults: withDefaults4.bind(null, endpoint2)
       });
     }
-    var request = withDefaults(import_endpoint.endpoint, {
+    var request2 = withDefaults4(import_endpoint2.endpoint, {
       headers: {
-        "user-agent": `octokit-request.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`
+        "user-agent": `octokit-request.js/${VERSION9} ${(0, import_universal_user_agent5.getUserAgent)()}`
       }
     });
   }
@@ -20044,23 +20044,23 @@ var require_dist_node6 = __commonJS({
     var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
     var dist_src_exports = {};
     __export2(dist_src_exports, {
-      GraphqlResponseError: () => GraphqlResponseError,
-      graphql: () => graphql2,
-      withCustomRequest: () => withCustomRequest
+      GraphqlResponseError: () => GraphqlResponseError2,
+      graphql: () => graphql22,
+      withCustomRequest: () => withCustomRequest2
     });
     module2.exports = __toCommonJS2(dist_src_exports);
     var import_request3 = require_dist_node5();
-    var import_universal_user_agent = require_dist_node();
-    var VERSION = "7.1.0";
-    var import_request2 = require_dist_node5();
-    var import_request = require_dist_node5();
-    function _buildMessageForResponseErrors(data) {
+    var import_universal_user_agent5 = require_dist_node();
+    var VERSION9 = "7.1.0";
+    var import_request22 = require_dist_node5();
+    var import_request4 = require_dist_node5();
+    function _buildMessageForResponseErrors2(data) {
       return `Request failed due to following response errors:
 ` + data.errors.map((e) => ` - ${e.message}`).join("\n");
     }
-    var GraphqlResponseError = class extends Error {
+    var GraphqlResponseError2 = class extends Error {
       constructor(request2, headers, response) {
-        super(_buildMessageForResponseErrors(response));
+        super(_buildMessageForResponseErrors2(response));
         this.request = request2;
         this.headers = headers;
         this.response = response;
@@ -20072,7 +20072,7 @@ var require_dist_node6 = __commonJS({
         }
       }
     };
-    var NON_VARIABLE_OPTIONS = [
+    var NON_VARIABLE_OPTIONS2 = [
       "method",
       "baseUrl",
       "url",
@@ -20081,9 +20081,9 @@ var require_dist_node6 = __commonJS({
       "query",
       "mediaType"
     ];
-    var FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
-    var GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
-    function graphql(request2, query, options) {
+    var FORBIDDEN_VARIABLE_OPTIONS2 = ["query", "method", "url"];
+    var GHES_V3_SUFFIX_REGEX2 = /\/api\/v3\/?$/;
+    function graphql3(request2, query, options) {
       if (options) {
         if (typeof query === "string" && "query" in options) {
           return Promise.reject(
@@ -20091,7 +20091,7 @@ var require_dist_node6 = __commonJS({
           );
         }
         for (const key in options) {
-          if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key))
+          if (!FORBIDDEN_VARIABLE_OPTIONS2.includes(key))
             continue;
           return Promise.reject(
             new Error(
@@ -20104,7 +20104,7 @@ var require_dist_node6 = __commonJS({
       const requestOptions = Object.keys(
         parsedOptions
       ).reduce((result, key) => {
-        if (NON_VARIABLE_OPTIONS.includes(key)) {
+        if (NON_VARIABLE_OPTIONS2.includes(key)) {
           result[key] = parsedOptions[key];
           return result;
         }
@@ -20115,8 +20115,8 @@ var require_dist_node6 = __commonJS({
         return result;
       }, {});
       const baseUrl = parsedOptions.baseUrl || request2.endpoint.DEFAULTS.baseUrl;
-      if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
-        requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
+      if (GHES_V3_SUFFIX_REGEX2.test(baseUrl)) {
+        requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX2, "/api/graphql");
       }
       return request2(requestOptions).then((response) => {
         if (response.data.errors) {
@@ -20124,7 +20124,7 @@ var require_dist_node6 = __commonJS({
           for (const key of Object.keys(response.headers)) {
             headers[key] = response.headers[key];
           }
-          throw new GraphqlResponseError(
+          throw new GraphqlResponseError2(
             requestOptions,
             headers,
             response.data
@@ -20133,25 +20133,25 @@ var require_dist_node6 = __commonJS({
         return response.data.data;
       });
     }
-    function withDefaults(request2, newDefaults) {
+    function withDefaults4(request2, newDefaults) {
       const newRequest = request2.defaults(newDefaults);
       const newApi = (query, options) => {
-        return graphql(newRequest, query, options);
+        return graphql3(newRequest, query, options);
       };
       return Object.assign(newApi, {
-        defaults: withDefaults.bind(null, newRequest),
+        defaults: withDefaults4.bind(null, newRequest),
         endpoint: newRequest.endpoint
       });
     }
-    var graphql2 = withDefaults(import_request3.request, {
+    var graphql22 = withDefaults4(import_request3.request, {
       headers: {
-        "user-agent": `octokit-graphql.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`
+        "user-agent": `octokit-graphql.js/${VERSION9} ${(0, import_universal_user_agent5.getUserAgent)()}`
       },
       method: "POST",
       url: "/graphql"
     });
-    function withCustomRequest(customRequest) {
-      return withDefaults(customRequest, {
+    function withCustomRequest2(customRequest) {
+      return withDefaults4(customRequest, {
         method: "POST",
         url: "/graphql"
       });
@@ -20182,16 +20182,16 @@ var require_dist_node7 = __commonJS({
     var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
     var dist_src_exports = {};
     __export2(dist_src_exports, {
-      createTokenAuth: () => createTokenAuth
+      createTokenAuth: () => createTokenAuth3
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var REGEX_IS_INSTALLATION_LEGACY = /^v1\./;
-    var REGEX_IS_INSTALLATION = /^ghs_/;
-    var REGEX_IS_USER_TO_SERVER = /^ghu_/;
-    async function auth(token) {
+    var REGEX_IS_INSTALLATION_LEGACY2 = /^v1\./;
+    var REGEX_IS_INSTALLATION2 = /^ghs_/;
+    var REGEX_IS_USER_TO_SERVER2 = /^ghu_/;
+    async function auth2(token) {
       const isApp = token.split(/\./).length === 3;
-      const isInstallation = REGEX_IS_INSTALLATION_LEGACY.test(token) || REGEX_IS_INSTALLATION.test(token);
-      const isUserToServer = REGEX_IS_USER_TO_SERVER.test(token);
+      const isInstallation = REGEX_IS_INSTALLATION_LEGACY2.test(token) || REGEX_IS_INSTALLATION2.test(token);
+      const isUserToServer = REGEX_IS_USER_TO_SERVER2.test(token);
       const tokenType = isApp ? "app" : isInstallation ? "installation" : isUserToServer ? "user-to-server" : "oauth";
       return {
         type: "token",
@@ -20199,21 +20199,21 @@ var require_dist_node7 = __commonJS({
         tokenType
       };
     }
-    function withAuthorizationPrefix(token) {
+    function withAuthorizationPrefix2(token) {
       if (token.split(/\./).length === 3) {
         return `bearer ${token}`;
       }
       return `token ${token}`;
     }
-    async function hook(token, request, route, parameters) {
-      const endpoint = request.endpoint.merge(
+    async function hook2(token, request2, route, parameters) {
+      const endpoint2 = request2.endpoint.merge(
         route,
         parameters
       );
-      endpoint.headers.authorization = withAuthorizationPrefix(token);
-      return request(endpoint);
+      endpoint2.headers.authorization = withAuthorizationPrefix2(token);
+      return request2(endpoint2);
     }
-    var createTokenAuth = function createTokenAuth2(token) {
+    var createTokenAuth3 = function createTokenAuth22(token) {
       if (!token) {
         throw new Error("[@octokit/auth-token] No token passed to createTokenAuth");
       }
@@ -20223,8 +20223,8 @@ var require_dist_node7 = __commonJS({
         );
       }
       token = token.replace(/^(token|bearer) +/i, "");
-      return Object.assign(auth.bind(null, token), {
-        hook: hook.bind(null, token)
+      return Object.assign(auth2.bind(null, token), {
+        hook: hook2.bind(null, token)
       });
     };
   }
@@ -20253,23 +20253,23 @@ var require_dist_node8 = __commonJS({
     var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
     var dist_src_exports = {};
     __export2(dist_src_exports, {
-      Octokit: () => Octokit2
+      Octokit: () => Octokit3
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var import_universal_user_agent = require_dist_node();
-    var import_before_after_hook = require_before_after_hook();
-    var import_request = require_dist_node5();
-    var import_graphql = require_dist_node6();
-    var import_auth_token = require_dist_node7();
-    var VERSION = "5.2.0";
-    var noop = () => {
+    var import_universal_user_agent5 = require_dist_node();
+    var import_before_after_hook2 = require_before_after_hook();
+    var import_request3 = require_dist_node5();
+    var import_graphql2 = require_dist_node6();
+    var import_auth_token2 = require_dist_node7();
+    var VERSION9 = "5.2.0";
+    var noop2 = () => {
     };
-    var consoleWarn = console.warn.bind(console);
-    var consoleError = console.error.bind(console);
-    var userAgentTrail = `octokit-core.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
-    var Octokit2 = class {
+    var consoleWarn2 = console.warn.bind(console);
+    var consoleError2 = console.error.bind(console);
+    var userAgentTrail2 = `octokit-core.js/${VERSION9} ${(0, import_universal_user_agent5.getUserAgent)()}`;
+    var Octokit3 = class {
       static {
-        this.VERSION = VERSION;
+        this.VERSION = VERSION9;
       }
       static defaults(defaults) {
         const OctokitWithDefaults = class extends this {
@@ -20314,20 +20314,20 @@ var require_dist_node8 = __commonJS({
         return NewOctokit;
       }
       constructor(options = {}) {
-        const hook = new import_before_after_hook.Collection();
+        const hook2 = new import_before_after_hook2.Collection();
         const requestDefaults = {
-          baseUrl: import_request.request.endpoint.DEFAULTS.baseUrl,
+          baseUrl: import_request3.request.endpoint.DEFAULTS.baseUrl,
           headers: {},
           request: Object.assign({}, options.request, {
             // @ts-ignore internal usage only, no need to type
-            hook: hook.bind(null, "request")
+            hook: hook2.bind(null, "request")
           }),
           mediaType: {
             previews: [],
             format: ""
           }
         };
-        requestDefaults.headers["user-agent"] = options.userAgent ? `${options.userAgent} ${userAgentTrail}` : userAgentTrail;
+        requestDefaults.headers["user-agent"] = options.userAgent ? `${options.userAgent} ${userAgentTrail2}` : userAgentTrail2;
         if (options.baseUrl) {
           requestDefaults.baseUrl = options.baseUrl;
         }
@@ -20337,31 +20337,31 @@ var require_dist_node8 = __commonJS({
         if (options.timeZone) {
           requestDefaults.headers["time-zone"] = options.timeZone;
         }
-        this.request = import_request.request.defaults(requestDefaults);
-        this.graphql = (0, import_graphql.withCustomRequest)(this.request).defaults(requestDefaults);
+        this.request = import_request3.request.defaults(requestDefaults);
+        this.graphql = (0, import_graphql2.withCustomRequest)(this.request).defaults(requestDefaults);
         this.log = Object.assign(
           {
-            debug: noop,
-            info: noop,
-            warn: consoleWarn,
-            error: consoleError
+            debug: noop2,
+            info: noop2,
+            warn: consoleWarn2,
+            error: consoleError2
           },
           options.log
         );
-        this.hook = hook;
+        this.hook = hook2;
         if (!options.authStrategy) {
           if (!options.auth) {
             this.auth = async () => ({
               type: "unauthenticated"
             });
           } else {
-            const auth = (0, import_auth_token.createTokenAuth)(options.auth);
-            hook.wrap("request", auth.hook);
-            this.auth = auth;
+            const auth2 = (0, import_auth_token2.createTokenAuth)(options.auth);
+            hook2.wrap("request", auth2.hook);
+            this.auth = auth2;
           }
         } else {
           const { authStrategy, ...otherOptions } = options;
-          const auth = authStrategy(
+          const auth2 = authStrategy(
             Object.assign(
               {
                 request: this.request,
@@ -20377,8 +20377,8 @@ var require_dist_node8 = __commonJS({
               options.auth
             )
           );
-          hook.wrap("request", auth.hook);
-          this.auth = auth;
+          hook2.wrap("request", auth2.hook);
+          this.auth = auth2;
         }
         const classConstructor = this.constructor;
         for (let i = 0; i < classConstructor.plugins.length; ++i) {
@@ -20412,12 +20412,12 @@ var require_dist_node9 = __commonJS({
     var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
     var dist_src_exports = {};
     __export2(dist_src_exports, {
-      legacyRestEndpointMethods: () => legacyRestEndpointMethods,
-      restEndpointMethods: () => restEndpointMethods
+      legacyRestEndpointMethods: () => legacyRestEndpointMethods2,
+      restEndpointMethods: () => restEndpointMethods2
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var VERSION = "10.4.1";
-    var Endpoints = {
+    var VERSION9 = "10.4.1";
+    var Endpoints2 = {
       actions: {
         addCustomLabelsToSelfHostedRunnerForOrg: [
           "POST /orgs/{org}/actions/runners/{runner_id}/labels"
@@ -22405,11 +22405,11 @@ var require_dist_node9 = __commonJS({
         updateAuthenticated: ["PATCH /user"]
       }
     };
-    var endpoints_default = Endpoints;
-    var endpointMethodsMap = /* @__PURE__ */ new Map();
-    for (const [scope, endpoints] of Object.entries(endpoints_default)) {
-      for (const [methodName, endpoint] of Object.entries(endpoints)) {
-        const [route, defaults, decorations] = endpoint;
+    var endpoints_default2 = Endpoints2;
+    var endpointMethodsMap2 = /* @__PURE__ */ new Map();
+    for (const [scope, endpoints] of Object.entries(endpoints_default2)) {
+      for (const [methodName, endpoint2] of Object.entries(endpoints)) {
+        const [route, defaults, decorations] = endpoint2;
         const [method, url] = route.split(/ /);
         const endpointDefaults = Object.assign(
           {
@@ -22418,10 +22418,10 @@ var require_dist_node9 = __commonJS({
           },
           defaults
         );
-        if (!endpointMethodsMap.has(scope)) {
-          endpointMethodsMap.set(scope, /* @__PURE__ */ new Map());
+        if (!endpointMethodsMap2.has(scope)) {
+          endpointMethodsMap2.set(scope, /* @__PURE__ */ new Map());
         }
-        endpointMethodsMap.get(scope).set(methodName, {
+        endpointMethodsMap2.get(scope).set(methodName, {
           scope,
           methodName,
           endpointDefaults,
@@ -22429,9 +22429,9 @@ var require_dist_node9 = __commonJS({
         });
       }
     }
-    var handler = {
+    var handler2 = {
       has({ scope }, methodName) {
-        return endpointMethodsMap.get(scope).has(methodName);
+        return endpointMethodsMap2.get(scope).has(methodName);
       },
       getOwnPropertyDescriptor(target, methodName) {
         return {
@@ -22451,7 +22451,7 @@ var require_dist_node9 = __commonJS({
         return true;
       },
       ownKeys({ scope }) {
-        return [...endpointMethodsMap.get(scope).keys()];
+        return [...endpointMethodsMap2.get(scope).keys()];
       },
       set(target, methodName, value) {
         return target.cache[methodName] = value;
@@ -22460,13 +22460,13 @@ var require_dist_node9 = __commonJS({
         if (cache[methodName]) {
           return cache[methodName];
         }
-        const method = endpointMethodsMap.get(scope).get(methodName);
+        const method = endpointMethodsMap2.get(scope).get(methodName);
         if (!method) {
           return void 0;
         }
         const { endpointDefaults, decorations } = method;
         if (decorations) {
-          cache[methodName] = decorate(
+          cache[methodName] = decorate2(
             octokit,
             scope,
             methodName,
@@ -22479,14 +22479,14 @@ var require_dist_node9 = __commonJS({
         return cache[methodName];
       }
     };
-    function endpointsToMethods(octokit) {
+    function endpointsToMethods2(octokit) {
       const newMethods = {};
-      for (const scope of endpointMethodsMap.keys()) {
-        newMethods[scope] = new Proxy({ octokit, scope, cache: {} }, handler);
+      for (const scope of endpointMethodsMap2.keys()) {
+        newMethods[scope] = new Proxy({ octokit, scope, cache: {} }, handler2);
       }
       return newMethods;
     }
-    function decorate(octokit, scope, methodName, defaults, decorations) {
+    function decorate2(octokit, scope, methodName, defaults, decorations) {
       const requestWithDefaults = octokit.request.defaults(defaults);
       function withDecorations(...args) {
         let options = requestWithDefaults.endpoint.merge(...args);
@@ -22527,21 +22527,21 @@ var require_dist_node9 = __commonJS({
       }
       return Object.assign(withDecorations, requestWithDefaults);
     }
-    function restEndpointMethods(octokit) {
-      const api = endpointsToMethods(octokit);
+    function restEndpointMethods2(octokit) {
+      const api = endpointsToMethods2(octokit);
       return {
         rest: api
       };
     }
-    restEndpointMethods.VERSION = VERSION;
-    function legacyRestEndpointMethods(octokit) {
-      const api = endpointsToMethods(octokit);
+    restEndpointMethods2.VERSION = VERSION9;
+    function legacyRestEndpointMethods2(octokit) {
+      const api = endpointsToMethods2(octokit);
       return {
         ...api,
         rest: api
       };
     }
-    legacyRestEndpointMethods.VERSION = VERSION;
+    legacyRestEndpointMethods2.VERSION = VERSION9;
   }
 });
 
@@ -22568,14 +22568,14 @@ var require_dist_node10 = __commonJS({
     var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
     var dist_src_exports = {};
     __export2(dist_src_exports, {
-      composePaginateRest: () => composePaginateRest,
+      composePaginateRest: () => composePaginateRest2,
       isPaginatingEndpoint: () => isPaginatingEndpoint,
-      paginateRest: () => paginateRest,
+      paginateRest: () => paginateRest2,
       paginatingEndpoints: () => paginatingEndpoints
     });
     module2.exports = __toCommonJS2(dist_src_exports);
-    var VERSION = "9.2.1";
-    function normalizePaginatedListResponse(response) {
+    var VERSION9 = "9.2.1";
+    function normalizePaginatedListResponse2(response) {
       if (!response.data) {
         return {
           ...response,
@@ -22603,7 +22603,7 @@ var require_dist_node10 = __commonJS({
       response.data.total_count = totalCount;
       return response;
     }
-    function iterator(octokit, route, parameters) {
+    function iterator2(octokit, route, parameters) {
       const options = typeof route === "function" ? route.endpoint(parameters) : octokit.request.endpoint(route, parameters);
       const requestMethod = typeof route === "function" ? route : octokit.request;
       const method = options.method;
@@ -22616,7 +22616,7 @@ var require_dist_node10 = __commonJS({
               return { done: true };
             try {
               const response = await requestMethod({ method, url, headers });
-              const normalizedResponse = normalizePaginatedListResponse(response);
+              const normalizedResponse = normalizePaginatedListResponse2(response);
               url = ((normalizedResponse.headers.link || "").match(
                 /<([^>]+)>;\s*rel="next"/
               ) || [])[1];
@@ -22637,20 +22637,20 @@ var require_dist_node10 = __commonJS({
         })
       };
     }
-    function paginate(octokit, route, parameters, mapFn) {
+    function paginate2(octokit, route, parameters, mapFn) {
       if (typeof parameters === "function") {
         mapFn = parameters;
         parameters = void 0;
       }
-      return gather(
+      return gather2(
         octokit,
         [],
-        iterator(octokit, route, parameters)[Symbol.asyncIterator](),
+        iterator2(octokit, route, parameters)[Symbol.asyncIterator](),
         mapFn
       );
     }
-    function gather(octokit, results, iterator2, mapFn) {
-      return iterator2.next().then((result) => {
+    function gather2(octokit, results, iterator22, mapFn) {
+      return iterator22.next().then((result) => {
         if (result.done) {
           return results;
         }
@@ -22664,11 +22664,11 @@ var require_dist_node10 = __commonJS({
         if (earlyExit) {
           return results;
         }
-        return gather(octokit, results, iterator2, mapFn);
+        return gather2(octokit, results, iterator22, mapFn);
       });
     }
-    var composePaginateRest = Object.assign(paginate, {
-      iterator
+    var composePaginateRest2 = Object.assign(paginate2, {
+      iterator: iterator2
     });
     var paginatingEndpoints = [
       "GET /advisories",
@@ -22913,14 +22913,14 @@ var require_dist_node10 = __commonJS({
         return false;
       }
     }
-    function paginateRest(octokit) {
+    function paginateRest2(octokit) {
       return {
-        paginate: Object.assign(paginate.bind(null, octokit), {
-          iterator: iterator.bind(null, octokit)
+        paginate: Object.assign(paginate2.bind(null, octokit), {
+          iterator: iterator2.bind(null, octokit)
         })
       };
     }
-    paginateRest.VERSION = VERSION;
+    paginateRest2.VERSION = VERSION9;
   }
 });
 
@@ -22974,9 +22974,9 @@ var require_utils4 = __commonJS({
     exports2.GitHub = core_1.Octokit.plugin(plugin_rest_endpoint_methods_1.restEndpointMethods, plugin_paginate_rest_1.paginateRest).defaults(exports2.defaults);
     function getOctokitOptions(token, options) {
       const opts = Object.assign({}, options || {});
-      const auth = Utils.getAuthString(token, opts);
-      if (auth) {
-        opts.auth = auth;
+      const auth2 = Utils.getAuthString(token, opts);
+      if (auth2) {
+        opts.auth = auth2;
       }
       return opts;
     }
@@ -23028,2585 +23028,6 @@ var require_github = __commonJS({
   }
 });
 
-// npm/node_modules/@octokit/plugin-request-log/dist-node/index.js
-var require_dist_node11 = __commonJS({
-  "npm/node_modules/@octokit/plugin-request-log/dist-node/index.js"(exports2, module2) {
-    "use strict";
-    var __defProp2 = Object.defineProperty;
-    var __getOwnPropDesc2 = Object.getOwnPropertyDescriptor;
-    var __getOwnPropNames2 = Object.getOwnPropertyNames;
-    var __hasOwnProp2 = Object.prototype.hasOwnProperty;
-    var __export2 = (target, all) => {
-      for (var name in all)
-        __defProp2(target, name, { get: all[name], enumerable: true });
-    };
-    var __copyProps2 = (to, from, except, desc) => {
-      if (from && typeof from === "object" || typeof from === "function") {
-        for (let key of __getOwnPropNames2(from))
-          if (!__hasOwnProp2.call(to, key) && key !== except)
-            __defProp2(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc2(from, key)) || desc.enumerable });
-      }
-      return to;
-    };
-    var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
-    var dist_src_exports = {};
-    __export2(dist_src_exports, {
-      requestLog: () => requestLog
-    });
-    module2.exports = __toCommonJS2(dist_src_exports);
-    var VERSION = "4.0.1";
-    function requestLog(octokit) {
-      octokit.hook.wrap("request", (request, options) => {
-        octokit.log.debug("request", options);
-        const start = Date.now();
-        const requestOptions = octokit.request.endpoint.parse(options);
-        const path = requestOptions.url.replace(options.baseUrl, "");
-        return request(options).then((response) => {
-          octokit.log.info(
-            `${requestOptions.method} ${path} - ${response.status} in ${Date.now() - start}ms`
-          );
-          return response;
-        }).catch((error) => {
-          octokit.log.info(
-            `${requestOptions.method} ${path} - ${error.status} in ${Date.now() - start}ms`
-          );
-          throw error;
-        });
-      });
-    }
-    requestLog.VERSION = VERSION;
-  }
-});
-
-// npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-paginate-rest/dist-node/index.js
-var require_dist_node12 = __commonJS({
-  "npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-paginate-rest/dist-node/index.js"(exports2, module2) {
-    "use strict";
-    var __defProp2 = Object.defineProperty;
-    var __getOwnPropDesc2 = Object.getOwnPropertyDescriptor;
-    var __getOwnPropNames2 = Object.getOwnPropertyNames;
-    var __hasOwnProp2 = Object.prototype.hasOwnProperty;
-    var __export2 = (target, all) => {
-      for (var name in all)
-        __defProp2(target, name, { get: all[name], enumerable: true });
-    };
-    var __copyProps2 = (to, from, except, desc) => {
-      if (from && typeof from === "object" || typeof from === "function") {
-        for (let key of __getOwnPropNames2(from))
-          if (!__hasOwnProp2.call(to, key) && key !== except)
-            __defProp2(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc2(from, key)) || desc.enumerable });
-      }
-      return to;
-    };
-    var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
-    var dist_src_exports = {};
-    __export2(dist_src_exports, {
-      composePaginateRest: () => composePaginateRest,
-      isPaginatingEndpoint: () => isPaginatingEndpoint,
-      paginateRest: () => paginateRest,
-      paginatingEndpoints: () => paginatingEndpoints
-    });
-    module2.exports = __toCommonJS2(dist_src_exports);
-    var VERSION = "11.3.1";
-    function normalizePaginatedListResponse(response) {
-      if (!response.data) {
-        return {
-          ...response,
-          data: []
-        };
-      }
-      const responseNeedsNormalization = "total_count" in response.data && !("url" in response.data);
-      if (!responseNeedsNormalization)
-        return response;
-      const incompleteResults = response.data.incomplete_results;
-      const repositorySelection = response.data.repository_selection;
-      const totalCount = response.data.total_count;
-      delete response.data.incomplete_results;
-      delete response.data.repository_selection;
-      delete response.data.total_count;
-      const namespaceKey = Object.keys(response.data)[0];
-      const data = response.data[namespaceKey];
-      response.data = data;
-      if (typeof incompleteResults !== "undefined") {
-        response.data.incomplete_results = incompleteResults;
-      }
-      if (typeof repositorySelection !== "undefined") {
-        response.data.repository_selection = repositorySelection;
-      }
-      response.data.total_count = totalCount;
-      return response;
-    }
-    function iterator(octokit, route, parameters) {
-      const options = typeof route === "function" ? route.endpoint(parameters) : octokit.request.endpoint(route, parameters);
-      const requestMethod = typeof route === "function" ? route : octokit.request;
-      const method = options.method;
-      const headers = options.headers;
-      let url = options.url;
-      return {
-        [Symbol.asyncIterator]: () => ({
-          async next() {
-            if (!url)
-              return { done: true };
-            try {
-              const response = await requestMethod({ method, url, headers });
-              const normalizedResponse = normalizePaginatedListResponse(response);
-              url = ((normalizedResponse.headers.link || "").match(
-                /<([^>]+)>;\s*rel="next"/
-              ) || [])[1];
-              return { value: normalizedResponse };
-            } catch (error) {
-              if (error.status !== 409)
-                throw error;
-              url = "";
-              return {
-                value: {
-                  status: 200,
-                  headers: {},
-                  data: []
-                }
-              };
-            }
-          }
-        })
-      };
-    }
-    function paginate(octokit, route, parameters, mapFn) {
-      if (typeof parameters === "function") {
-        mapFn = parameters;
-        parameters = void 0;
-      }
-      return gather(
-        octokit,
-        [],
-        iterator(octokit, route, parameters)[Symbol.asyncIterator](),
-        mapFn
-      );
-    }
-    function gather(octokit, results, iterator2, mapFn) {
-      return iterator2.next().then((result) => {
-        if (result.done) {
-          return results;
-        }
-        let earlyExit = false;
-        function done() {
-          earlyExit = true;
-        }
-        results = results.concat(
-          mapFn ? mapFn(result.value, done) : result.value.data
-        );
-        if (earlyExit) {
-          return results;
-        }
-        return gather(octokit, results, iterator2, mapFn);
-      });
-    }
-    var composePaginateRest = Object.assign(paginate, {
-      iterator
-    });
-    var paginatingEndpoints = [
-      "GET /advisories",
-      "GET /app/hook/deliveries",
-      "GET /app/installation-requests",
-      "GET /app/installations",
-      "GET /assignments/{assignment_id}/accepted_assignments",
-      "GET /classrooms",
-      "GET /classrooms/{classroom_id}/assignments",
-      "GET /enterprises/{enterprise}/copilot/usage",
-      "GET /enterprises/{enterprise}/dependabot/alerts",
-      "GET /enterprises/{enterprise}/secret-scanning/alerts",
-      "GET /events",
-      "GET /gists",
-      "GET /gists/public",
-      "GET /gists/starred",
-      "GET /gists/{gist_id}/comments",
-      "GET /gists/{gist_id}/commits",
-      "GET /gists/{gist_id}/forks",
-      "GET /installation/repositories",
-      "GET /issues",
-      "GET /licenses",
-      "GET /marketplace_listing/plans",
-      "GET /marketplace_listing/plans/{plan_id}/accounts",
-      "GET /marketplace_listing/stubbed/plans",
-      "GET /marketplace_listing/stubbed/plans/{plan_id}/accounts",
-      "GET /networks/{owner}/{repo}/events",
-      "GET /notifications",
-      "GET /organizations",
-      "GET /orgs/{org}/actions/cache/usage-by-repository",
-      "GET /orgs/{org}/actions/permissions/repositories",
-      "GET /orgs/{org}/actions/runners",
-      "GET /orgs/{org}/actions/secrets",
-      "GET /orgs/{org}/actions/secrets/{secret_name}/repositories",
-      "GET /orgs/{org}/actions/variables",
-      "GET /orgs/{org}/actions/variables/{name}/repositories",
-      "GET /orgs/{org}/blocks",
-      "GET /orgs/{org}/code-scanning/alerts",
-      "GET /orgs/{org}/codespaces",
-      "GET /orgs/{org}/codespaces/secrets",
-      "GET /orgs/{org}/codespaces/secrets/{secret_name}/repositories",
-      "GET /orgs/{org}/copilot/billing/seats",
-      "GET /orgs/{org}/copilot/usage",
-      "GET /orgs/{org}/dependabot/alerts",
-      "GET /orgs/{org}/dependabot/secrets",
-      "GET /orgs/{org}/dependabot/secrets/{secret_name}/repositories",
-      "GET /orgs/{org}/events",
-      "GET /orgs/{org}/failed_invitations",
-      "GET /orgs/{org}/hooks",
-      "GET /orgs/{org}/hooks/{hook_id}/deliveries",
-      "GET /orgs/{org}/installations",
-      "GET /orgs/{org}/invitations",
-      "GET /orgs/{org}/invitations/{invitation_id}/teams",
-      "GET /orgs/{org}/issues",
-      "GET /orgs/{org}/members",
-      "GET /orgs/{org}/members/{username}/codespaces",
-      "GET /orgs/{org}/migrations",
-      "GET /orgs/{org}/migrations/{migration_id}/repositories",
-      "GET /orgs/{org}/organization-roles/{role_id}/teams",
-      "GET /orgs/{org}/organization-roles/{role_id}/users",
-      "GET /orgs/{org}/outside_collaborators",
-      "GET /orgs/{org}/packages",
-      "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
-      "GET /orgs/{org}/personal-access-token-requests",
-      "GET /orgs/{org}/personal-access-token-requests/{pat_request_id}/repositories",
-      "GET /orgs/{org}/personal-access-tokens",
-      "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories",
-      "GET /orgs/{org}/projects",
-      "GET /orgs/{org}/properties/values",
-      "GET /orgs/{org}/public_members",
-      "GET /orgs/{org}/repos",
-      "GET /orgs/{org}/rulesets",
-      "GET /orgs/{org}/rulesets/rule-suites",
-      "GET /orgs/{org}/secret-scanning/alerts",
-      "GET /orgs/{org}/security-advisories",
-      "GET /orgs/{org}/team/{team_slug}/copilot/usage",
-      "GET /orgs/{org}/teams",
-      "GET /orgs/{org}/teams/{team_slug}/discussions",
-      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments",
-      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions",
-      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions",
-      "GET /orgs/{org}/teams/{team_slug}/invitations",
-      "GET /orgs/{org}/teams/{team_slug}/members",
-      "GET /orgs/{org}/teams/{team_slug}/projects",
-      "GET /orgs/{org}/teams/{team_slug}/repos",
-      "GET /orgs/{org}/teams/{team_slug}/teams",
-      "GET /projects/columns/{column_id}/cards",
-      "GET /projects/{project_id}/collaborators",
-      "GET /projects/{project_id}/columns",
-      "GET /repos/{owner}/{repo}/actions/artifacts",
-      "GET /repos/{owner}/{repo}/actions/caches",
-      "GET /repos/{owner}/{repo}/actions/organization-secrets",
-      "GET /repos/{owner}/{repo}/actions/organization-variables",
-      "GET /repos/{owner}/{repo}/actions/runners",
-      "GET /repos/{owner}/{repo}/actions/runs",
-      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts",
-      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs",
-      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs",
-      "GET /repos/{owner}/{repo}/actions/secrets",
-      "GET /repos/{owner}/{repo}/actions/variables",
-      "GET /repos/{owner}/{repo}/actions/workflows",
-      "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs",
-      "GET /repos/{owner}/{repo}/activity",
-      "GET /repos/{owner}/{repo}/assignees",
-      "GET /repos/{owner}/{repo}/branches",
-      "GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations",
-      "GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs",
-      "GET /repos/{owner}/{repo}/code-scanning/alerts",
-      "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances",
-      "GET /repos/{owner}/{repo}/code-scanning/analyses",
-      "GET /repos/{owner}/{repo}/codespaces",
-      "GET /repos/{owner}/{repo}/codespaces/devcontainers",
-      "GET /repos/{owner}/{repo}/codespaces/secrets",
-      "GET /repos/{owner}/{repo}/collaborators",
-      "GET /repos/{owner}/{repo}/comments",
-      "GET /repos/{owner}/{repo}/comments/{comment_id}/reactions",
-      "GET /repos/{owner}/{repo}/commits",
-      "GET /repos/{owner}/{repo}/commits/{commit_sha}/comments",
-      "GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls",
-      "GET /repos/{owner}/{repo}/commits/{ref}/check-runs",
-      "GET /repos/{owner}/{repo}/commits/{ref}/check-suites",
-      "GET /repos/{owner}/{repo}/commits/{ref}/status",
-      "GET /repos/{owner}/{repo}/commits/{ref}/statuses",
-      "GET /repos/{owner}/{repo}/contributors",
-      "GET /repos/{owner}/{repo}/dependabot/alerts",
-      "GET /repos/{owner}/{repo}/dependabot/secrets",
-      "GET /repos/{owner}/{repo}/deployments",
-      "GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses",
-      "GET /repos/{owner}/{repo}/environments",
-      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies",
-      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/apps",
-      "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets",
-      "GET /repos/{owner}/{repo}/environments/{environment_name}/variables",
-      "GET /repos/{owner}/{repo}/events",
-      "GET /repos/{owner}/{repo}/forks",
-      "GET /repos/{owner}/{repo}/hooks",
-      "GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries",
-      "GET /repos/{owner}/{repo}/invitations",
-      "GET /repos/{owner}/{repo}/issues",
-      "GET /repos/{owner}/{repo}/issues/comments",
-      "GET /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions",
-      "GET /repos/{owner}/{repo}/issues/events",
-      "GET /repos/{owner}/{repo}/issues/{issue_number}/comments",
-      "GET /repos/{owner}/{repo}/issues/{issue_number}/events",
-      "GET /repos/{owner}/{repo}/issues/{issue_number}/labels",
-      "GET /repos/{owner}/{repo}/issues/{issue_number}/reactions",
-      "GET /repos/{owner}/{repo}/issues/{issue_number}/timeline",
-      "GET /repos/{owner}/{repo}/keys",
-      "GET /repos/{owner}/{repo}/labels",
-      "GET /repos/{owner}/{repo}/milestones",
-      "GET /repos/{owner}/{repo}/milestones/{milestone_number}/labels",
-      "GET /repos/{owner}/{repo}/notifications",
-      "GET /repos/{owner}/{repo}/pages/builds",
-      "GET /repos/{owner}/{repo}/projects",
-      "GET /repos/{owner}/{repo}/pulls",
-      "GET /repos/{owner}/{repo}/pulls/comments",
-      "GET /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions",
-      "GET /repos/{owner}/{repo}/pulls/{pull_number}/comments",
-      "GET /repos/{owner}/{repo}/pulls/{pull_number}/commits",
-      "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
-      "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews",
-      "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/comments",
-      "GET /repos/{owner}/{repo}/releases",
-      "GET /repos/{owner}/{repo}/releases/{release_id}/assets",
-      "GET /repos/{owner}/{repo}/releases/{release_id}/reactions",
-      "GET /repos/{owner}/{repo}/rules/branches/{branch}",
-      "GET /repos/{owner}/{repo}/rulesets",
-      "GET /repos/{owner}/{repo}/rulesets/rule-suites",
-      "GET /repos/{owner}/{repo}/secret-scanning/alerts",
-      "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}/locations",
-      "GET /repos/{owner}/{repo}/security-advisories",
-      "GET /repos/{owner}/{repo}/stargazers",
-      "GET /repos/{owner}/{repo}/subscribers",
-      "GET /repos/{owner}/{repo}/tags",
-      "GET /repos/{owner}/{repo}/teams",
-      "GET /repos/{owner}/{repo}/topics",
-      "GET /repositories",
-      "GET /search/code",
-      "GET /search/commits",
-      "GET /search/issues",
-      "GET /search/labels",
-      "GET /search/repositories",
-      "GET /search/topics",
-      "GET /search/users",
-      "GET /teams/{team_id}/discussions",
-      "GET /teams/{team_id}/discussions/{discussion_number}/comments",
-      "GET /teams/{team_id}/discussions/{discussion_number}/comments/{comment_number}/reactions",
-      "GET /teams/{team_id}/discussions/{discussion_number}/reactions",
-      "GET /teams/{team_id}/invitations",
-      "GET /teams/{team_id}/members",
-      "GET /teams/{team_id}/projects",
-      "GET /teams/{team_id}/repos",
-      "GET /teams/{team_id}/teams",
-      "GET /user/blocks",
-      "GET /user/codespaces",
-      "GET /user/codespaces/secrets",
-      "GET /user/emails",
-      "GET /user/followers",
-      "GET /user/following",
-      "GET /user/gpg_keys",
-      "GET /user/installations",
-      "GET /user/installations/{installation_id}/repositories",
-      "GET /user/issues",
-      "GET /user/keys",
-      "GET /user/marketplace_purchases",
-      "GET /user/marketplace_purchases/stubbed",
-      "GET /user/memberships/orgs",
-      "GET /user/migrations",
-      "GET /user/migrations/{migration_id}/repositories",
-      "GET /user/orgs",
-      "GET /user/packages",
-      "GET /user/packages/{package_type}/{package_name}/versions",
-      "GET /user/public_emails",
-      "GET /user/repos",
-      "GET /user/repository_invitations",
-      "GET /user/social_accounts",
-      "GET /user/ssh_signing_keys",
-      "GET /user/starred",
-      "GET /user/subscriptions",
-      "GET /user/teams",
-      "GET /users",
-      "GET /users/{username}/events",
-      "GET /users/{username}/events/orgs/{org}",
-      "GET /users/{username}/events/public",
-      "GET /users/{username}/followers",
-      "GET /users/{username}/following",
-      "GET /users/{username}/gists",
-      "GET /users/{username}/gpg_keys",
-      "GET /users/{username}/keys",
-      "GET /users/{username}/orgs",
-      "GET /users/{username}/packages",
-      "GET /users/{username}/projects",
-      "GET /users/{username}/received_events",
-      "GET /users/{username}/received_events/public",
-      "GET /users/{username}/repos",
-      "GET /users/{username}/social_accounts",
-      "GET /users/{username}/ssh_signing_keys",
-      "GET /users/{username}/starred",
-      "GET /users/{username}/subscriptions"
-    ];
-    function isPaginatingEndpoint(arg) {
-      if (typeof arg === "string") {
-        return paginatingEndpoints.includes(arg);
-      } else {
-        return false;
-      }
-    }
-    function paginateRest(octokit) {
-      return {
-        paginate: Object.assign(paginate.bind(null, octokit), {
-          iterator: iterator.bind(null, octokit)
-        })
-      };
-    }
-    paginateRest.VERSION = VERSION;
-  }
-});
-
-// npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-node/index.js
-var require_dist_node13 = __commonJS({
-  "npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-node/index.js"(exports2, module2) {
-    "use strict";
-    var __defProp2 = Object.defineProperty;
-    var __getOwnPropDesc2 = Object.getOwnPropertyDescriptor;
-    var __getOwnPropNames2 = Object.getOwnPropertyNames;
-    var __hasOwnProp2 = Object.prototype.hasOwnProperty;
-    var __export2 = (target, all) => {
-      for (var name in all)
-        __defProp2(target, name, { get: all[name], enumerable: true });
-    };
-    var __copyProps2 = (to, from, except, desc) => {
-      if (from && typeof from === "object" || typeof from === "function") {
-        for (let key of __getOwnPropNames2(from))
-          if (!__hasOwnProp2.call(to, key) && key !== except)
-            __defProp2(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc2(from, key)) || desc.enumerable });
-      }
-      return to;
-    };
-    var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
-    var dist_src_exports = {};
-    __export2(dist_src_exports, {
-      legacyRestEndpointMethods: () => legacyRestEndpointMethods,
-      restEndpointMethods: () => restEndpointMethods
-    });
-    module2.exports = __toCommonJS2(dist_src_exports);
-    var VERSION = "13.2.2";
-    var Endpoints = {
-      actions: {
-        addCustomLabelsToSelfHostedRunnerForOrg: [
-          "POST /orgs/{org}/actions/runners/{runner_id}/labels"
-        ],
-        addCustomLabelsToSelfHostedRunnerForRepo: [
-          "POST /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
-        ],
-        addSelectedRepoToOrgSecret: [
-          "PUT /orgs/{org}/actions/secrets/{secret_name}/repositories/{repository_id}"
-        ],
-        addSelectedRepoToOrgVariable: [
-          "PUT /orgs/{org}/actions/variables/{name}/repositories/{repository_id}"
-        ],
-        approveWorkflowRun: [
-          "POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve"
-        ],
-        cancelWorkflowRun: [
-          "POST /repos/{owner}/{repo}/actions/runs/{run_id}/cancel"
-        ],
-        createEnvironmentVariable: [
-          "POST /repos/{owner}/{repo}/environments/{environment_name}/variables"
-        ],
-        createOrUpdateEnvironmentSecret: [
-          "PUT /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
-        ],
-        createOrUpdateOrgSecret: ["PUT /orgs/{org}/actions/secrets/{secret_name}"],
-        createOrUpdateRepoSecret: [
-          "PUT /repos/{owner}/{repo}/actions/secrets/{secret_name}"
-        ],
-        createOrgVariable: ["POST /orgs/{org}/actions/variables"],
-        createRegistrationTokenForOrg: [
-          "POST /orgs/{org}/actions/runners/registration-token"
-        ],
-        createRegistrationTokenForRepo: [
-          "POST /repos/{owner}/{repo}/actions/runners/registration-token"
-        ],
-        createRemoveTokenForOrg: ["POST /orgs/{org}/actions/runners/remove-token"],
-        createRemoveTokenForRepo: [
-          "POST /repos/{owner}/{repo}/actions/runners/remove-token"
-        ],
-        createRepoVariable: ["POST /repos/{owner}/{repo}/actions/variables"],
-        createWorkflowDispatch: [
-          "POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches"
-        ],
-        deleteActionsCacheById: [
-          "DELETE /repos/{owner}/{repo}/actions/caches/{cache_id}"
-        ],
-        deleteActionsCacheByKey: [
-          "DELETE /repos/{owner}/{repo}/actions/caches{?key,ref}"
-        ],
-        deleteArtifact: [
-          "DELETE /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"
-        ],
-        deleteEnvironmentSecret: [
-          "DELETE /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
-        ],
-        deleteEnvironmentVariable: [
-          "DELETE /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
-        ],
-        deleteOrgSecret: ["DELETE /orgs/{org}/actions/secrets/{secret_name}"],
-        deleteOrgVariable: ["DELETE /orgs/{org}/actions/variables/{name}"],
-        deleteRepoSecret: [
-          "DELETE /repos/{owner}/{repo}/actions/secrets/{secret_name}"
-        ],
-        deleteRepoVariable: [
-          "DELETE /repos/{owner}/{repo}/actions/variables/{name}"
-        ],
-        deleteSelfHostedRunnerFromOrg: [
-          "DELETE /orgs/{org}/actions/runners/{runner_id}"
-        ],
-        deleteSelfHostedRunnerFromRepo: [
-          "DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}"
-        ],
-        deleteWorkflowRun: ["DELETE /repos/{owner}/{repo}/actions/runs/{run_id}"],
-        deleteWorkflowRunLogs: [
-          "DELETE /repos/{owner}/{repo}/actions/runs/{run_id}/logs"
-        ],
-        disableSelectedRepositoryGithubActionsOrganization: [
-          "DELETE /orgs/{org}/actions/permissions/repositories/{repository_id}"
-        ],
-        disableWorkflow: [
-          "PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable"
-        ],
-        downloadArtifact: [
-          "GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}/{archive_format}"
-        ],
-        downloadJobLogsForWorkflowRun: [
-          "GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs"
-        ],
-        downloadWorkflowRunAttemptLogs: [
-          "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/logs"
-        ],
-        downloadWorkflowRunLogs: [
-          "GET /repos/{owner}/{repo}/actions/runs/{run_id}/logs"
-        ],
-        enableSelectedRepositoryGithubActionsOrganization: [
-          "PUT /orgs/{org}/actions/permissions/repositories/{repository_id}"
-        ],
-        enableWorkflow: [
-          "PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable"
-        ],
-        forceCancelWorkflowRun: [
-          "POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel"
-        ],
-        generateRunnerJitconfigForOrg: [
-          "POST /orgs/{org}/actions/runners/generate-jitconfig"
-        ],
-        generateRunnerJitconfigForRepo: [
-          "POST /repos/{owner}/{repo}/actions/runners/generate-jitconfig"
-        ],
-        getActionsCacheList: ["GET /repos/{owner}/{repo}/actions/caches"],
-        getActionsCacheUsage: ["GET /repos/{owner}/{repo}/actions/cache/usage"],
-        getActionsCacheUsageByRepoForOrg: [
-          "GET /orgs/{org}/actions/cache/usage-by-repository"
-        ],
-        getActionsCacheUsageForOrg: ["GET /orgs/{org}/actions/cache/usage"],
-        getAllowedActionsOrganization: [
-          "GET /orgs/{org}/actions/permissions/selected-actions"
-        ],
-        getAllowedActionsRepository: [
-          "GET /repos/{owner}/{repo}/actions/permissions/selected-actions"
-        ],
-        getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
-        getCustomOidcSubClaimForRepo: [
-          "GET /repos/{owner}/{repo}/actions/oidc/customization/sub"
-        ],
-        getEnvironmentPublicKey: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets/public-key"
-        ],
-        getEnvironmentSecret: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
-        ],
-        getEnvironmentVariable: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
-        ],
-        getGithubActionsDefaultWorkflowPermissionsOrganization: [
-          "GET /orgs/{org}/actions/permissions/workflow"
-        ],
-        getGithubActionsDefaultWorkflowPermissionsRepository: [
-          "GET /repos/{owner}/{repo}/actions/permissions/workflow"
-        ],
-        getGithubActionsPermissionsOrganization: [
-          "GET /orgs/{org}/actions/permissions"
-        ],
-        getGithubActionsPermissionsRepository: [
-          "GET /repos/{owner}/{repo}/actions/permissions"
-        ],
-        getJobForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/jobs/{job_id}"],
-        getOrgPublicKey: ["GET /orgs/{org}/actions/secrets/public-key"],
-        getOrgSecret: ["GET /orgs/{org}/actions/secrets/{secret_name}"],
-        getOrgVariable: ["GET /orgs/{org}/actions/variables/{name}"],
-        getPendingDeploymentsForRun: [
-          "GET /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments"
-        ],
-        getRepoPermissions: [
-          "GET /repos/{owner}/{repo}/actions/permissions",
-          {},
-          { renamed: ["actions", "getGithubActionsPermissionsRepository"] }
-        ],
-        getRepoPublicKey: ["GET /repos/{owner}/{repo}/actions/secrets/public-key"],
-        getRepoSecret: ["GET /repos/{owner}/{repo}/actions/secrets/{secret_name}"],
-        getRepoVariable: ["GET /repos/{owner}/{repo}/actions/variables/{name}"],
-        getReviewsForRun: [
-          "GET /repos/{owner}/{repo}/actions/runs/{run_id}/approvals"
-        ],
-        getSelfHostedRunnerForOrg: ["GET /orgs/{org}/actions/runners/{runner_id}"],
-        getSelfHostedRunnerForRepo: [
-          "GET /repos/{owner}/{repo}/actions/runners/{runner_id}"
-        ],
-        getWorkflow: ["GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}"],
-        getWorkflowAccessToRepository: [
-          "GET /repos/{owner}/{repo}/actions/permissions/access"
-        ],
-        getWorkflowRun: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}"],
-        getWorkflowRunAttempt: [
-          "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}"
-        ],
-        getWorkflowRunUsage: [
-          "GET /repos/{owner}/{repo}/actions/runs/{run_id}/timing"
-        ],
-        getWorkflowUsage: [
-          "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/timing"
-        ],
-        listArtifactsForRepo: ["GET /repos/{owner}/{repo}/actions/artifacts"],
-        listEnvironmentSecrets: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets"
-        ],
-        listEnvironmentVariables: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/variables"
-        ],
-        listJobsForWorkflowRun: [
-          "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
-        ],
-        listJobsForWorkflowRunAttempt: [
-          "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs"
-        ],
-        listLabelsForSelfHostedRunnerForOrg: [
-          "GET /orgs/{org}/actions/runners/{runner_id}/labels"
-        ],
-        listLabelsForSelfHostedRunnerForRepo: [
-          "GET /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
-        ],
-        listOrgSecrets: ["GET /orgs/{org}/actions/secrets"],
-        listOrgVariables: ["GET /orgs/{org}/actions/variables"],
-        listRepoOrganizationSecrets: [
-          "GET /repos/{owner}/{repo}/actions/organization-secrets"
-        ],
-        listRepoOrganizationVariables: [
-          "GET /repos/{owner}/{repo}/actions/organization-variables"
-        ],
-        listRepoSecrets: ["GET /repos/{owner}/{repo}/actions/secrets"],
-        listRepoVariables: ["GET /repos/{owner}/{repo}/actions/variables"],
-        listRepoWorkflows: ["GET /repos/{owner}/{repo}/actions/workflows"],
-        listRunnerApplicationsForOrg: ["GET /orgs/{org}/actions/runners/downloads"],
-        listRunnerApplicationsForRepo: [
-          "GET /repos/{owner}/{repo}/actions/runners/downloads"
-        ],
-        listSelectedReposForOrgSecret: [
-          "GET /orgs/{org}/actions/secrets/{secret_name}/repositories"
-        ],
-        listSelectedReposForOrgVariable: [
-          "GET /orgs/{org}/actions/variables/{name}/repositories"
-        ],
-        listSelectedRepositoriesEnabledGithubActionsOrganization: [
-          "GET /orgs/{org}/actions/permissions/repositories"
-        ],
-        listSelfHostedRunnersForOrg: ["GET /orgs/{org}/actions/runners"],
-        listSelfHostedRunnersForRepo: ["GET /repos/{owner}/{repo}/actions/runners"],
-        listWorkflowRunArtifacts: [
-          "GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
-        ],
-        listWorkflowRuns: [
-          "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs"
-        ],
-        listWorkflowRunsForRepo: ["GET /repos/{owner}/{repo}/actions/runs"],
-        reRunJobForWorkflowRun: [
-          "POST /repos/{owner}/{repo}/actions/jobs/{job_id}/rerun"
-        ],
-        reRunWorkflow: ["POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun"],
-        reRunWorkflowFailedJobs: [
-          "POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs"
-        ],
-        removeAllCustomLabelsFromSelfHostedRunnerForOrg: [
-          "DELETE /orgs/{org}/actions/runners/{runner_id}/labels"
-        ],
-        removeAllCustomLabelsFromSelfHostedRunnerForRepo: [
-          "DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
-        ],
-        removeCustomLabelFromSelfHostedRunnerForOrg: [
-          "DELETE /orgs/{org}/actions/runners/{runner_id}/labels/{name}"
-        ],
-        removeCustomLabelFromSelfHostedRunnerForRepo: [
-          "DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}/labels/{name}"
-        ],
-        removeSelectedRepoFromOrgSecret: [
-          "DELETE /orgs/{org}/actions/secrets/{secret_name}/repositories/{repository_id}"
-        ],
-        removeSelectedRepoFromOrgVariable: [
-          "DELETE /orgs/{org}/actions/variables/{name}/repositories/{repository_id}"
-        ],
-        reviewCustomGatesForRun: [
-          "POST /repos/{owner}/{repo}/actions/runs/{run_id}/deployment_protection_rule"
-        ],
-        reviewPendingDeploymentsForRun: [
-          "POST /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments"
-        ],
-        setAllowedActionsOrganization: [
-          "PUT /orgs/{org}/actions/permissions/selected-actions"
-        ],
-        setAllowedActionsRepository: [
-          "PUT /repos/{owner}/{repo}/actions/permissions/selected-actions"
-        ],
-        setCustomLabelsForSelfHostedRunnerForOrg: [
-          "PUT /orgs/{org}/actions/runners/{runner_id}/labels"
-        ],
-        setCustomLabelsForSelfHostedRunnerForRepo: [
-          "PUT /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
-        ],
-        setCustomOidcSubClaimForRepo: [
-          "PUT /repos/{owner}/{repo}/actions/oidc/customization/sub"
-        ],
-        setGithubActionsDefaultWorkflowPermissionsOrganization: [
-          "PUT /orgs/{org}/actions/permissions/workflow"
-        ],
-        setGithubActionsDefaultWorkflowPermissionsRepository: [
-          "PUT /repos/{owner}/{repo}/actions/permissions/workflow"
-        ],
-        setGithubActionsPermissionsOrganization: [
-          "PUT /orgs/{org}/actions/permissions"
-        ],
-        setGithubActionsPermissionsRepository: [
-          "PUT /repos/{owner}/{repo}/actions/permissions"
-        ],
-        setSelectedReposForOrgSecret: [
-          "PUT /orgs/{org}/actions/secrets/{secret_name}/repositories"
-        ],
-        setSelectedReposForOrgVariable: [
-          "PUT /orgs/{org}/actions/variables/{name}/repositories"
-        ],
-        setSelectedRepositoriesEnabledGithubActionsOrganization: [
-          "PUT /orgs/{org}/actions/permissions/repositories"
-        ],
-        setWorkflowAccessToRepository: [
-          "PUT /repos/{owner}/{repo}/actions/permissions/access"
-        ],
-        updateEnvironmentVariable: [
-          "PATCH /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
-        ],
-        updateOrgVariable: ["PATCH /orgs/{org}/actions/variables/{name}"],
-        updateRepoVariable: [
-          "PATCH /repos/{owner}/{repo}/actions/variables/{name}"
-        ]
-      },
-      activity: {
-        checkRepoIsStarredByAuthenticatedUser: ["GET /user/starred/{owner}/{repo}"],
-        deleteRepoSubscription: ["DELETE /repos/{owner}/{repo}/subscription"],
-        deleteThreadSubscription: [
-          "DELETE /notifications/threads/{thread_id}/subscription"
-        ],
-        getFeeds: ["GET /feeds"],
-        getRepoSubscription: ["GET /repos/{owner}/{repo}/subscription"],
-        getThread: ["GET /notifications/threads/{thread_id}"],
-        getThreadSubscriptionForAuthenticatedUser: [
-          "GET /notifications/threads/{thread_id}/subscription"
-        ],
-        listEventsForAuthenticatedUser: ["GET /users/{username}/events"],
-        listNotificationsForAuthenticatedUser: ["GET /notifications"],
-        listOrgEventsForAuthenticatedUser: [
-          "GET /users/{username}/events/orgs/{org}"
-        ],
-        listPublicEvents: ["GET /events"],
-        listPublicEventsForRepoNetwork: ["GET /networks/{owner}/{repo}/events"],
-        listPublicEventsForUser: ["GET /users/{username}/events/public"],
-        listPublicOrgEvents: ["GET /orgs/{org}/events"],
-        listReceivedEventsForUser: ["GET /users/{username}/received_events"],
-        listReceivedPublicEventsForUser: [
-          "GET /users/{username}/received_events/public"
-        ],
-        listRepoEvents: ["GET /repos/{owner}/{repo}/events"],
-        listRepoNotificationsForAuthenticatedUser: [
-          "GET /repos/{owner}/{repo}/notifications"
-        ],
-        listReposStarredByAuthenticatedUser: ["GET /user/starred"],
-        listReposStarredByUser: ["GET /users/{username}/starred"],
-        listReposWatchedByUser: ["GET /users/{username}/subscriptions"],
-        listStargazersForRepo: ["GET /repos/{owner}/{repo}/stargazers"],
-        listWatchedReposForAuthenticatedUser: ["GET /user/subscriptions"],
-        listWatchersForRepo: ["GET /repos/{owner}/{repo}/subscribers"],
-        markNotificationsAsRead: ["PUT /notifications"],
-        markRepoNotificationsAsRead: ["PUT /repos/{owner}/{repo}/notifications"],
-        markThreadAsDone: ["DELETE /notifications/threads/{thread_id}"],
-        markThreadAsRead: ["PATCH /notifications/threads/{thread_id}"],
-        setRepoSubscription: ["PUT /repos/{owner}/{repo}/subscription"],
-        setThreadSubscription: [
-          "PUT /notifications/threads/{thread_id}/subscription"
-        ],
-        starRepoForAuthenticatedUser: ["PUT /user/starred/{owner}/{repo}"],
-        unstarRepoForAuthenticatedUser: ["DELETE /user/starred/{owner}/{repo}"]
-      },
-      apps: {
-        addRepoToInstallation: [
-          "PUT /user/installations/{installation_id}/repositories/{repository_id}",
-          {},
-          { renamed: ["apps", "addRepoToInstallationForAuthenticatedUser"] }
-        ],
-        addRepoToInstallationForAuthenticatedUser: [
-          "PUT /user/installations/{installation_id}/repositories/{repository_id}"
-        ],
-        checkToken: ["POST /applications/{client_id}/token"],
-        createFromManifest: ["POST /app-manifests/{code}/conversions"],
-        createInstallationAccessToken: [
-          "POST /app/installations/{installation_id}/access_tokens"
-        ],
-        deleteAuthorization: ["DELETE /applications/{client_id}/grant"],
-        deleteInstallation: ["DELETE /app/installations/{installation_id}"],
-        deleteToken: ["DELETE /applications/{client_id}/token"],
-        getAuthenticated: ["GET /app"],
-        getBySlug: ["GET /apps/{app_slug}"],
-        getInstallation: ["GET /app/installations/{installation_id}"],
-        getOrgInstallation: ["GET /orgs/{org}/installation"],
-        getRepoInstallation: ["GET /repos/{owner}/{repo}/installation"],
-        getSubscriptionPlanForAccount: [
-          "GET /marketplace_listing/accounts/{account_id}"
-        ],
-        getSubscriptionPlanForAccountStubbed: [
-          "GET /marketplace_listing/stubbed/accounts/{account_id}"
-        ],
-        getUserInstallation: ["GET /users/{username}/installation"],
-        getWebhookConfigForApp: ["GET /app/hook/config"],
-        getWebhookDelivery: ["GET /app/hook/deliveries/{delivery_id}"],
-        listAccountsForPlan: ["GET /marketplace_listing/plans/{plan_id}/accounts"],
-        listAccountsForPlanStubbed: [
-          "GET /marketplace_listing/stubbed/plans/{plan_id}/accounts"
-        ],
-        listInstallationReposForAuthenticatedUser: [
-          "GET /user/installations/{installation_id}/repositories"
-        ],
-        listInstallationRequestsForAuthenticatedApp: [
-          "GET /app/installation-requests"
-        ],
-        listInstallations: ["GET /app/installations"],
-        listInstallationsForAuthenticatedUser: ["GET /user/installations"],
-        listPlans: ["GET /marketplace_listing/plans"],
-        listPlansStubbed: ["GET /marketplace_listing/stubbed/plans"],
-        listReposAccessibleToInstallation: ["GET /installation/repositories"],
-        listSubscriptionsForAuthenticatedUser: ["GET /user/marketplace_purchases"],
-        listSubscriptionsForAuthenticatedUserStubbed: [
-          "GET /user/marketplace_purchases/stubbed"
-        ],
-        listWebhookDeliveries: ["GET /app/hook/deliveries"],
-        redeliverWebhookDelivery: [
-          "POST /app/hook/deliveries/{delivery_id}/attempts"
-        ],
-        removeRepoFromInstallation: [
-          "DELETE /user/installations/{installation_id}/repositories/{repository_id}",
-          {},
-          { renamed: ["apps", "removeRepoFromInstallationForAuthenticatedUser"] }
-        ],
-        removeRepoFromInstallationForAuthenticatedUser: [
-          "DELETE /user/installations/{installation_id}/repositories/{repository_id}"
-        ],
-        resetToken: ["PATCH /applications/{client_id}/token"],
-        revokeInstallationAccessToken: ["DELETE /installation/token"],
-        scopeToken: ["POST /applications/{client_id}/token/scoped"],
-        suspendInstallation: ["PUT /app/installations/{installation_id}/suspended"],
-        unsuspendInstallation: [
-          "DELETE /app/installations/{installation_id}/suspended"
-        ],
-        updateWebhookConfigForApp: ["PATCH /app/hook/config"]
-      },
-      billing: {
-        getGithubActionsBillingOrg: ["GET /orgs/{org}/settings/billing/actions"],
-        getGithubActionsBillingUser: [
-          "GET /users/{username}/settings/billing/actions"
-        ],
-        getGithubPackagesBillingOrg: ["GET /orgs/{org}/settings/billing/packages"],
-        getGithubPackagesBillingUser: [
-          "GET /users/{username}/settings/billing/packages"
-        ],
-        getSharedStorageBillingOrg: [
-          "GET /orgs/{org}/settings/billing/shared-storage"
-        ],
-        getSharedStorageBillingUser: [
-          "GET /users/{username}/settings/billing/shared-storage"
-        ]
-      },
-      checks: {
-        create: ["POST /repos/{owner}/{repo}/check-runs"],
-        createSuite: ["POST /repos/{owner}/{repo}/check-suites"],
-        get: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}"],
-        getSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}"],
-        listAnnotations: [
-          "GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations"
-        ],
-        listForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-runs"],
-        listForSuite: [
-          "GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs"
-        ],
-        listSuitesForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-suites"],
-        rerequestRun: [
-          "POST /repos/{owner}/{repo}/check-runs/{check_run_id}/rerequest"
-        ],
-        rerequestSuite: [
-          "POST /repos/{owner}/{repo}/check-suites/{check_suite_id}/rerequest"
-        ],
-        setSuitesPreferences: [
-          "PATCH /repos/{owner}/{repo}/check-suites/preferences"
-        ],
-        update: ["PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}"]
-      },
-      codeScanning: {
-        deleteAnalysis: [
-          "DELETE /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}{?confirm_delete}"
-        ],
-        getAlert: [
-          "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}",
-          {},
-          { renamedParameters: { alert_id: "alert_number" } }
-        ],
-        getAnalysis: [
-          "GET /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}"
-        ],
-        getCodeqlDatabase: [
-          "GET /repos/{owner}/{repo}/code-scanning/codeql/databases/{language}"
-        ],
-        getDefaultSetup: ["GET /repos/{owner}/{repo}/code-scanning/default-setup"],
-        getSarif: ["GET /repos/{owner}/{repo}/code-scanning/sarifs/{sarif_id}"],
-        listAlertInstances: [
-          "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances"
-        ],
-        listAlertsForOrg: ["GET /orgs/{org}/code-scanning/alerts"],
-        listAlertsForRepo: ["GET /repos/{owner}/{repo}/code-scanning/alerts"],
-        listAlertsInstances: [
-          "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances",
-          {},
-          { renamed: ["codeScanning", "listAlertInstances"] }
-        ],
-        listCodeqlDatabases: [
-          "GET /repos/{owner}/{repo}/code-scanning/codeql/databases"
-        ],
-        listRecentAnalyses: ["GET /repos/{owner}/{repo}/code-scanning/analyses"],
-        updateAlert: [
-          "PATCH /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}"
-        ],
-        updateDefaultSetup: [
-          "PATCH /repos/{owner}/{repo}/code-scanning/default-setup"
-        ],
-        uploadSarif: ["POST /repos/{owner}/{repo}/code-scanning/sarifs"]
-      },
-      codesOfConduct: {
-        getAllCodesOfConduct: ["GET /codes_of_conduct"],
-        getConductCode: ["GET /codes_of_conduct/{key}"]
-      },
-      codespaces: {
-        addRepositoryForSecretForAuthenticatedUser: [
-          "PUT /user/codespaces/secrets/{secret_name}/repositories/{repository_id}"
-        ],
-        addSelectedRepoToOrgSecret: [
-          "PUT /orgs/{org}/codespaces/secrets/{secret_name}/repositories/{repository_id}"
-        ],
-        checkPermissionsForDevcontainer: [
-          "GET /repos/{owner}/{repo}/codespaces/permissions_check"
-        ],
-        codespaceMachinesForAuthenticatedUser: [
-          "GET /user/codespaces/{codespace_name}/machines"
-        ],
-        createForAuthenticatedUser: ["POST /user/codespaces"],
-        createOrUpdateOrgSecret: [
-          "PUT /orgs/{org}/codespaces/secrets/{secret_name}"
-        ],
-        createOrUpdateRepoSecret: [
-          "PUT /repos/{owner}/{repo}/codespaces/secrets/{secret_name}"
-        ],
-        createOrUpdateSecretForAuthenticatedUser: [
-          "PUT /user/codespaces/secrets/{secret_name}"
-        ],
-        createWithPrForAuthenticatedUser: [
-          "POST /repos/{owner}/{repo}/pulls/{pull_number}/codespaces"
-        ],
-        createWithRepoForAuthenticatedUser: [
-          "POST /repos/{owner}/{repo}/codespaces"
-        ],
-        deleteForAuthenticatedUser: ["DELETE /user/codespaces/{codespace_name}"],
-        deleteFromOrganization: [
-          "DELETE /orgs/{org}/members/{username}/codespaces/{codespace_name}"
-        ],
-        deleteOrgSecret: ["DELETE /orgs/{org}/codespaces/secrets/{secret_name}"],
-        deleteRepoSecret: [
-          "DELETE /repos/{owner}/{repo}/codespaces/secrets/{secret_name}"
-        ],
-        deleteSecretForAuthenticatedUser: [
-          "DELETE /user/codespaces/secrets/{secret_name}"
-        ],
-        exportForAuthenticatedUser: [
-          "POST /user/codespaces/{codespace_name}/exports"
-        ],
-        getCodespacesForUserInOrg: [
-          "GET /orgs/{org}/members/{username}/codespaces"
-        ],
-        getExportDetailsForAuthenticatedUser: [
-          "GET /user/codespaces/{codespace_name}/exports/{export_id}"
-        ],
-        getForAuthenticatedUser: ["GET /user/codespaces/{codespace_name}"],
-        getOrgPublicKey: ["GET /orgs/{org}/codespaces/secrets/public-key"],
-        getOrgSecret: ["GET /orgs/{org}/codespaces/secrets/{secret_name}"],
-        getPublicKeyForAuthenticatedUser: [
-          "GET /user/codespaces/secrets/public-key"
-        ],
-        getRepoPublicKey: [
-          "GET /repos/{owner}/{repo}/codespaces/secrets/public-key"
-        ],
-        getRepoSecret: [
-          "GET /repos/{owner}/{repo}/codespaces/secrets/{secret_name}"
-        ],
-        getSecretForAuthenticatedUser: [
-          "GET /user/codespaces/secrets/{secret_name}"
-        ],
-        listDevcontainersInRepositoryForAuthenticatedUser: [
-          "GET /repos/{owner}/{repo}/codespaces/devcontainers"
-        ],
-        listForAuthenticatedUser: ["GET /user/codespaces"],
-        listInOrganization: [
-          "GET /orgs/{org}/codespaces",
-          {},
-          { renamedParameters: { org_id: "org" } }
-        ],
-        listInRepositoryForAuthenticatedUser: [
-          "GET /repos/{owner}/{repo}/codespaces"
-        ],
-        listOrgSecrets: ["GET /orgs/{org}/codespaces/secrets"],
-        listRepoSecrets: ["GET /repos/{owner}/{repo}/codespaces/secrets"],
-        listRepositoriesForSecretForAuthenticatedUser: [
-          "GET /user/codespaces/secrets/{secret_name}/repositories"
-        ],
-        listSecretsForAuthenticatedUser: ["GET /user/codespaces/secrets"],
-        listSelectedReposForOrgSecret: [
-          "GET /orgs/{org}/codespaces/secrets/{secret_name}/repositories"
-        ],
-        preFlightWithRepoForAuthenticatedUser: [
-          "GET /repos/{owner}/{repo}/codespaces/new"
-        ],
-        publishForAuthenticatedUser: [
-          "POST /user/codespaces/{codespace_name}/publish"
-        ],
-        removeRepositoryForSecretForAuthenticatedUser: [
-          "DELETE /user/codespaces/secrets/{secret_name}/repositories/{repository_id}"
-        ],
-        removeSelectedRepoFromOrgSecret: [
-          "DELETE /orgs/{org}/codespaces/secrets/{secret_name}/repositories/{repository_id}"
-        ],
-        repoMachinesForAuthenticatedUser: [
-          "GET /repos/{owner}/{repo}/codespaces/machines"
-        ],
-        setRepositoriesForSecretForAuthenticatedUser: [
-          "PUT /user/codespaces/secrets/{secret_name}/repositories"
-        ],
-        setSelectedReposForOrgSecret: [
-          "PUT /orgs/{org}/codespaces/secrets/{secret_name}/repositories"
-        ],
-        startForAuthenticatedUser: ["POST /user/codespaces/{codespace_name}/start"],
-        stopForAuthenticatedUser: ["POST /user/codespaces/{codespace_name}/stop"],
-        stopInOrganization: [
-          "POST /orgs/{org}/members/{username}/codespaces/{codespace_name}/stop"
-        ],
-        updateForAuthenticatedUser: ["PATCH /user/codespaces/{codespace_name}"]
-      },
-      copilot: {
-        addCopilotSeatsForTeams: [
-          "POST /orgs/{org}/copilot/billing/selected_teams"
-        ],
-        addCopilotSeatsForUsers: [
-          "POST /orgs/{org}/copilot/billing/selected_users"
-        ],
-        cancelCopilotSeatAssignmentForTeams: [
-          "DELETE /orgs/{org}/copilot/billing/selected_teams"
-        ],
-        cancelCopilotSeatAssignmentForUsers: [
-          "DELETE /orgs/{org}/copilot/billing/selected_users"
-        ],
-        getCopilotOrganizationDetails: ["GET /orgs/{org}/copilot/billing"],
-        getCopilotSeatDetailsForUser: [
-          "GET /orgs/{org}/members/{username}/copilot"
-        ],
-        listCopilotSeats: ["GET /orgs/{org}/copilot/billing/seats"],
-        usageMetricsForEnterprise: ["GET /enterprises/{enterprise}/copilot/usage"],
-        usageMetricsForOrg: ["GET /orgs/{org}/copilot/usage"],
-        usageMetricsForTeam: ["GET /orgs/{org}/team/{team_slug}/copilot/usage"]
-      },
-      dependabot: {
-        addSelectedRepoToOrgSecret: [
-          "PUT /orgs/{org}/dependabot/secrets/{secret_name}/repositories/{repository_id}"
-        ],
-        createOrUpdateOrgSecret: [
-          "PUT /orgs/{org}/dependabot/secrets/{secret_name}"
-        ],
-        createOrUpdateRepoSecret: [
-          "PUT /repos/{owner}/{repo}/dependabot/secrets/{secret_name}"
-        ],
-        deleteOrgSecret: ["DELETE /orgs/{org}/dependabot/secrets/{secret_name}"],
-        deleteRepoSecret: [
-          "DELETE /repos/{owner}/{repo}/dependabot/secrets/{secret_name}"
-        ],
-        getAlert: ["GET /repos/{owner}/{repo}/dependabot/alerts/{alert_number}"],
-        getOrgPublicKey: ["GET /orgs/{org}/dependabot/secrets/public-key"],
-        getOrgSecret: ["GET /orgs/{org}/dependabot/secrets/{secret_name}"],
-        getRepoPublicKey: [
-          "GET /repos/{owner}/{repo}/dependabot/secrets/public-key"
-        ],
-        getRepoSecret: [
-          "GET /repos/{owner}/{repo}/dependabot/secrets/{secret_name}"
-        ],
-        listAlertsForEnterprise: [
-          "GET /enterprises/{enterprise}/dependabot/alerts"
-        ],
-        listAlertsForOrg: ["GET /orgs/{org}/dependabot/alerts"],
-        listAlertsForRepo: ["GET /repos/{owner}/{repo}/dependabot/alerts"],
-        listOrgSecrets: ["GET /orgs/{org}/dependabot/secrets"],
-        listRepoSecrets: ["GET /repos/{owner}/{repo}/dependabot/secrets"],
-        listSelectedReposForOrgSecret: [
-          "GET /orgs/{org}/dependabot/secrets/{secret_name}/repositories"
-        ],
-        removeSelectedRepoFromOrgSecret: [
-          "DELETE /orgs/{org}/dependabot/secrets/{secret_name}/repositories/{repository_id}"
-        ],
-        setSelectedReposForOrgSecret: [
-          "PUT /orgs/{org}/dependabot/secrets/{secret_name}/repositories"
-        ],
-        updateAlert: [
-          "PATCH /repos/{owner}/{repo}/dependabot/alerts/{alert_number}"
-        ]
-      },
-      dependencyGraph: {
-        createRepositorySnapshot: [
-          "POST /repos/{owner}/{repo}/dependency-graph/snapshots"
-        ],
-        diffRange: [
-          "GET /repos/{owner}/{repo}/dependency-graph/compare/{basehead}"
-        ],
-        exportSbom: ["GET /repos/{owner}/{repo}/dependency-graph/sbom"]
-      },
-      emojis: { get: ["GET /emojis"] },
-      gists: {
-        checkIsStarred: ["GET /gists/{gist_id}/star"],
-        create: ["POST /gists"],
-        createComment: ["POST /gists/{gist_id}/comments"],
-        delete: ["DELETE /gists/{gist_id}"],
-        deleteComment: ["DELETE /gists/{gist_id}/comments/{comment_id}"],
-        fork: ["POST /gists/{gist_id}/forks"],
-        get: ["GET /gists/{gist_id}"],
-        getComment: ["GET /gists/{gist_id}/comments/{comment_id}"],
-        getRevision: ["GET /gists/{gist_id}/{sha}"],
-        list: ["GET /gists"],
-        listComments: ["GET /gists/{gist_id}/comments"],
-        listCommits: ["GET /gists/{gist_id}/commits"],
-        listForUser: ["GET /users/{username}/gists"],
-        listForks: ["GET /gists/{gist_id}/forks"],
-        listPublic: ["GET /gists/public"],
-        listStarred: ["GET /gists/starred"],
-        star: ["PUT /gists/{gist_id}/star"],
-        unstar: ["DELETE /gists/{gist_id}/star"],
-        update: ["PATCH /gists/{gist_id}"],
-        updateComment: ["PATCH /gists/{gist_id}/comments/{comment_id}"]
-      },
-      git: {
-        createBlob: ["POST /repos/{owner}/{repo}/git/blobs"],
-        createCommit: ["POST /repos/{owner}/{repo}/git/commits"],
-        createRef: ["POST /repos/{owner}/{repo}/git/refs"],
-        createTag: ["POST /repos/{owner}/{repo}/git/tags"],
-        createTree: ["POST /repos/{owner}/{repo}/git/trees"],
-        deleteRef: ["DELETE /repos/{owner}/{repo}/git/refs/{ref}"],
-        getBlob: ["GET /repos/{owner}/{repo}/git/blobs/{file_sha}"],
-        getCommit: ["GET /repos/{owner}/{repo}/git/commits/{commit_sha}"],
-        getRef: ["GET /repos/{owner}/{repo}/git/ref/{ref}"],
-        getTag: ["GET /repos/{owner}/{repo}/git/tags/{tag_sha}"],
-        getTree: ["GET /repos/{owner}/{repo}/git/trees/{tree_sha}"],
-        listMatchingRefs: ["GET /repos/{owner}/{repo}/git/matching-refs/{ref}"],
-        updateRef: ["PATCH /repos/{owner}/{repo}/git/refs/{ref}"]
-      },
-      gitignore: {
-        getAllTemplates: ["GET /gitignore/templates"],
-        getTemplate: ["GET /gitignore/templates/{name}"]
-      },
-      interactions: {
-        getRestrictionsForAuthenticatedUser: ["GET /user/interaction-limits"],
-        getRestrictionsForOrg: ["GET /orgs/{org}/interaction-limits"],
-        getRestrictionsForRepo: ["GET /repos/{owner}/{repo}/interaction-limits"],
-        getRestrictionsForYourPublicRepos: [
-          "GET /user/interaction-limits",
-          {},
-          { renamed: ["interactions", "getRestrictionsForAuthenticatedUser"] }
-        ],
-        removeRestrictionsForAuthenticatedUser: ["DELETE /user/interaction-limits"],
-        removeRestrictionsForOrg: ["DELETE /orgs/{org}/interaction-limits"],
-        removeRestrictionsForRepo: [
-          "DELETE /repos/{owner}/{repo}/interaction-limits"
-        ],
-        removeRestrictionsForYourPublicRepos: [
-          "DELETE /user/interaction-limits",
-          {},
-          { renamed: ["interactions", "removeRestrictionsForAuthenticatedUser"] }
-        ],
-        setRestrictionsForAuthenticatedUser: ["PUT /user/interaction-limits"],
-        setRestrictionsForOrg: ["PUT /orgs/{org}/interaction-limits"],
-        setRestrictionsForRepo: ["PUT /repos/{owner}/{repo}/interaction-limits"],
-        setRestrictionsForYourPublicRepos: [
-          "PUT /user/interaction-limits",
-          {},
-          { renamed: ["interactions", "setRestrictionsForAuthenticatedUser"] }
-        ]
-      },
-      issues: {
-        addAssignees: [
-          "POST /repos/{owner}/{repo}/issues/{issue_number}/assignees"
-        ],
-        addLabels: ["POST /repos/{owner}/{repo}/issues/{issue_number}/labels"],
-        checkUserCanBeAssigned: ["GET /repos/{owner}/{repo}/assignees/{assignee}"],
-        checkUserCanBeAssignedToIssue: [
-          "GET /repos/{owner}/{repo}/issues/{issue_number}/assignees/{assignee}"
-        ],
-        create: ["POST /repos/{owner}/{repo}/issues"],
-        createComment: [
-          "POST /repos/{owner}/{repo}/issues/{issue_number}/comments"
-        ],
-        createLabel: ["POST /repos/{owner}/{repo}/labels"],
-        createMilestone: ["POST /repos/{owner}/{repo}/milestones"],
-        deleteComment: [
-          "DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}"
-        ],
-        deleteLabel: ["DELETE /repos/{owner}/{repo}/labels/{name}"],
-        deleteMilestone: [
-          "DELETE /repos/{owner}/{repo}/milestones/{milestone_number}"
-        ],
-        get: ["GET /repos/{owner}/{repo}/issues/{issue_number}"],
-        getComment: ["GET /repos/{owner}/{repo}/issues/comments/{comment_id}"],
-        getEvent: ["GET /repos/{owner}/{repo}/issues/events/{event_id}"],
-        getLabel: ["GET /repos/{owner}/{repo}/labels/{name}"],
-        getMilestone: ["GET /repos/{owner}/{repo}/milestones/{milestone_number}"],
-        list: ["GET /issues"],
-        listAssignees: ["GET /repos/{owner}/{repo}/assignees"],
-        listComments: ["GET /repos/{owner}/{repo}/issues/{issue_number}/comments"],
-        listCommentsForRepo: ["GET /repos/{owner}/{repo}/issues/comments"],
-        listEvents: ["GET /repos/{owner}/{repo}/issues/{issue_number}/events"],
-        listEventsForRepo: ["GET /repos/{owner}/{repo}/issues/events"],
-        listEventsForTimeline: [
-          "GET /repos/{owner}/{repo}/issues/{issue_number}/timeline"
-        ],
-        listForAuthenticatedUser: ["GET /user/issues"],
-        listForOrg: ["GET /orgs/{org}/issues"],
-        listForRepo: ["GET /repos/{owner}/{repo}/issues"],
-        listLabelsForMilestone: [
-          "GET /repos/{owner}/{repo}/milestones/{milestone_number}/labels"
-        ],
-        listLabelsForRepo: ["GET /repos/{owner}/{repo}/labels"],
-        listLabelsOnIssue: [
-          "GET /repos/{owner}/{repo}/issues/{issue_number}/labels"
-        ],
-        listMilestones: ["GET /repos/{owner}/{repo}/milestones"],
-        lock: ["PUT /repos/{owner}/{repo}/issues/{issue_number}/lock"],
-        removeAllLabels: [
-          "DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels"
-        ],
-        removeAssignees: [
-          "DELETE /repos/{owner}/{repo}/issues/{issue_number}/assignees"
-        ],
-        removeLabel: [
-          "DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}"
-        ],
-        setLabels: ["PUT /repos/{owner}/{repo}/issues/{issue_number}/labels"],
-        unlock: ["DELETE /repos/{owner}/{repo}/issues/{issue_number}/lock"],
-        update: ["PATCH /repos/{owner}/{repo}/issues/{issue_number}"],
-        updateComment: ["PATCH /repos/{owner}/{repo}/issues/comments/{comment_id}"],
-        updateLabel: ["PATCH /repos/{owner}/{repo}/labels/{name}"],
-        updateMilestone: [
-          "PATCH /repos/{owner}/{repo}/milestones/{milestone_number}"
-        ]
-      },
-      licenses: {
-        get: ["GET /licenses/{license}"],
-        getAllCommonlyUsed: ["GET /licenses"],
-        getForRepo: ["GET /repos/{owner}/{repo}/license"]
-      },
-      markdown: {
-        render: ["POST /markdown"],
-        renderRaw: [
-          "POST /markdown/raw",
-          { headers: { "content-type": "text/plain; charset=utf-8" } }
-        ]
-      },
-      meta: {
-        get: ["GET /meta"],
-        getAllVersions: ["GET /versions"],
-        getOctocat: ["GET /octocat"],
-        getZen: ["GET /zen"],
-        root: ["GET /"]
-      },
-      migrations: {
-        deleteArchiveForAuthenticatedUser: [
-          "DELETE /user/migrations/{migration_id}/archive"
-        ],
-        deleteArchiveForOrg: [
-          "DELETE /orgs/{org}/migrations/{migration_id}/archive"
-        ],
-        downloadArchiveForOrg: [
-          "GET /orgs/{org}/migrations/{migration_id}/archive"
-        ],
-        getArchiveForAuthenticatedUser: [
-          "GET /user/migrations/{migration_id}/archive"
-        ],
-        getStatusForAuthenticatedUser: ["GET /user/migrations/{migration_id}"],
-        getStatusForOrg: ["GET /orgs/{org}/migrations/{migration_id}"],
-        listForAuthenticatedUser: ["GET /user/migrations"],
-        listForOrg: ["GET /orgs/{org}/migrations"],
-        listReposForAuthenticatedUser: [
-          "GET /user/migrations/{migration_id}/repositories"
-        ],
-        listReposForOrg: ["GET /orgs/{org}/migrations/{migration_id}/repositories"],
-        listReposForUser: [
-          "GET /user/migrations/{migration_id}/repositories",
-          {},
-          { renamed: ["migrations", "listReposForAuthenticatedUser"] }
-        ],
-        startForAuthenticatedUser: ["POST /user/migrations"],
-        startForOrg: ["POST /orgs/{org}/migrations"],
-        unlockRepoForAuthenticatedUser: [
-          "DELETE /user/migrations/{migration_id}/repos/{repo_name}/lock"
-        ],
-        unlockRepoForOrg: [
-          "DELETE /orgs/{org}/migrations/{migration_id}/repos/{repo_name}/lock"
-        ]
-      },
-      oidc: {
-        getOidcCustomSubTemplateForOrg: [
-          "GET /orgs/{org}/actions/oidc/customization/sub"
-        ],
-        updateOidcCustomSubTemplateForOrg: [
-          "PUT /orgs/{org}/actions/oidc/customization/sub"
-        ]
-      },
-      orgs: {
-        addSecurityManagerTeam: [
-          "PUT /orgs/{org}/security-managers/teams/{team_slug}"
-        ],
-        assignTeamToOrgRole: [
-          "PUT /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
-        ],
-        assignUserToOrgRole: [
-          "PUT /orgs/{org}/organization-roles/users/{username}/{role_id}"
-        ],
-        blockUser: ["PUT /orgs/{org}/blocks/{username}"],
-        cancelInvitation: ["DELETE /orgs/{org}/invitations/{invitation_id}"],
-        checkBlockedUser: ["GET /orgs/{org}/blocks/{username}"],
-        checkMembershipForUser: ["GET /orgs/{org}/members/{username}"],
-        checkPublicMembershipForUser: ["GET /orgs/{org}/public_members/{username}"],
-        convertMemberToOutsideCollaborator: [
-          "PUT /orgs/{org}/outside_collaborators/{username}"
-        ],
-        createCustomOrganizationRole: ["POST /orgs/{org}/organization-roles"],
-        createInvitation: ["POST /orgs/{org}/invitations"],
-        createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
-        createOrUpdateCustomPropertiesValuesForRepos: [
-          "PATCH /orgs/{org}/properties/values"
-        ],
-        createOrUpdateCustomProperty: [
-          "PUT /orgs/{org}/properties/schema/{custom_property_name}"
-        ],
-        createWebhook: ["POST /orgs/{org}/hooks"],
-        delete: ["DELETE /orgs/{org}"],
-        deleteCustomOrganizationRole: [
-          "DELETE /orgs/{org}/organization-roles/{role_id}"
-        ],
-        deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
-        enableOrDisableSecurityProductOnAllOrgRepos: [
-          "POST /orgs/{org}/{security_product}/{enablement}"
-        ],
-        get: ["GET /orgs/{org}"],
-        getAllCustomProperties: ["GET /orgs/{org}/properties/schema"],
-        getCustomProperty: [
-          "GET /orgs/{org}/properties/schema/{custom_property_name}"
-        ],
-        getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
-        getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
-        getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
-        getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
-        getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
-        getWebhookDelivery: [
-          "GET /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}"
-        ],
-        list: ["GET /organizations"],
-        listAppInstallations: ["GET /orgs/{org}/installations"],
-        listBlockedUsers: ["GET /orgs/{org}/blocks"],
-        listCustomPropertiesValuesForRepos: ["GET /orgs/{org}/properties/values"],
-        listFailedInvitations: ["GET /orgs/{org}/failed_invitations"],
-        listForAuthenticatedUser: ["GET /user/orgs"],
-        listForUser: ["GET /users/{username}/orgs"],
-        listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
-        listMembers: ["GET /orgs/{org}/members"],
-        listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
-        listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
-        listOrgRoleUsers: ["GET /orgs/{org}/organization-roles/{role_id}/users"],
-        listOrgRoles: ["GET /orgs/{org}/organization-roles"],
-        listOrganizationFineGrainedPermissions: [
-          "GET /orgs/{org}/organization-fine-grained-permissions"
-        ],
-        listOutsideCollaborators: ["GET /orgs/{org}/outside_collaborators"],
-        listPatGrantRepositories: [
-          "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories"
-        ],
-        listPatGrantRequestRepositories: [
-          "GET /orgs/{org}/personal-access-token-requests/{pat_request_id}/repositories"
-        ],
-        listPatGrantRequests: ["GET /orgs/{org}/personal-access-token-requests"],
-        listPatGrants: ["GET /orgs/{org}/personal-access-tokens"],
-        listPendingInvitations: ["GET /orgs/{org}/invitations"],
-        listPublicMembers: ["GET /orgs/{org}/public_members"],
-        listSecurityManagerTeams: ["GET /orgs/{org}/security-managers"],
-        listWebhookDeliveries: ["GET /orgs/{org}/hooks/{hook_id}/deliveries"],
-        listWebhooks: ["GET /orgs/{org}/hooks"],
-        patchCustomOrganizationRole: [
-          "PATCH /orgs/{org}/organization-roles/{role_id}"
-        ],
-        pingWebhook: ["POST /orgs/{org}/hooks/{hook_id}/pings"],
-        redeliverWebhookDelivery: [
-          "POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
-        ],
-        removeCustomProperty: [
-          "DELETE /orgs/{org}/properties/schema/{custom_property_name}"
-        ],
-        removeMember: ["DELETE /orgs/{org}/members/{username}"],
-        removeMembershipForUser: ["DELETE /orgs/{org}/memberships/{username}"],
-        removeOutsideCollaborator: [
-          "DELETE /orgs/{org}/outside_collaborators/{username}"
-        ],
-        removePublicMembershipForAuthenticatedUser: [
-          "DELETE /orgs/{org}/public_members/{username}"
-        ],
-        removeSecurityManagerTeam: [
-          "DELETE /orgs/{org}/security-managers/teams/{team_slug}"
-        ],
-        reviewPatGrantRequest: [
-          "POST /orgs/{org}/personal-access-token-requests/{pat_request_id}"
-        ],
-        reviewPatGrantRequestsInBulk: [
-          "POST /orgs/{org}/personal-access-token-requests"
-        ],
-        revokeAllOrgRolesTeam: [
-          "DELETE /orgs/{org}/organization-roles/teams/{team_slug}"
-        ],
-        revokeAllOrgRolesUser: [
-          "DELETE /orgs/{org}/organization-roles/users/{username}"
-        ],
-        revokeOrgRoleTeam: [
-          "DELETE /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
-        ],
-        revokeOrgRoleUser: [
-          "DELETE /orgs/{org}/organization-roles/users/{username}/{role_id}"
-        ],
-        setMembershipForUser: ["PUT /orgs/{org}/memberships/{username}"],
-        setPublicMembershipForAuthenticatedUser: [
-          "PUT /orgs/{org}/public_members/{username}"
-        ],
-        unblockUser: ["DELETE /orgs/{org}/blocks/{username}"],
-        update: ["PATCH /orgs/{org}"],
-        updateMembershipForAuthenticatedUser: [
-          "PATCH /user/memberships/orgs/{org}"
-        ],
-        updatePatAccess: ["POST /orgs/{org}/personal-access-tokens/{pat_id}"],
-        updatePatAccesses: ["POST /orgs/{org}/personal-access-tokens"],
-        updateWebhook: ["PATCH /orgs/{org}/hooks/{hook_id}"],
-        updateWebhookConfigForOrg: ["PATCH /orgs/{org}/hooks/{hook_id}/config"]
-      },
-      packages: {
-        deletePackageForAuthenticatedUser: [
-          "DELETE /user/packages/{package_type}/{package_name}"
-        ],
-        deletePackageForOrg: [
-          "DELETE /orgs/{org}/packages/{package_type}/{package_name}"
-        ],
-        deletePackageForUser: [
-          "DELETE /users/{username}/packages/{package_type}/{package_name}"
-        ],
-        deletePackageVersionForAuthenticatedUser: [
-          "DELETE /user/packages/{package_type}/{package_name}/versions/{package_version_id}"
-        ],
-        deletePackageVersionForOrg: [
-          "DELETE /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"
-        ],
-        deletePackageVersionForUser: [
-          "DELETE /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}"
-        ],
-        getAllPackageVersionsForAPackageOwnedByAnOrg: [
-          "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
-          {},
-          { renamed: ["packages", "getAllPackageVersionsForPackageOwnedByOrg"] }
-        ],
-        getAllPackageVersionsForAPackageOwnedByTheAuthenticatedUser: [
-          "GET /user/packages/{package_type}/{package_name}/versions",
-          {},
-          {
-            renamed: [
-              "packages",
-              "getAllPackageVersionsForPackageOwnedByAuthenticatedUser"
-            ]
-          }
-        ],
-        getAllPackageVersionsForPackageOwnedByAuthenticatedUser: [
-          "GET /user/packages/{package_type}/{package_name}/versions"
-        ],
-        getAllPackageVersionsForPackageOwnedByOrg: [
-          "GET /orgs/{org}/packages/{package_type}/{package_name}/versions"
-        ],
-        getAllPackageVersionsForPackageOwnedByUser: [
-          "GET /users/{username}/packages/{package_type}/{package_name}/versions"
-        ],
-        getPackageForAuthenticatedUser: [
-          "GET /user/packages/{package_type}/{package_name}"
-        ],
-        getPackageForOrganization: [
-          "GET /orgs/{org}/packages/{package_type}/{package_name}"
-        ],
-        getPackageForUser: [
-          "GET /users/{username}/packages/{package_type}/{package_name}"
-        ],
-        getPackageVersionForAuthenticatedUser: [
-          "GET /user/packages/{package_type}/{package_name}/versions/{package_version_id}"
-        ],
-        getPackageVersionForOrganization: [
-          "GET /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"
-        ],
-        getPackageVersionForUser: [
-          "GET /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}"
-        ],
-        listDockerMigrationConflictingPackagesForAuthenticatedUser: [
-          "GET /user/docker/conflicts"
-        ],
-        listDockerMigrationConflictingPackagesForOrganization: [
-          "GET /orgs/{org}/docker/conflicts"
-        ],
-        listDockerMigrationConflictingPackagesForUser: [
-          "GET /users/{username}/docker/conflicts"
-        ],
-        listPackagesForAuthenticatedUser: ["GET /user/packages"],
-        listPackagesForOrganization: ["GET /orgs/{org}/packages"],
-        listPackagesForUser: ["GET /users/{username}/packages"],
-        restorePackageForAuthenticatedUser: [
-          "POST /user/packages/{package_type}/{package_name}/restore{?token}"
-        ],
-        restorePackageForOrg: [
-          "POST /orgs/{org}/packages/{package_type}/{package_name}/restore{?token}"
-        ],
-        restorePackageForUser: [
-          "POST /users/{username}/packages/{package_type}/{package_name}/restore{?token}"
-        ],
-        restorePackageVersionForAuthenticatedUser: [
-          "POST /user/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"
-        ],
-        restorePackageVersionForOrg: [
-          "POST /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"
-        ],
-        restorePackageVersionForUser: [
-          "POST /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"
-        ]
-      },
-      projects: {
-        addCollaborator: ["PUT /projects/{project_id}/collaborators/{username}"],
-        createCard: ["POST /projects/columns/{column_id}/cards"],
-        createColumn: ["POST /projects/{project_id}/columns"],
-        createForAuthenticatedUser: ["POST /user/projects"],
-        createForOrg: ["POST /orgs/{org}/projects"],
-        createForRepo: ["POST /repos/{owner}/{repo}/projects"],
-        delete: ["DELETE /projects/{project_id}"],
-        deleteCard: ["DELETE /projects/columns/cards/{card_id}"],
-        deleteColumn: ["DELETE /projects/columns/{column_id}"],
-        get: ["GET /projects/{project_id}"],
-        getCard: ["GET /projects/columns/cards/{card_id}"],
-        getColumn: ["GET /projects/columns/{column_id}"],
-        getPermissionForUser: [
-          "GET /projects/{project_id}/collaborators/{username}/permission"
-        ],
-        listCards: ["GET /projects/columns/{column_id}/cards"],
-        listCollaborators: ["GET /projects/{project_id}/collaborators"],
-        listColumns: ["GET /projects/{project_id}/columns"],
-        listForOrg: ["GET /orgs/{org}/projects"],
-        listForRepo: ["GET /repos/{owner}/{repo}/projects"],
-        listForUser: ["GET /users/{username}/projects"],
-        moveCard: ["POST /projects/columns/cards/{card_id}/moves"],
-        moveColumn: ["POST /projects/columns/{column_id}/moves"],
-        removeCollaborator: [
-          "DELETE /projects/{project_id}/collaborators/{username}"
-        ],
-        update: ["PATCH /projects/{project_id}"],
-        updateCard: ["PATCH /projects/columns/cards/{card_id}"],
-        updateColumn: ["PATCH /projects/columns/{column_id}"]
-      },
-      pulls: {
-        checkIfMerged: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/merge"],
-        create: ["POST /repos/{owner}/{repo}/pulls"],
-        createReplyForReviewComment: [
-          "POST /repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies"
-        ],
-        createReview: ["POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews"],
-        createReviewComment: [
-          "POST /repos/{owner}/{repo}/pulls/{pull_number}/comments"
-        ],
-        deletePendingReview: [
-          "DELETE /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}"
-        ],
-        deleteReviewComment: [
-          "DELETE /repos/{owner}/{repo}/pulls/comments/{comment_id}"
-        ],
-        dismissReview: [
-          "PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/dismissals"
-        ],
-        get: ["GET /repos/{owner}/{repo}/pulls/{pull_number}"],
-        getReview: [
-          "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}"
-        ],
-        getReviewComment: ["GET /repos/{owner}/{repo}/pulls/comments/{comment_id}"],
-        list: ["GET /repos/{owner}/{repo}/pulls"],
-        listCommentsForReview: [
-          "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/comments"
-        ],
-        listCommits: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/commits"],
-        listFiles: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/files"],
-        listRequestedReviewers: [
-          "GET /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers"
-        ],
-        listReviewComments: [
-          "GET /repos/{owner}/{repo}/pulls/{pull_number}/comments"
-        ],
-        listReviewCommentsForRepo: ["GET /repos/{owner}/{repo}/pulls/comments"],
-        listReviews: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews"],
-        merge: ["PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge"],
-        removeRequestedReviewers: [
-          "DELETE /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers"
-        ],
-        requestReviewers: [
-          "POST /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers"
-        ],
-        submitReview: [
-          "POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/events"
-        ],
-        update: ["PATCH /repos/{owner}/{repo}/pulls/{pull_number}"],
-        updateBranch: [
-          "PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch"
-        ],
-        updateReview: [
-          "PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}"
-        ],
-        updateReviewComment: [
-          "PATCH /repos/{owner}/{repo}/pulls/comments/{comment_id}"
-        ]
-      },
-      rateLimit: { get: ["GET /rate_limit"] },
-      reactions: {
-        createForCommitComment: [
-          "POST /repos/{owner}/{repo}/comments/{comment_id}/reactions"
-        ],
-        createForIssue: [
-          "POST /repos/{owner}/{repo}/issues/{issue_number}/reactions"
-        ],
-        createForIssueComment: [
-          "POST /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions"
-        ],
-        createForPullRequestReviewComment: [
-          "POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions"
-        ],
-        createForRelease: [
-          "POST /repos/{owner}/{repo}/releases/{release_id}/reactions"
-        ],
-        createForTeamDiscussionCommentInOrg: [
-          "POST /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions"
-        ],
-        createForTeamDiscussionInOrg: [
-          "POST /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions"
-        ],
-        deleteForCommitComment: [
-          "DELETE /repos/{owner}/{repo}/comments/{comment_id}/reactions/{reaction_id}"
-        ],
-        deleteForIssue: [
-          "DELETE /repos/{owner}/{repo}/issues/{issue_number}/reactions/{reaction_id}"
-        ],
-        deleteForIssueComment: [
-          "DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions/{reaction_id}"
-        ],
-        deleteForPullRequestComment: [
-          "DELETE /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions/{reaction_id}"
-        ],
-        deleteForRelease: [
-          "DELETE /repos/{owner}/{repo}/releases/{release_id}/reactions/{reaction_id}"
-        ],
-        deleteForTeamDiscussion: [
-          "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions/{reaction_id}"
-        ],
-        deleteForTeamDiscussionComment: [
-          "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions/{reaction_id}"
-        ],
-        listForCommitComment: [
-          "GET /repos/{owner}/{repo}/comments/{comment_id}/reactions"
-        ],
-        listForIssue: ["GET /repos/{owner}/{repo}/issues/{issue_number}/reactions"],
-        listForIssueComment: [
-          "GET /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions"
-        ],
-        listForPullRequestReviewComment: [
-          "GET /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions"
-        ],
-        listForRelease: [
-          "GET /repos/{owner}/{repo}/releases/{release_id}/reactions"
-        ],
-        listForTeamDiscussionCommentInOrg: [
-          "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions"
-        ],
-        listForTeamDiscussionInOrg: [
-          "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions"
-        ]
-      },
-      repos: {
-        acceptInvitation: [
-          "PATCH /user/repository_invitations/{invitation_id}",
-          {},
-          { renamed: ["repos", "acceptInvitationForAuthenticatedUser"] }
-        ],
-        acceptInvitationForAuthenticatedUser: [
-          "PATCH /user/repository_invitations/{invitation_id}"
-        ],
-        addAppAccessRestrictions: [
-          "POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps",
-          {},
-          { mapToData: "apps" }
-        ],
-        addCollaborator: ["PUT /repos/{owner}/{repo}/collaborators/{username}"],
-        addStatusCheckContexts: [
-          "POST /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts",
-          {},
-          { mapToData: "contexts" }
-        ],
-        addTeamAccessRestrictions: [
-          "POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams",
-          {},
-          { mapToData: "teams" }
-        ],
-        addUserAccessRestrictions: [
-          "POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users",
-          {},
-          { mapToData: "users" }
-        ],
-        cancelPagesDeployment: [
-          "POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel"
-        ],
-        checkAutomatedSecurityFixes: [
-          "GET /repos/{owner}/{repo}/automated-security-fixes"
-        ],
-        checkCollaborator: ["GET /repos/{owner}/{repo}/collaborators/{username}"],
-        checkPrivateVulnerabilityReporting: [
-          "GET /repos/{owner}/{repo}/private-vulnerability-reporting"
-        ],
-        checkVulnerabilityAlerts: [
-          "GET /repos/{owner}/{repo}/vulnerability-alerts"
-        ],
-        codeownersErrors: ["GET /repos/{owner}/{repo}/codeowners/errors"],
-        compareCommits: ["GET /repos/{owner}/{repo}/compare/{base}...{head}"],
-        compareCommitsWithBasehead: [
-          "GET /repos/{owner}/{repo}/compare/{basehead}"
-        ],
-        createAutolink: ["POST /repos/{owner}/{repo}/autolinks"],
-        createCommitComment: [
-          "POST /repos/{owner}/{repo}/commits/{commit_sha}/comments"
-        ],
-        createCommitSignatureProtection: [
-          "POST /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures"
-        ],
-        createCommitStatus: ["POST /repos/{owner}/{repo}/statuses/{sha}"],
-        createDeployKey: ["POST /repos/{owner}/{repo}/keys"],
-        createDeployment: ["POST /repos/{owner}/{repo}/deployments"],
-        createDeploymentBranchPolicy: [
-          "POST /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies"
-        ],
-        createDeploymentProtectionRule: [
-          "POST /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules"
-        ],
-        createDeploymentStatus: [
-          "POST /repos/{owner}/{repo}/deployments/{deployment_id}/statuses"
-        ],
-        createDispatchEvent: ["POST /repos/{owner}/{repo}/dispatches"],
-        createForAuthenticatedUser: ["POST /user/repos"],
-        createFork: ["POST /repos/{owner}/{repo}/forks"],
-        createInOrg: ["POST /orgs/{org}/repos"],
-        createOrUpdateCustomPropertiesValues: [
-          "PATCH /repos/{owner}/{repo}/properties/values"
-        ],
-        createOrUpdateEnvironment: [
-          "PUT /repos/{owner}/{repo}/environments/{environment_name}"
-        ],
-        createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
-        createOrgRuleset: ["POST /orgs/{org}/rulesets"],
-        createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployments"],
-        createPagesSite: ["POST /repos/{owner}/{repo}/pages"],
-        createRelease: ["POST /repos/{owner}/{repo}/releases"],
-        createRepoRuleset: ["POST /repos/{owner}/{repo}/rulesets"],
-        createTagProtection: ["POST /repos/{owner}/{repo}/tags/protection"],
-        createUsingTemplate: [
-          "POST /repos/{template_owner}/{template_repo}/generate"
-        ],
-        createWebhook: ["POST /repos/{owner}/{repo}/hooks"],
-        declineInvitation: [
-          "DELETE /user/repository_invitations/{invitation_id}",
-          {},
-          { renamed: ["repos", "declineInvitationForAuthenticatedUser"] }
-        ],
-        declineInvitationForAuthenticatedUser: [
-          "DELETE /user/repository_invitations/{invitation_id}"
-        ],
-        delete: ["DELETE /repos/{owner}/{repo}"],
-        deleteAccessRestrictions: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions"
-        ],
-        deleteAdminBranchProtection: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"
-        ],
-        deleteAnEnvironment: [
-          "DELETE /repos/{owner}/{repo}/environments/{environment_name}"
-        ],
-        deleteAutolink: ["DELETE /repos/{owner}/{repo}/autolinks/{autolink_id}"],
-        deleteBranchProtection: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection"
-        ],
-        deleteCommitComment: ["DELETE /repos/{owner}/{repo}/comments/{comment_id}"],
-        deleteCommitSignatureProtection: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures"
-        ],
-        deleteDeployKey: ["DELETE /repos/{owner}/{repo}/keys/{key_id}"],
-        deleteDeployment: [
-          "DELETE /repos/{owner}/{repo}/deployments/{deployment_id}"
-        ],
-        deleteDeploymentBranchPolicy: [
-          "DELETE /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies/{branch_policy_id}"
-        ],
-        deleteFile: ["DELETE /repos/{owner}/{repo}/contents/{path}"],
-        deleteInvitation: [
-          "DELETE /repos/{owner}/{repo}/invitations/{invitation_id}"
-        ],
-        deleteOrgRuleset: ["DELETE /orgs/{org}/rulesets/{ruleset_id}"],
-        deletePagesSite: ["DELETE /repos/{owner}/{repo}/pages"],
-        deletePullRequestReviewProtection: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"
-        ],
-        deleteRelease: ["DELETE /repos/{owner}/{repo}/releases/{release_id}"],
-        deleteReleaseAsset: [
-          "DELETE /repos/{owner}/{repo}/releases/assets/{asset_id}"
-        ],
-        deleteRepoRuleset: ["DELETE /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
-        deleteTagProtection: [
-          "DELETE /repos/{owner}/{repo}/tags/protection/{tag_protection_id}"
-        ],
-        deleteWebhook: ["DELETE /repos/{owner}/{repo}/hooks/{hook_id}"],
-        disableAutomatedSecurityFixes: [
-          "DELETE /repos/{owner}/{repo}/automated-security-fixes"
-        ],
-        disableDeploymentProtectionRule: [
-          "DELETE /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/{protection_rule_id}"
-        ],
-        disablePrivateVulnerabilityReporting: [
-          "DELETE /repos/{owner}/{repo}/private-vulnerability-reporting"
-        ],
-        disableVulnerabilityAlerts: [
-          "DELETE /repos/{owner}/{repo}/vulnerability-alerts"
-        ],
-        downloadArchive: [
-          "GET /repos/{owner}/{repo}/zipball/{ref}",
-          {},
-          { renamed: ["repos", "downloadZipballArchive"] }
-        ],
-        downloadTarballArchive: ["GET /repos/{owner}/{repo}/tarball/{ref}"],
-        downloadZipballArchive: ["GET /repos/{owner}/{repo}/zipball/{ref}"],
-        enableAutomatedSecurityFixes: [
-          "PUT /repos/{owner}/{repo}/automated-security-fixes"
-        ],
-        enablePrivateVulnerabilityReporting: [
-          "PUT /repos/{owner}/{repo}/private-vulnerability-reporting"
-        ],
-        enableVulnerabilityAlerts: [
-          "PUT /repos/{owner}/{repo}/vulnerability-alerts"
-        ],
-        generateReleaseNotes: [
-          "POST /repos/{owner}/{repo}/releases/generate-notes"
-        ],
-        get: ["GET /repos/{owner}/{repo}"],
-        getAccessRestrictions: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions"
-        ],
-        getAdminBranchProtection: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"
-        ],
-        getAllDeploymentProtectionRules: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules"
-        ],
-        getAllEnvironments: ["GET /repos/{owner}/{repo}/environments"],
-        getAllStatusCheckContexts: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts"
-        ],
-        getAllTopics: ["GET /repos/{owner}/{repo}/topics"],
-        getAppsWithAccessToProtectedBranch: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps"
-        ],
-        getAutolink: ["GET /repos/{owner}/{repo}/autolinks/{autolink_id}"],
-        getBranch: ["GET /repos/{owner}/{repo}/branches/{branch}"],
-        getBranchProtection: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection"
-        ],
-        getBranchRules: ["GET /repos/{owner}/{repo}/rules/branches/{branch}"],
-        getClones: ["GET /repos/{owner}/{repo}/traffic/clones"],
-        getCodeFrequencyStats: ["GET /repos/{owner}/{repo}/stats/code_frequency"],
-        getCollaboratorPermissionLevel: [
-          "GET /repos/{owner}/{repo}/collaborators/{username}/permission"
-        ],
-        getCombinedStatusForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/status"],
-        getCommit: ["GET /repos/{owner}/{repo}/commits/{ref}"],
-        getCommitActivityStats: ["GET /repos/{owner}/{repo}/stats/commit_activity"],
-        getCommitComment: ["GET /repos/{owner}/{repo}/comments/{comment_id}"],
-        getCommitSignatureProtection: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures"
-        ],
-        getCommunityProfileMetrics: ["GET /repos/{owner}/{repo}/community/profile"],
-        getContent: ["GET /repos/{owner}/{repo}/contents/{path}"],
-        getContributorsStats: ["GET /repos/{owner}/{repo}/stats/contributors"],
-        getCustomDeploymentProtectionRule: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/{protection_rule_id}"
-        ],
-        getCustomPropertiesValues: ["GET /repos/{owner}/{repo}/properties/values"],
-        getDeployKey: ["GET /repos/{owner}/{repo}/keys/{key_id}"],
-        getDeployment: ["GET /repos/{owner}/{repo}/deployments/{deployment_id}"],
-        getDeploymentBranchPolicy: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies/{branch_policy_id}"
-        ],
-        getDeploymentStatus: [
-          "GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses/{status_id}"
-        ],
-        getEnvironment: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}"
-        ],
-        getLatestPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/latest"],
-        getLatestRelease: ["GET /repos/{owner}/{repo}/releases/latest"],
-        getOrgRuleSuite: ["GET /orgs/{org}/rulesets/rule-suites/{rule_suite_id}"],
-        getOrgRuleSuites: ["GET /orgs/{org}/rulesets/rule-suites"],
-        getOrgRuleset: ["GET /orgs/{org}/rulesets/{ruleset_id}"],
-        getOrgRulesets: ["GET /orgs/{org}/rulesets"],
-        getPages: ["GET /repos/{owner}/{repo}/pages"],
-        getPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/{build_id}"],
-        getPagesDeployment: [
-          "GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}"
-        ],
-        getPagesHealthCheck: ["GET /repos/{owner}/{repo}/pages/health"],
-        getParticipationStats: ["GET /repos/{owner}/{repo}/stats/participation"],
-        getPullRequestReviewProtection: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"
-        ],
-        getPunchCardStats: ["GET /repos/{owner}/{repo}/stats/punch_card"],
-        getReadme: ["GET /repos/{owner}/{repo}/readme"],
-        getReadmeInDirectory: ["GET /repos/{owner}/{repo}/readme/{dir}"],
-        getRelease: ["GET /repos/{owner}/{repo}/releases/{release_id}"],
-        getReleaseAsset: ["GET /repos/{owner}/{repo}/releases/assets/{asset_id}"],
-        getReleaseByTag: ["GET /repos/{owner}/{repo}/releases/tags/{tag}"],
-        getRepoRuleSuite: [
-          "GET /repos/{owner}/{repo}/rulesets/rule-suites/{rule_suite_id}"
-        ],
-        getRepoRuleSuites: ["GET /repos/{owner}/{repo}/rulesets/rule-suites"],
-        getRepoRuleset: ["GET /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
-        getRepoRulesets: ["GET /repos/{owner}/{repo}/rulesets"],
-        getStatusChecksProtection: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
-        ],
-        getTeamsWithAccessToProtectedBranch: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams"
-        ],
-        getTopPaths: ["GET /repos/{owner}/{repo}/traffic/popular/paths"],
-        getTopReferrers: ["GET /repos/{owner}/{repo}/traffic/popular/referrers"],
-        getUsersWithAccessToProtectedBranch: [
-          "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users"
-        ],
-        getViews: ["GET /repos/{owner}/{repo}/traffic/views"],
-        getWebhook: ["GET /repos/{owner}/{repo}/hooks/{hook_id}"],
-        getWebhookConfigForRepo: [
-          "GET /repos/{owner}/{repo}/hooks/{hook_id}/config"
-        ],
-        getWebhookDelivery: [
-          "GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}"
-        ],
-        listActivities: ["GET /repos/{owner}/{repo}/activity"],
-        listAutolinks: ["GET /repos/{owner}/{repo}/autolinks"],
-        listBranches: ["GET /repos/{owner}/{repo}/branches"],
-        listBranchesForHeadCommit: [
-          "GET /repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head"
-        ],
-        listCollaborators: ["GET /repos/{owner}/{repo}/collaborators"],
-        listCommentsForCommit: [
-          "GET /repos/{owner}/{repo}/commits/{commit_sha}/comments"
-        ],
-        listCommitCommentsForRepo: ["GET /repos/{owner}/{repo}/comments"],
-        listCommitStatusesForRef: [
-          "GET /repos/{owner}/{repo}/commits/{ref}/statuses"
-        ],
-        listCommits: ["GET /repos/{owner}/{repo}/commits"],
-        listContributors: ["GET /repos/{owner}/{repo}/contributors"],
-        listCustomDeploymentRuleIntegrations: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/apps"
-        ],
-        listDeployKeys: ["GET /repos/{owner}/{repo}/keys"],
-        listDeploymentBranchPolicies: [
-          "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies"
-        ],
-        listDeploymentStatuses: [
-          "GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses"
-        ],
-        listDeployments: ["GET /repos/{owner}/{repo}/deployments"],
-        listForAuthenticatedUser: ["GET /user/repos"],
-        listForOrg: ["GET /orgs/{org}/repos"],
-        listForUser: ["GET /users/{username}/repos"],
-        listForks: ["GET /repos/{owner}/{repo}/forks"],
-        listInvitations: ["GET /repos/{owner}/{repo}/invitations"],
-        listInvitationsForAuthenticatedUser: ["GET /user/repository_invitations"],
-        listLanguages: ["GET /repos/{owner}/{repo}/languages"],
-        listPagesBuilds: ["GET /repos/{owner}/{repo}/pages/builds"],
-        listPublic: ["GET /repositories"],
-        listPullRequestsAssociatedWithCommit: [
-          "GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls"
-        ],
-        listReleaseAssets: [
-          "GET /repos/{owner}/{repo}/releases/{release_id}/assets"
-        ],
-        listReleases: ["GET /repos/{owner}/{repo}/releases"],
-        listTagProtection: ["GET /repos/{owner}/{repo}/tags/protection"],
-        listTags: ["GET /repos/{owner}/{repo}/tags"],
-        listTeams: ["GET /repos/{owner}/{repo}/teams"],
-        listWebhookDeliveries: [
-          "GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries"
-        ],
-        listWebhooks: ["GET /repos/{owner}/{repo}/hooks"],
-        merge: ["POST /repos/{owner}/{repo}/merges"],
-        mergeUpstream: ["POST /repos/{owner}/{repo}/merge-upstream"],
-        pingWebhook: ["POST /repos/{owner}/{repo}/hooks/{hook_id}/pings"],
-        redeliverWebhookDelivery: [
-          "POST /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
-        ],
-        removeAppAccessRestrictions: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps",
-          {},
-          { mapToData: "apps" }
-        ],
-        removeCollaborator: [
-          "DELETE /repos/{owner}/{repo}/collaborators/{username}"
-        ],
-        removeStatusCheckContexts: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts",
-          {},
-          { mapToData: "contexts" }
-        ],
-        removeStatusCheckProtection: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
-        ],
-        removeTeamAccessRestrictions: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams",
-          {},
-          { mapToData: "teams" }
-        ],
-        removeUserAccessRestrictions: [
-          "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users",
-          {},
-          { mapToData: "users" }
-        ],
-        renameBranch: ["POST /repos/{owner}/{repo}/branches/{branch}/rename"],
-        replaceAllTopics: ["PUT /repos/{owner}/{repo}/topics"],
-        requestPagesBuild: ["POST /repos/{owner}/{repo}/pages/builds"],
-        setAdminBranchProtection: [
-          "POST /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"
-        ],
-        setAppAccessRestrictions: [
-          "PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps",
-          {},
-          { mapToData: "apps" }
-        ],
-        setStatusCheckContexts: [
-          "PUT /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts",
-          {},
-          { mapToData: "contexts" }
-        ],
-        setTeamAccessRestrictions: [
-          "PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams",
-          {},
-          { mapToData: "teams" }
-        ],
-        setUserAccessRestrictions: [
-          "PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users",
-          {},
-          { mapToData: "users" }
-        ],
-        testPushWebhook: ["POST /repos/{owner}/{repo}/hooks/{hook_id}/tests"],
-        transfer: ["POST /repos/{owner}/{repo}/transfer"],
-        update: ["PATCH /repos/{owner}/{repo}"],
-        updateBranchProtection: [
-          "PUT /repos/{owner}/{repo}/branches/{branch}/protection"
-        ],
-        updateCommitComment: ["PATCH /repos/{owner}/{repo}/comments/{comment_id}"],
-        updateDeploymentBranchPolicy: [
-          "PUT /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies/{branch_policy_id}"
-        ],
-        updateInformationAboutPagesSite: ["PUT /repos/{owner}/{repo}/pages"],
-        updateInvitation: [
-          "PATCH /repos/{owner}/{repo}/invitations/{invitation_id}"
-        ],
-        updateOrgRuleset: ["PUT /orgs/{org}/rulesets/{ruleset_id}"],
-        updatePullRequestReviewProtection: [
-          "PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"
-        ],
-        updateRelease: ["PATCH /repos/{owner}/{repo}/releases/{release_id}"],
-        updateReleaseAsset: [
-          "PATCH /repos/{owner}/{repo}/releases/assets/{asset_id}"
-        ],
-        updateRepoRuleset: ["PUT /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
-        updateStatusCheckPotection: [
-          "PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks",
-          {},
-          { renamed: ["repos", "updateStatusCheckProtection"] }
-        ],
-        updateStatusCheckProtection: [
-          "PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
-        ],
-        updateWebhook: ["PATCH /repos/{owner}/{repo}/hooks/{hook_id}"],
-        updateWebhookConfigForRepo: [
-          "PATCH /repos/{owner}/{repo}/hooks/{hook_id}/config"
-        ],
-        uploadReleaseAsset: [
-          "POST /repos/{owner}/{repo}/releases/{release_id}/assets{?name,label}",
-          { baseUrl: "https://uploads.github.com" }
-        ]
-      },
-      search: {
-        code: ["GET /search/code"],
-        commits: ["GET /search/commits"],
-        issuesAndPullRequests: ["GET /search/issues"],
-        labels: ["GET /search/labels"],
-        repos: ["GET /search/repositories"],
-        topics: ["GET /search/topics"],
-        users: ["GET /search/users"]
-      },
-      secretScanning: {
-        getAlert: [
-          "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"
-        ],
-        listAlertsForEnterprise: [
-          "GET /enterprises/{enterprise}/secret-scanning/alerts"
-        ],
-        listAlertsForOrg: ["GET /orgs/{org}/secret-scanning/alerts"],
-        listAlertsForRepo: ["GET /repos/{owner}/{repo}/secret-scanning/alerts"],
-        listLocationsForAlert: [
-          "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}/locations"
-        ],
-        updateAlert: [
-          "PATCH /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"
-        ]
-      },
-      securityAdvisories: {
-        createFork: [
-          "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/forks"
-        ],
-        createPrivateVulnerabilityReport: [
-          "POST /repos/{owner}/{repo}/security-advisories/reports"
-        ],
-        createRepositoryAdvisory: [
-          "POST /repos/{owner}/{repo}/security-advisories"
-        ],
-        createRepositoryAdvisoryCveRequest: [
-          "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/cve"
-        ],
-        getGlobalAdvisory: ["GET /advisories/{ghsa_id}"],
-        getRepositoryAdvisory: [
-          "GET /repos/{owner}/{repo}/security-advisories/{ghsa_id}"
-        ],
-        listGlobalAdvisories: ["GET /advisories"],
-        listOrgRepositoryAdvisories: ["GET /orgs/{org}/security-advisories"],
-        listRepositoryAdvisories: ["GET /repos/{owner}/{repo}/security-advisories"],
-        updateRepositoryAdvisory: [
-          "PATCH /repos/{owner}/{repo}/security-advisories/{ghsa_id}"
-        ]
-      },
-      teams: {
-        addOrUpdateMembershipForUserInOrg: [
-          "PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"
-        ],
-        addOrUpdateProjectPermissionsInOrg: [
-          "PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}"
-        ],
-        addOrUpdateRepoPermissionsInOrg: [
-          "PUT /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
-        ],
-        checkPermissionsForProjectInOrg: [
-          "GET /orgs/{org}/teams/{team_slug}/projects/{project_id}"
-        ],
-        checkPermissionsForRepoInOrg: [
-          "GET /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
-        ],
-        create: ["POST /orgs/{org}/teams"],
-        createDiscussionCommentInOrg: [
-          "POST /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments"
-        ],
-        createDiscussionInOrg: ["POST /orgs/{org}/teams/{team_slug}/discussions"],
-        deleteDiscussionCommentInOrg: [
-          "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}"
-        ],
-        deleteDiscussionInOrg: [
-          "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}"
-        ],
-        deleteInOrg: ["DELETE /orgs/{org}/teams/{team_slug}"],
-        getByName: ["GET /orgs/{org}/teams/{team_slug}"],
-        getDiscussionCommentInOrg: [
-          "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}"
-        ],
-        getDiscussionInOrg: [
-          "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}"
-        ],
-        getMembershipForUserInOrg: [
-          "GET /orgs/{org}/teams/{team_slug}/memberships/{username}"
-        ],
-        list: ["GET /orgs/{org}/teams"],
-        listChildInOrg: ["GET /orgs/{org}/teams/{team_slug}/teams"],
-        listDiscussionCommentsInOrg: [
-          "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments"
-        ],
-        listDiscussionsInOrg: ["GET /orgs/{org}/teams/{team_slug}/discussions"],
-        listForAuthenticatedUser: ["GET /user/teams"],
-        listMembersInOrg: ["GET /orgs/{org}/teams/{team_slug}/members"],
-        listPendingInvitationsInOrg: [
-          "GET /orgs/{org}/teams/{team_slug}/invitations"
-        ],
-        listProjectsInOrg: ["GET /orgs/{org}/teams/{team_slug}/projects"],
-        listReposInOrg: ["GET /orgs/{org}/teams/{team_slug}/repos"],
-        removeMembershipForUserInOrg: [
-          "DELETE /orgs/{org}/teams/{team_slug}/memberships/{username}"
-        ],
-        removeProjectInOrg: [
-          "DELETE /orgs/{org}/teams/{team_slug}/projects/{project_id}"
-        ],
-        removeRepoInOrg: [
-          "DELETE /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
-        ],
-        updateDiscussionCommentInOrg: [
-          "PATCH /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}"
-        ],
-        updateDiscussionInOrg: [
-          "PATCH /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}"
-        ],
-        updateInOrg: ["PATCH /orgs/{org}/teams/{team_slug}"]
-      },
-      users: {
-        addEmailForAuthenticated: [
-          "POST /user/emails",
-          {},
-          { renamed: ["users", "addEmailForAuthenticatedUser"] }
-        ],
-        addEmailForAuthenticatedUser: ["POST /user/emails"],
-        addSocialAccountForAuthenticatedUser: ["POST /user/social_accounts"],
-        block: ["PUT /user/blocks/{username}"],
-        checkBlocked: ["GET /user/blocks/{username}"],
-        checkFollowingForUser: ["GET /users/{username}/following/{target_user}"],
-        checkPersonIsFollowedByAuthenticated: ["GET /user/following/{username}"],
-        createGpgKeyForAuthenticated: [
-          "POST /user/gpg_keys",
-          {},
-          { renamed: ["users", "createGpgKeyForAuthenticatedUser"] }
-        ],
-        createGpgKeyForAuthenticatedUser: ["POST /user/gpg_keys"],
-        createPublicSshKeyForAuthenticated: [
-          "POST /user/keys",
-          {},
-          { renamed: ["users", "createPublicSshKeyForAuthenticatedUser"] }
-        ],
-        createPublicSshKeyForAuthenticatedUser: ["POST /user/keys"],
-        createSshSigningKeyForAuthenticatedUser: ["POST /user/ssh_signing_keys"],
-        deleteEmailForAuthenticated: [
-          "DELETE /user/emails",
-          {},
-          { renamed: ["users", "deleteEmailForAuthenticatedUser"] }
-        ],
-        deleteEmailForAuthenticatedUser: ["DELETE /user/emails"],
-        deleteGpgKeyForAuthenticated: [
-          "DELETE /user/gpg_keys/{gpg_key_id}",
-          {},
-          { renamed: ["users", "deleteGpgKeyForAuthenticatedUser"] }
-        ],
-        deleteGpgKeyForAuthenticatedUser: ["DELETE /user/gpg_keys/{gpg_key_id}"],
-        deletePublicSshKeyForAuthenticated: [
-          "DELETE /user/keys/{key_id}",
-          {},
-          { renamed: ["users", "deletePublicSshKeyForAuthenticatedUser"] }
-        ],
-        deletePublicSshKeyForAuthenticatedUser: ["DELETE /user/keys/{key_id}"],
-        deleteSocialAccountForAuthenticatedUser: ["DELETE /user/social_accounts"],
-        deleteSshSigningKeyForAuthenticatedUser: [
-          "DELETE /user/ssh_signing_keys/{ssh_signing_key_id}"
-        ],
-        follow: ["PUT /user/following/{username}"],
-        getAuthenticated: ["GET /user"],
-        getByUsername: ["GET /users/{username}"],
-        getContextForUser: ["GET /users/{username}/hovercard"],
-        getGpgKeyForAuthenticated: [
-          "GET /user/gpg_keys/{gpg_key_id}",
-          {},
-          { renamed: ["users", "getGpgKeyForAuthenticatedUser"] }
-        ],
-        getGpgKeyForAuthenticatedUser: ["GET /user/gpg_keys/{gpg_key_id}"],
-        getPublicSshKeyForAuthenticated: [
-          "GET /user/keys/{key_id}",
-          {},
-          { renamed: ["users", "getPublicSshKeyForAuthenticatedUser"] }
-        ],
-        getPublicSshKeyForAuthenticatedUser: ["GET /user/keys/{key_id}"],
-        getSshSigningKeyForAuthenticatedUser: [
-          "GET /user/ssh_signing_keys/{ssh_signing_key_id}"
-        ],
-        list: ["GET /users"],
-        listBlockedByAuthenticated: [
-          "GET /user/blocks",
-          {},
-          { renamed: ["users", "listBlockedByAuthenticatedUser"] }
-        ],
-        listBlockedByAuthenticatedUser: ["GET /user/blocks"],
-        listEmailsForAuthenticated: [
-          "GET /user/emails",
-          {},
-          { renamed: ["users", "listEmailsForAuthenticatedUser"] }
-        ],
-        listEmailsForAuthenticatedUser: ["GET /user/emails"],
-        listFollowedByAuthenticated: [
-          "GET /user/following",
-          {},
-          { renamed: ["users", "listFollowedByAuthenticatedUser"] }
-        ],
-        listFollowedByAuthenticatedUser: ["GET /user/following"],
-        listFollowersForAuthenticatedUser: ["GET /user/followers"],
-        listFollowersForUser: ["GET /users/{username}/followers"],
-        listFollowingForUser: ["GET /users/{username}/following"],
-        listGpgKeysForAuthenticated: [
-          "GET /user/gpg_keys",
-          {},
-          { renamed: ["users", "listGpgKeysForAuthenticatedUser"] }
-        ],
-        listGpgKeysForAuthenticatedUser: ["GET /user/gpg_keys"],
-        listGpgKeysForUser: ["GET /users/{username}/gpg_keys"],
-        listPublicEmailsForAuthenticated: [
-          "GET /user/public_emails",
-          {},
-          { renamed: ["users", "listPublicEmailsForAuthenticatedUser"] }
-        ],
-        listPublicEmailsForAuthenticatedUser: ["GET /user/public_emails"],
-        listPublicKeysForUser: ["GET /users/{username}/keys"],
-        listPublicSshKeysForAuthenticated: [
-          "GET /user/keys",
-          {},
-          { renamed: ["users", "listPublicSshKeysForAuthenticatedUser"] }
-        ],
-        listPublicSshKeysForAuthenticatedUser: ["GET /user/keys"],
-        listSocialAccountsForAuthenticatedUser: ["GET /user/social_accounts"],
-        listSocialAccountsForUser: ["GET /users/{username}/social_accounts"],
-        listSshSigningKeysForAuthenticatedUser: ["GET /user/ssh_signing_keys"],
-        listSshSigningKeysForUser: ["GET /users/{username}/ssh_signing_keys"],
-        setPrimaryEmailVisibilityForAuthenticated: [
-          "PATCH /user/email/visibility",
-          {},
-          { renamed: ["users", "setPrimaryEmailVisibilityForAuthenticatedUser"] }
-        ],
-        setPrimaryEmailVisibilityForAuthenticatedUser: [
-          "PATCH /user/email/visibility"
-        ],
-        unblock: ["DELETE /user/blocks/{username}"],
-        unfollow: ["DELETE /user/following/{username}"],
-        updateAuthenticated: ["PATCH /user"]
-      }
-    };
-    var endpoints_default = Endpoints;
-    var endpointMethodsMap = /* @__PURE__ */ new Map();
-    for (const [scope, endpoints] of Object.entries(endpoints_default)) {
-      for (const [methodName, endpoint] of Object.entries(endpoints)) {
-        const [route, defaults, decorations] = endpoint;
-        const [method, url] = route.split(/ /);
-        const endpointDefaults = Object.assign(
-          {
-            method,
-            url
-          },
-          defaults
-        );
-        if (!endpointMethodsMap.has(scope)) {
-          endpointMethodsMap.set(scope, /* @__PURE__ */ new Map());
-        }
-        endpointMethodsMap.get(scope).set(methodName, {
-          scope,
-          methodName,
-          endpointDefaults,
-          decorations
-        });
-      }
-    }
-    var handler = {
-      has({ scope }, methodName) {
-        return endpointMethodsMap.get(scope).has(methodName);
-      },
-      getOwnPropertyDescriptor(target, methodName) {
-        return {
-          value: this.get(target, methodName),
-          // ensures method is in the cache
-          configurable: true,
-          writable: true,
-          enumerable: true
-        };
-      },
-      defineProperty(target, methodName, descriptor) {
-        Object.defineProperty(target.cache, methodName, descriptor);
-        return true;
-      },
-      deleteProperty(target, methodName) {
-        delete target.cache[methodName];
-        return true;
-      },
-      ownKeys({ scope }) {
-        return [...endpointMethodsMap.get(scope).keys()];
-      },
-      set(target, methodName, value) {
-        return target.cache[methodName] = value;
-      },
-      get({ octokit, scope, cache }, methodName) {
-        if (cache[methodName]) {
-          return cache[methodName];
-        }
-        const method = endpointMethodsMap.get(scope).get(methodName);
-        if (!method) {
-          return void 0;
-        }
-        const { endpointDefaults, decorations } = method;
-        if (decorations) {
-          cache[methodName] = decorate(
-            octokit,
-            scope,
-            methodName,
-            endpointDefaults,
-            decorations
-          );
-        } else {
-          cache[methodName] = octokit.request.defaults(endpointDefaults);
-        }
-        return cache[methodName];
-      }
-    };
-    function endpointsToMethods(octokit) {
-      const newMethods = {};
-      for (const scope of endpointMethodsMap.keys()) {
-        newMethods[scope] = new Proxy({ octokit, scope, cache: {} }, handler);
-      }
-      return newMethods;
-    }
-    function decorate(octokit, scope, methodName, defaults, decorations) {
-      const requestWithDefaults = octokit.request.defaults(defaults);
-      function withDecorations(...args) {
-        let options = requestWithDefaults.endpoint.merge(...args);
-        if (decorations.mapToData) {
-          options = Object.assign({}, options, {
-            data: options[decorations.mapToData],
-            [decorations.mapToData]: void 0
-          });
-          return requestWithDefaults(options);
-        }
-        if (decorations.renamed) {
-          const [newScope, newMethodName] = decorations.renamed;
-          octokit.log.warn(
-            `octokit.${scope}.${methodName}() has been renamed to octokit.${newScope}.${newMethodName}()`
-          );
-        }
-        if (decorations.deprecated) {
-          octokit.log.warn(decorations.deprecated);
-        }
-        if (decorations.renamedParameters) {
-          const options2 = requestWithDefaults.endpoint.merge(...args);
-          for (const [name, alias] of Object.entries(
-            decorations.renamedParameters
-          )) {
-            if (name in options2) {
-              octokit.log.warn(
-                `"${name}" parameter is deprecated for "octokit.${scope}.${methodName}()". Use "${alias}" instead`
-              );
-              if (!(alias in options2)) {
-                options2[alias] = options2[name];
-              }
-              delete options2[name];
-            }
-          }
-          return requestWithDefaults(options2);
-        }
-        return requestWithDefaults(...args);
-      }
-      return Object.assign(withDecorations, requestWithDefaults);
-    }
-    function restEndpointMethods(octokit) {
-      const api = endpointsToMethods(octokit);
-      return {
-        rest: api
-      };
-    }
-    restEndpointMethods.VERSION = VERSION;
-    function legacyRestEndpointMethods(octokit) {
-      const api = endpointsToMethods(octokit);
-      return {
-        ...api,
-        rest: api
-      };
-    }
-    legacyRestEndpointMethods.VERSION = VERSION;
-  }
-});
-
-// npm/node_modules/@octokit/rest/dist-node/index.js
-var require_dist_node14 = __commonJS({
-  "npm/node_modules/@octokit/rest/dist-node/index.js"(exports2, module2) {
-    "use strict";
-    var __defProp2 = Object.defineProperty;
-    var __getOwnPropDesc2 = Object.getOwnPropertyDescriptor;
-    var __getOwnPropNames2 = Object.getOwnPropertyNames;
-    var __hasOwnProp2 = Object.prototype.hasOwnProperty;
-    var __export2 = (target, all) => {
-      for (var name in all)
-        __defProp2(target, name, { get: all[name], enumerable: true });
-    };
-    var __copyProps2 = (to, from, except, desc) => {
-      if (from && typeof from === "object" || typeof from === "function") {
-        for (let key of __getOwnPropNames2(from))
-          if (!__hasOwnProp2.call(to, key) && key !== except)
-            __defProp2(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc2(from, key)) || desc.enumerable });
-      }
-      return to;
-    };
-    var __toCommonJS2 = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
-    var dist_src_exports = {};
-    __export2(dist_src_exports, {
-      Octokit: () => Octokit2
-    });
-    module2.exports = __toCommonJS2(dist_src_exports);
-    var import_core2 = require_dist_node8();
-    var import_plugin_request_log = require_dist_node11();
-    var import_plugin_paginate_rest = require_dist_node12();
-    var import_plugin_rest_endpoint_methods = require_dist_node13();
-    var VERSION = "20.1.1";
-    var Octokit2 = import_core2.Octokit.plugin(
-      import_plugin_request_log.requestLog,
-      import_plugin_rest_endpoint_methods.legacyRestEndpointMethods,
-      import_plugin_paginate_rest.paginateRest
-    ).defaults({
-      userAgent: `octokit-rest.js/${VERSION}`
-    });
-  }
-});
-
 // npm/src/_dnt.polyfills.ts
 if (!Object.hasOwn) {
   Object.defineProperty(Object, "hasOwn", {
@@ -25625,7 +23046,7 @@ if (!Object.hasOwn) {
 // npm/src/post.ts
 var import_promises = require("timers/promises");
 var import_process2 = __toESM(require("process"));
-var import_core = __toESM(require_core());
+var import_core2 = __toESM(require_core());
 var github = __toESM(require_github());
 
 // npm/src/deps/deno.land/std@0.224.0/collections/deep_merge.ts
@@ -27301,12 +24722,3178 @@ var createMermaid = (workflow, workflowJobs) => {
   return createGanttDiagrams(title, jobs).join("\n");
 };
 
+// npm/node_modules/@octokit/rest/node_modules/universal-user-agent/index.js
+function getUserAgent() {
+  if (typeof navigator === "object" && "userAgent" in navigator) {
+    return navigator.userAgent;
+  }
+  if (typeof process === "object" && process.version !== void 0) {
+    return `Node.js/${process.version.substr(1)} (${process.platform}; ${process.arch})`;
+  }
+  return "<environment undetectable>";
+}
+
+// npm/node_modules/@octokit/rest/node_modules/before-after-hook/lib/register.js
+function register(state, name, method, options) {
+  if (typeof method !== "function") {
+    throw new Error("method for before hook must be a function");
+  }
+  if (!options) {
+    options = {};
+  }
+  if (Array.isArray(name)) {
+    return name.reverse().reduce((callback, name2) => {
+      return register.bind(null, state, name2, callback, options);
+    }, method)();
+  }
+  return Promise.resolve().then(() => {
+    if (!state.registry[name]) {
+      return method(options);
+    }
+    return state.registry[name].reduce((method2, registered) => {
+      return registered.hook.bind(null, method2, options);
+    }, method)();
+  });
+}
+
+// npm/node_modules/@octokit/rest/node_modules/before-after-hook/lib/add.js
+function addHook(state, kind, name, hook2) {
+  const orig = hook2;
+  if (!state.registry[name]) {
+    state.registry[name] = [];
+  }
+  if (kind === "before") {
+    hook2 = (method, options) => {
+      return Promise.resolve().then(orig.bind(null, options)).then(method.bind(null, options));
+    };
+  }
+  if (kind === "after") {
+    hook2 = (method, options) => {
+      let result;
+      return Promise.resolve().then(method.bind(null, options)).then((result_) => {
+        result = result_;
+        return orig(result, options);
+      }).then(() => {
+        return result;
+      });
+    };
+  }
+  if (kind === "error") {
+    hook2 = (method, options) => {
+      return Promise.resolve().then(method.bind(null, options)).catch((error) => {
+        return orig(error, options);
+      });
+    };
+  }
+  state.registry[name].push({
+    hook: hook2,
+    orig
+  });
+}
+
+// npm/node_modules/@octokit/rest/node_modules/before-after-hook/lib/remove.js
+function removeHook(state, name, method) {
+  if (!state.registry[name]) {
+    return;
+  }
+  const index = state.registry[name].map((registered) => {
+    return registered.orig;
+  }).indexOf(method);
+  if (index === -1) {
+    return;
+  }
+  state.registry[name].splice(index, 1);
+}
+
+// npm/node_modules/@octokit/rest/node_modules/before-after-hook/index.js
+var bind = Function.bind;
+var bindable = bind.bind(bind);
+function bindApi(hook2, state, name) {
+  const removeHookRef = bindable(removeHook, null).apply(
+    null,
+    name ? [state, name] : [state]
+  );
+  hook2.api = { remove: removeHookRef };
+  hook2.remove = removeHookRef;
+  ["before", "error", "after", "wrap"].forEach((kind) => {
+    const args = name ? [state, kind, name] : [state, kind];
+    hook2[kind] = hook2.api[kind] = bindable(addHook, null).apply(null, args);
+  });
+}
+function Singular() {
+  const singularHookName = Symbol("Singular");
+  const singularHookState = {
+    registry: {}
+  };
+  const singularHook = register.bind(null, singularHookState, singularHookName);
+  bindApi(singularHook, singularHookState, singularHookName);
+  return singularHook;
+}
+function Collection() {
+  const state = {
+    registry: {}
+  };
+  const hook2 = register.bind(null, state);
+  bindApi(hook2, state);
+  return hook2;
+}
+var before_after_hook_default = { Singular, Collection };
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/endpoint/dist-bundle/index.js
+var VERSION = "0.0.0-development";
+var userAgent = `octokit-endpoint.js/${VERSION} ${getUserAgent()}`;
+var DEFAULTS = {
+  method: "GET",
+  baseUrl: "https://api.github.com",
+  headers: {
+    accept: "application/vnd.github.v3+json",
+    "user-agent": userAgent
+  },
+  mediaType: {
+    format: ""
+  }
+};
+function lowercaseKeys(object) {
+  if (!object) {
+    return {};
+  }
+  return Object.keys(object).reduce((newObj, key) => {
+    newObj[key.toLowerCase()] = object[key];
+    return newObj;
+  }, {});
+}
+function isPlainObject(value) {
+  if (typeof value !== "object" || value === null)
+    return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]")
+    return false;
+  const proto = Object.getPrototypeOf(value);
+  if (proto === null)
+    return true;
+  const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
+  return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
+}
+function mergeDeep(defaults, options) {
+  const result = Object.assign({}, defaults);
+  Object.keys(options).forEach((key) => {
+    if (isPlainObject(options[key])) {
+      if (!(key in defaults))
+        Object.assign(result, { [key]: options[key] });
+      else
+        result[key] = mergeDeep(defaults[key], options[key]);
+    } else {
+      Object.assign(result, { [key]: options[key] });
+    }
+  });
+  return result;
+}
+function removeUndefinedProperties(obj) {
+  for (const key in obj) {
+    if (obj[key] === void 0) {
+      delete obj[key];
+    }
+  }
+  return obj;
+}
+function merge(defaults, route, options) {
+  if (typeof route === "string") {
+    let [method, url] = route.split(" ");
+    options = Object.assign(url ? { method, url } : { url: method }, options);
+  } else {
+    options = Object.assign({}, route);
+  }
+  options.headers = lowercaseKeys(options.headers);
+  removeUndefinedProperties(options);
+  removeUndefinedProperties(options.headers);
+  const mergedOptions = mergeDeep(defaults || {}, options);
+  if (options.url === "/graphql") {
+    if (defaults && defaults.mediaType.previews?.length) {
+      mergedOptions.mediaType.previews = defaults.mediaType.previews.filter(
+        (preview) => !mergedOptions.mediaType.previews.includes(preview)
+      ).concat(mergedOptions.mediaType.previews);
+    }
+    mergedOptions.mediaType.previews = (mergedOptions.mediaType.previews || []).map((preview) => preview.replace(/-preview/, ""));
+  }
+  return mergedOptions;
+}
+function addQueryParameters(url, parameters) {
+  const separator = /\?/.test(url) ? "&" : "?";
+  const names = Object.keys(parameters);
+  if (names.length === 0) {
+    return url;
+  }
+  return url + separator + names.map((name) => {
+    if (name === "q") {
+      return "q=" + parameters.q.split("+").map(encodeURIComponent).join("+");
+    }
+    return `${name}=${encodeURIComponent(parameters[name])}`;
+  }).join("&");
+}
+var urlVariableRegex = /\{[^}]+\}/g;
+function removeNonChars(variableName) {
+  return variableName.replace(/^\W+|\W+$/g, "").split(/,/);
+}
+function extractUrlVariableNames(url) {
+  const matches = url.match(urlVariableRegex);
+  if (!matches) {
+    return [];
+  }
+  return matches.map(removeNonChars).reduce((a, b) => a.concat(b), []);
+}
+function omit(object, keysToOmit) {
+  const result = { __proto__: null };
+  for (const key of Object.keys(object)) {
+    if (keysToOmit.indexOf(key) === -1) {
+      result[key] = object[key];
+    }
+  }
+  return result;
+}
+function encodeReserved(str) {
+  return str.split(/(%[0-9A-Fa-f]{2})/g).map(function(part) {
+    if (!/%[0-9A-Fa-f]/.test(part)) {
+      part = encodeURI(part).replace(/%5B/g, "[").replace(/%5D/g, "]");
+    }
+    return part;
+  }).join("");
+}
+function encodeUnreserved(str) {
+  return encodeURIComponent(str).replace(/[!'()*]/g, function(c) {
+    return "%" + c.charCodeAt(0).toString(16).toUpperCase();
+  });
+}
+function encodeValue(operator, value, key) {
+  value = operator === "+" || operator === "#" ? encodeReserved(value) : encodeUnreserved(value);
+  if (key) {
+    return encodeUnreserved(key) + "=" + value;
+  } else {
+    return value;
+  }
+}
+function isDefined(value) {
+  return value !== void 0 && value !== null;
+}
+function isKeyOperator(operator) {
+  return operator === ";" || operator === "&" || operator === "?";
+}
+function getValues(context2, operator, key, modifier) {
+  var value = context2[key], result = [];
+  if (isDefined(value) && value !== "") {
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      value = value.toString();
+      if (modifier && modifier !== "*") {
+        value = value.substring(0, parseInt(modifier, 10));
+      }
+      result.push(
+        encodeValue(operator, value, isKeyOperator(operator) ? key : "")
+      );
+    } else {
+      if (modifier === "*") {
+        if (Array.isArray(value)) {
+          value.filter(isDefined).forEach(function(value2) {
+            result.push(
+              encodeValue(operator, value2, isKeyOperator(operator) ? key : "")
+            );
+          });
+        } else {
+          Object.keys(value).forEach(function(k) {
+            if (isDefined(value[k])) {
+              result.push(encodeValue(operator, value[k], k));
+            }
+          });
+        }
+      } else {
+        const tmp = [];
+        if (Array.isArray(value)) {
+          value.filter(isDefined).forEach(function(value2) {
+            tmp.push(encodeValue(operator, value2));
+          });
+        } else {
+          Object.keys(value).forEach(function(k) {
+            if (isDefined(value[k])) {
+              tmp.push(encodeUnreserved(k));
+              tmp.push(encodeValue(operator, value[k].toString()));
+            }
+          });
+        }
+        if (isKeyOperator(operator)) {
+          result.push(encodeUnreserved(key) + "=" + tmp.join(","));
+        } else if (tmp.length !== 0) {
+          result.push(tmp.join(","));
+        }
+      }
+    }
+  } else {
+    if (operator === ";") {
+      if (isDefined(value)) {
+        result.push(encodeUnreserved(key));
+      }
+    } else if (value === "" && (operator === "&" || operator === "?")) {
+      result.push(encodeUnreserved(key) + "=");
+    } else if (value === "") {
+      result.push("");
+    }
+  }
+  return result;
+}
+function parseUrl(template) {
+  return {
+    expand: expand.bind(null, template)
+  };
+}
+function expand(template, context2) {
+  var operators = ["+", "#", ".", "/", ";", "?", "&"];
+  template = template.replace(
+    /\{([^\{\}]+)\}|([^\{\}]+)/g,
+    function(_, expression, literal) {
+      if (expression) {
+        let operator = "";
+        const values = [];
+        if (operators.indexOf(expression.charAt(0)) !== -1) {
+          operator = expression.charAt(0);
+          expression = expression.substr(1);
+        }
+        expression.split(/,/g).forEach(function(variable) {
+          var tmp = /([^:\*]*)(?::(\d+)|(\*))?/.exec(variable);
+          values.push(getValues(context2, operator, tmp[1], tmp[2] || tmp[3]));
+        });
+        if (operator && operator !== "+") {
+          var separator = ",";
+          if (operator === "?") {
+            separator = "&";
+          } else if (operator !== "#") {
+            separator = operator;
+          }
+          return (values.length !== 0 ? operator : "") + values.join(separator);
+        } else {
+          return values.join(",");
+        }
+      } else {
+        return encodeReserved(literal);
+      }
+    }
+  );
+  if (template === "/") {
+    return template;
+  } else {
+    return template.replace(/\/$/, "");
+  }
+}
+function parse2(options) {
+  let method = options.method.toUpperCase();
+  let url = (options.url || "/").replace(/:([a-z]\w+)/g, "{$1}");
+  let headers = Object.assign({}, options.headers);
+  let body;
+  let parameters = omit(options, [
+    "method",
+    "baseUrl",
+    "url",
+    "headers",
+    "request",
+    "mediaType"
+  ]);
+  const urlVariableNames = extractUrlVariableNames(url);
+  url = parseUrl(url).expand(parameters);
+  if (!/^http/.test(url)) {
+    url = options.baseUrl + url;
+  }
+  const omittedParameters = Object.keys(options).filter((option) => urlVariableNames.includes(option)).concat("baseUrl");
+  const remainingParameters = omit(parameters, omittedParameters);
+  const isBinaryRequest = /application\/octet-stream/i.test(headers.accept);
+  if (!isBinaryRequest) {
+    if (options.mediaType.format) {
+      headers.accept = headers.accept.split(/,/).map(
+        (format2) => format2.replace(
+          /application\/vnd(\.\w+)(\.v3)?(\.\w+)?(\+json)?$/,
+          `application/vnd$1$2.${options.mediaType.format}`
+        )
+      ).join(",");
+    }
+    if (url.endsWith("/graphql")) {
+      if (options.mediaType.previews?.length) {
+        const previewsFromAcceptHeader = headers.accept.match(/[\w-]+(?=-preview)/g) || [];
+        headers.accept = previewsFromAcceptHeader.concat(options.mediaType.previews).map((preview) => {
+          const format2 = options.mediaType.format ? `.${options.mediaType.format}` : "+json";
+          return `application/vnd.github.${preview}-preview${format2}`;
+        }).join(",");
+      }
+    }
+  }
+  if (["GET", "HEAD"].includes(method)) {
+    url = addQueryParameters(url, remainingParameters);
+  } else {
+    if ("data" in remainingParameters) {
+      body = remainingParameters.data;
+    } else {
+      if (Object.keys(remainingParameters).length) {
+        body = remainingParameters;
+      }
+    }
+  }
+  if (!headers["content-type"] && typeof body !== "undefined") {
+    headers["content-type"] = "application/json; charset=utf-8";
+  }
+  if (["PATCH", "PUT"].includes(method) && typeof body === "undefined") {
+    body = "";
+  }
+  return Object.assign(
+    { method, url, headers },
+    typeof body !== "undefined" ? { body } : null,
+    options.request ? { request: options.request } : null
+  );
+}
+function endpointWithDefaults(defaults, route, options) {
+  return parse2(merge(defaults, route, options));
+}
+function withDefaults(oldDefaults, newDefaults) {
+  const DEFAULTS2 = merge(oldDefaults, newDefaults);
+  const endpoint2 = endpointWithDefaults.bind(null, DEFAULTS2);
+  return Object.assign(endpoint2, {
+    DEFAULTS: DEFAULTS2,
+    defaults: withDefaults.bind(null, DEFAULTS2),
+    merge: merge.bind(null, DEFAULTS2),
+    parse: parse2
+  });
+}
+var endpoint = withDefaults(null, DEFAULTS);
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/request-error/dist-src/index.js
+var RequestError = class extends Error {
+  name;
+  /**
+   * http status code
+   */
+  status;
+  /**
+   * Request options that lead to the error.
+   */
+  request;
+  /**
+   * Response object if a response was received
+   */
+  response;
+  constructor(message2, statusCode, options) {
+    super(message2);
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+    this.name = "HttpError";
+    this.status = statusCode;
+    if ("response" in options) {
+      this.response = options.response;
+    }
+    const requestCopy = Object.assign({}, options.request);
+    if (options.request.headers.authorization) {
+      requestCopy.headers = Object.assign({}, options.request.headers, {
+        authorization: options.request.headers.authorization.replace(
+          / .*$/,
+          " [REDACTED]"
+        )
+      });
+    }
+    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
+    this.request = requestCopy;
+  }
+};
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/request/dist-bundle/index.js
+var VERSION2 = "0.0.0-development";
+function isPlainObject2(value) {
+  if (typeof value !== "object" || value === null)
+    return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]")
+    return false;
+  const proto = Object.getPrototypeOf(value);
+  if (proto === null)
+    return true;
+  const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
+  return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
+}
+function getBufferResponse(response) {
+  return response.arrayBuffer();
+}
+function fetchWrapper(requestOptions) {
+  const log = requestOptions.request && requestOptions.request.log ? requestOptions.request.log : console;
+  const parseSuccessResponseBody = requestOptions.request?.parseSuccessResponseBody !== false;
+  if (isPlainObject2(requestOptions.body) || Array.isArray(requestOptions.body)) {
+    requestOptions.body = JSON.stringify(requestOptions.body);
+  }
+  let headers = {};
+  let status;
+  let url;
+  let { fetch } = globalThis;
+  if (requestOptions.request?.fetch) {
+    fetch = requestOptions.request.fetch;
+  }
+  if (!fetch) {
+    throw new Error(
+      "fetch is not set. Please pass a fetch implementation as new Octokit({ request: { fetch }}). Learn more at https://github.com/octokit/octokit.js/#fetch-missing"
+    );
+  }
+  return fetch(requestOptions.url, {
+    method: requestOptions.method,
+    body: requestOptions.body,
+    redirect: requestOptions.request?.redirect,
+    // Header values must be `string`
+    headers: Object.fromEntries(
+      Object.entries(requestOptions.headers).map(([name, value]) => [
+        name,
+        String(value)
+      ])
+    ),
+    signal: requestOptions.request?.signal,
+    // duplex must be set if request.body is ReadableStream or Async Iterables.
+    // See https://fetch.spec.whatwg.org/#dom-requestinit-duplex.
+    ...requestOptions.body && { duplex: "half" }
+  }).then(async (response) => {
+    url = response.url;
+    status = response.status;
+    for (const keyAndValue of response.headers) {
+      headers[keyAndValue[0]] = keyAndValue[1];
+    }
+    if ("deprecation" in headers) {
+      const matches = headers.link && headers.link.match(/<([^>]+)>; rel="deprecation"/);
+      const deprecationLink = matches && matches.pop();
+      log.warn(
+        `[@octokit/request] "${requestOptions.method} ${requestOptions.url}" is deprecated. It is scheduled to be removed on ${headers.sunset}${deprecationLink ? `. See ${deprecationLink}` : ""}`
+      );
+    }
+    if (status === 204 || status === 205) {
+      return;
+    }
+    if (requestOptions.method === "HEAD") {
+      if (status < 400) {
+        return;
+      }
+      throw new RequestError(response.statusText, status, {
+        response: {
+          url,
+          status,
+          headers,
+          data: void 0
+        },
+        request: requestOptions
+      });
+    }
+    if (status === 304) {
+      throw new RequestError("Not modified", status, {
+        response: {
+          url,
+          status,
+          headers,
+          data: await getResponseData(response)
+        },
+        request: requestOptions
+      });
+    }
+    if (status >= 400) {
+      const data = await getResponseData(response);
+      const error = new RequestError(toErrorMessage(data), status, {
+        response: {
+          url,
+          status,
+          headers,
+          data
+        },
+        request: requestOptions
+      });
+      throw error;
+    }
+    return parseSuccessResponseBody ? await getResponseData(response) : response.body;
+  }).then((data) => {
+    return {
+      status,
+      url,
+      headers,
+      data
+    };
+  }).catch((error) => {
+    if (error instanceof RequestError)
+      throw error;
+    else if (error.name === "AbortError")
+      throw error;
+    let message2 = error.message;
+    if (error.name === "TypeError" && "cause" in error) {
+      if (error.cause instanceof Error) {
+        message2 = error.cause.message;
+      } else if (typeof error.cause === "string") {
+        message2 = error.cause;
+      }
+    }
+    throw new RequestError(message2, 500, {
+      request: requestOptions
+    });
+  });
+}
+async function getResponseData(response) {
+  const contentType = response.headers.get("content-type");
+  if (/application\/json/.test(contentType)) {
+    return response.json().catch(() => response.text()).catch(() => "");
+  }
+  if (!contentType || /^text\/|charset=utf-8$/.test(contentType)) {
+    return response.text();
+  }
+  return getBufferResponse(response);
+}
+function toErrorMessage(data) {
+  if (typeof data === "string")
+    return data;
+  let suffix;
+  if ("documentation_url" in data) {
+    suffix = ` - ${data.documentation_url}`;
+  } else {
+    suffix = "";
+  }
+  if ("message" in data) {
+    if (Array.isArray(data.errors)) {
+      return `${data.message}: ${data.errors.map(JSON.stringify).join(", ")}${suffix}`;
+    }
+    return `${data.message}${suffix}`;
+  }
+  return `Unknown error: ${JSON.stringify(data)}`;
+}
+function withDefaults2(oldEndpoint, newDefaults) {
+  const endpoint2 = oldEndpoint.defaults(newDefaults);
+  const newApi = function(route, parameters) {
+    const endpointOptions = endpoint2.merge(route, parameters);
+    if (!endpointOptions.request || !endpointOptions.request.hook) {
+      return fetchWrapper(endpoint2.parse(endpointOptions));
+    }
+    const request2 = (route2, parameters2) => {
+      return fetchWrapper(
+        endpoint2.parse(endpoint2.merge(route2, parameters2))
+      );
+    };
+    Object.assign(request2, {
+      endpoint: endpoint2,
+      defaults: withDefaults2.bind(null, endpoint2)
+    });
+    return endpointOptions.request.hook(request2, endpointOptions);
+  };
+  return Object.assign(newApi, {
+    endpoint: endpoint2,
+    defaults: withDefaults2.bind(null, endpoint2)
+  });
+}
+var request = withDefaults2(endpoint, {
+  headers: {
+    "user-agent": `octokit-request.js/${VERSION2} ${getUserAgent()}`
+  }
+});
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/graphql/dist-bundle/index.js
+var VERSION3 = "0.0.0-development";
+function _buildMessageForResponseErrors(data) {
+  return `Request failed due to following response errors:
+` + data.errors.map((e) => ` - ${e.message}`).join("\n");
+}
+var GraphqlResponseError = class extends Error {
+  constructor(request2, headers, response) {
+    super(_buildMessageForResponseErrors(response));
+    this.request = request2;
+    this.headers = headers;
+    this.response = response;
+    this.errors = response.errors;
+    this.data = response.data;
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+  name = "GraphqlResponseError";
+  errors;
+  data;
+};
+var NON_VARIABLE_OPTIONS = [
+  "method",
+  "baseUrl",
+  "url",
+  "headers",
+  "request",
+  "query",
+  "mediaType"
+];
+var FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
+var GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
+function graphql(request2, query, options) {
+  if (options) {
+    if (typeof query === "string" && "query" in options) {
+      return Promise.reject(
+        new Error(`[@octokit/graphql] "query" cannot be used as variable name`)
+      );
+    }
+    for (const key in options) {
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key))
+        continue;
+      return Promise.reject(
+        new Error(
+          `[@octokit/graphql] "${key}" cannot be used as variable name`
+        )
+      );
+    }
+  }
+  const parsedOptions = typeof query === "string" ? Object.assign({ query }, options) : query;
+  const requestOptions = Object.keys(
+    parsedOptions
+  ).reduce((result, key) => {
+    if (NON_VARIABLE_OPTIONS.includes(key)) {
+      result[key] = parsedOptions[key];
+      return result;
+    }
+    if (!result.variables) {
+      result.variables = {};
+    }
+    result.variables[key] = parsedOptions[key];
+    return result;
+  }, {});
+  const baseUrl = parsedOptions.baseUrl || request2.endpoint.DEFAULTS.baseUrl;
+  if (GHES_V3_SUFFIX_REGEX.test(baseUrl)) {
+    requestOptions.url = baseUrl.replace(GHES_V3_SUFFIX_REGEX, "/api/graphql");
+  }
+  return request2(requestOptions).then((response) => {
+    if (response.data.errors) {
+      const headers = {};
+      for (const key of Object.keys(response.headers)) {
+        headers[key] = response.headers[key];
+      }
+      throw new GraphqlResponseError(
+        requestOptions,
+        headers,
+        response.data
+      );
+    }
+    return response.data.data;
+  });
+}
+function withDefaults3(request2, newDefaults) {
+  const newRequest = request2.defaults(newDefaults);
+  const newApi = (query, options) => {
+    return graphql(newRequest, query, options);
+  };
+  return Object.assign(newApi, {
+    defaults: withDefaults3.bind(null, newRequest),
+    endpoint: newRequest.endpoint
+  });
+}
+var graphql2 = withDefaults3(request, {
+  headers: {
+    "user-agent": `octokit-graphql.js/${VERSION3} ${getUserAgent()}`
+  },
+  method: "POST",
+  url: "/graphql"
+});
+function withCustomRequest(customRequest) {
+  return withDefaults3(customRequest, {
+    method: "POST",
+    url: "/graphql"
+  });
+}
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/auth-token/dist-bundle/index.js
+var REGEX_IS_INSTALLATION_LEGACY = /^v1\./;
+var REGEX_IS_INSTALLATION = /^ghs_/;
+var REGEX_IS_USER_TO_SERVER = /^ghu_/;
+async function auth(token) {
+  const isApp = token.split(/\./).length === 3;
+  const isInstallation = REGEX_IS_INSTALLATION_LEGACY.test(token) || REGEX_IS_INSTALLATION.test(token);
+  const isUserToServer = REGEX_IS_USER_TO_SERVER.test(token);
+  const tokenType = isApp ? "app" : isInstallation ? "installation" : isUserToServer ? "user-to-server" : "oauth";
+  return {
+    type: "token",
+    token,
+    tokenType
+  };
+}
+function withAuthorizationPrefix(token) {
+  if (token.split(/\./).length === 3) {
+    return `bearer ${token}`;
+  }
+  return `token ${token}`;
+}
+async function hook(token, request2, route, parameters) {
+  const endpoint2 = request2.endpoint.merge(
+    route,
+    parameters
+  );
+  endpoint2.headers.authorization = withAuthorizationPrefix(token);
+  return request2(endpoint2);
+}
+var createTokenAuth = function createTokenAuth2(token) {
+  if (!token) {
+    throw new Error("[@octokit/auth-token] No token passed to createTokenAuth");
+  }
+  if (typeof token !== "string") {
+    throw new Error(
+      "[@octokit/auth-token] Token passed to createTokenAuth is not a string"
+    );
+  }
+  token = token.replace(/^(token|bearer) +/i, "");
+  return Object.assign(auth.bind(null, token), {
+    hook: hook.bind(null, token)
+  });
+};
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/version.js
+var VERSION4 = "6.1.2";
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/index.js
+var noop = () => {
+};
+var consoleWarn = console.warn.bind(console);
+var consoleError = console.error.bind(console);
+var userAgentTrail = `octokit-core.js/${VERSION4} ${getUserAgent()}`;
+var Octokit = class {
+  static VERSION = VERSION4;
+  static defaults(defaults) {
+    const OctokitWithDefaults = class extends this {
+      constructor(...args) {
+        const options = args[0] || {};
+        if (typeof defaults === "function") {
+          super(defaults(options));
+          return;
+        }
+        super(
+          Object.assign(
+            {},
+            defaults,
+            options,
+            options.userAgent && defaults.userAgent ? {
+              userAgent: `${options.userAgent} ${defaults.userAgent}`
+            } : null
+          )
+        );
+      }
+    };
+    return OctokitWithDefaults;
+  }
+  static plugins = [];
+  /**
+   * Attach a plugin (or many) to your Octokit instance.
+   *
+   * @example
+   * const API = Octokit.plugin(plugin1, plugin2, plugin3, ...)
+   */
+  static plugin(...newPlugins) {
+    const currentPlugins = this.plugins;
+    const NewOctokit = class extends this {
+      static plugins = currentPlugins.concat(
+        newPlugins.filter((plugin) => !currentPlugins.includes(plugin))
+      );
+    };
+    return NewOctokit;
+  }
+  constructor(options = {}) {
+    const hook2 = new before_after_hook_default.Collection();
+    const requestDefaults = {
+      baseUrl: request.endpoint.DEFAULTS.baseUrl,
+      headers: {},
+      request: Object.assign({}, options.request, {
+        // @ts-ignore internal usage only, no need to type
+        hook: hook2.bind(null, "request")
+      }),
+      mediaType: {
+        previews: [],
+        format: ""
+      }
+    };
+    requestDefaults.headers["user-agent"] = options.userAgent ? `${options.userAgent} ${userAgentTrail}` : userAgentTrail;
+    if (options.baseUrl) {
+      requestDefaults.baseUrl = options.baseUrl;
+    }
+    if (options.previews) {
+      requestDefaults.mediaType.previews = options.previews;
+    }
+    if (options.timeZone) {
+      requestDefaults.headers["time-zone"] = options.timeZone;
+    }
+    this.request = request.defaults(requestDefaults);
+    this.graphql = withCustomRequest(this.request).defaults(requestDefaults);
+    this.log = Object.assign(
+      {
+        debug: noop,
+        info: noop,
+        warn: consoleWarn,
+        error: consoleError
+      },
+      options.log
+    );
+    this.hook = hook2;
+    if (!options.authStrategy) {
+      if (!options.auth) {
+        this.auth = async () => ({
+          type: "unauthenticated"
+        });
+      } else {
+        const auth2 = createTokenAuth(options.auth);
+        hook2.wrap("request", auth2.hook);
+        this.auth = auth2;
+      }
+    } else {
+      const { authStrategy, ...otherOptions } = options;
+      const auth2 = authStrategy(
+        Object.assign(
+          {
+            request: this.request,
+            log: this.log,
+            // we pass the current octokit instance as well as its constructor options
+            // to allow for authentication strategies that return a new octokit instance
+            // that shares the same internal state as the current one. The original
+            // requirement for this was the "event-octokit" authentication strategy
+            // of https://github.com/probot/octokit-auth-probot.
+            octokit: this,
+            octokitOptions: otherOptions
+          },
+          options.auth
+        )
+      );
+      hook2.wrap("request", auth2.hook);
+      this.auth = auth2;
+    }
+    const classConstructor = this.constructor;
+    for (let i = 0; i < classConstructor.plugins.length; ++i) {
+      Object.assign(this, classConstructor.plugins[i](this, options));
+    }
+  }
+  // assigned during constructor
+  request;
+  graphql;
+  log;
+  hook;
+  // TODO: type `octokit.auth` based on passed options.authStrategy
+  auth;
+};
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-request-log/dist-src/version.js
+var VERSION5 = "5.3.0";
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-request-log/dist-src/index.js
+function requestLog(octokit) {
+  octokit.hook.wrap("request", (request2, options) => {
+    octokit.log.debug("request", options);
+    const start = Date.now();
+    const requestOptions = octokit.request.endpoint.parse(options);
+    const path = requestOptions.url.replace(options.baseUrl, "");
+    return request2(options).then((response) => {
+      const requestId = response.headers["x-github-request-id"];
+      octokit.log.info(
+        `${requestOptions.method} ${path} - ${response.status} with id ${requestId} in ${Date.now() - start}ms`
+      );
+      return response;
+    }).catch((error) => {
+      const requestId = error.response.headers["x-github-request-id"] || "UNKNOWN";
+      octokit.log.error(
+        `${requestOptions.method} ${path} - ${error.status} with id ${requestId} in ${Date.now() - start}ms`
+      );
+      throw error;
+    });
+  });
+}
+requestLog.VERSION = VERSION5;
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-paginate-rest/dist-bundle/index.js
+var VERSION6 = "0.0.0-development";
+function normalizePaginatedListResponse(response) {
+  if (!response.data) {
+    return {
+      ...response,
+      data: []
+    };
+  }
+  const responseNeedsNormalization = "total_count" in response.data && !("url" in response.data);
+  if (!responseNeedsNormalization)
+    return response;
+  const incompleteResults = response.data.incomplete_results;
+  const repositorySelection = response.data.repository_selection;
+  const totalCount = response.data.total_count;
+  delete response.data.incomplete_results;
+  delete response.data.repository_selection;
+  delete response.data.total_count;
+  const namespaceKey = Object.keys(response.data)[0];
+  const data = response.data[namespaceKey];
+  response.data = data;
+  if (typeof incompleteResults !== "undefined") {
+    response.data.incomplete_results = incompleteResults;
+  }
+  if (typeof repositorySelection !== "undefined") {
+    response.data.repository_selection = repositorySelection;
+  }
+  response.data.total_count = totalCount;
+  return response;
+}
+function iterator(octokit, route, parameters) {
+  const options = typeof route === "function" ? route.endpoint(parameters) : octokit.request.endpoint(route, parameters);
+  const requestMethod = typeof route === "function" ? route : octokit.request;
+  const method = options.method;
+  const headers = options.headers;
+  let url = options.url;
+  return {
+    [Symbol.asyncIterator]: () => ({
+      async next() {
+        if (!url)
+          return { done: true };
+        try {
+          const response = await requestMethod({ method, url, headers });
+          const normalizedResponse = normalizePaginatedListResponse(response);
+          url = ((normalizedResponse.headers.link || "").match(
+            /<([^>]+)>;\s*rel="next"/
+          ) || [])[1];
+          return { value: normalizedResponse };
+        } catch (error) {
+          if (error.status !== 409)
+            throw error;
+          url = "";
+          return {
+            value: {
+              status: 200,
+              headers: {},
+              data: []
+            }
+          };
+        }
+      }
+    })
+  };
+}
+function paginate(octokit, route, parameters, mapFn) {
+  if (typeof parameters === "function") {
+    mapFn = parameters;
+    parameters = void 0;
+  }
+  return gather(
+    octokit,
+    [],
+    iterator(octokit, route, parameters)[Symbol.asyncIterator](),
+    mapFn
+  );
+}
+function gather(octokit, results, iterator2, mapFn) {
+  return iterator2.next().then((result) => {
+    if (result.done) {
+      return results;
+    }
+    let earlyExit = false;
+    function done() {
+      earlyExit = true;
+    }
+    results = results.concat(
+      mapFn ? mapFn(result.value, done) : result.value.data
+    );
+    if (earlyExit) {
+      return results;
+    }
+    return gather(octokit, results, iterator2, mapFn);
+  });
+}
+var composePaginateRest = Object.assign(paginate, {
+  iterator
+});
+function paginateRest(octokit) {
+  return {
+    paginate: Object.assign(paginate.bind(null, octokit), {
+      iterator: iterator.bind(null, octokit)
+    })
+  };
+}
+paginateRest.VERSION = VERSION6;
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
+var VERSION7 = "13.2.1";
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/generated/endpoints.js
+var Endpoints = {
+  actions: {
+    addCustomLabelsToSelfHostedRunnerForOrg: [
+      "POST /orgs/{org}/actions/runners/{runner_id}/labels"
+    ],
+    addCustomLabelsToSelfHostedRunnerForRepo: [
+      "POST /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
+    ],
+    addSelectedRepoToOrgSecret: [
+      "PUT /orgs/{org}/actions/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    addSelectedRepoToOrgVariable: [
+      "PUT /orgs/{org}/actions/variables/{name}/repositories/{repository_id}"
+    ],
+    approveWorkflowRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/approve"
+    ],
+    cancelWorkflowRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/cancel"
+    ],
+    createEnvironmentVariable: [
+      "POST /repos/{owner}/{repo}/environments/{environment_name}/variables"
+    ],
+    createOrUpdateEnvironmentSecret: [
+      "PUT /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
+    ],
+    createOrUpdateOrgSecret: ["PUT /orgs/{org}/actions/secrets/{secret_name}"],
+    createOrUpdateRepoSecret: [
+      "PUT /repos/{owner}/{repo}/actions/secrets/{secret_name}"
+    ],
+    createOrgVariable: ["POST /orgs/{org}/actions/variables"],
+    createRegistrationTokenForOrg: [
+      "POST /orgs/{org}/actions/runners/registration-token"
+    ],
+    createRegistrationTokenForRepo: [
+      "POST /repos/{owner}/{repo}/actions/runners/registration-token"
+    ],
+    createRemoveTokenForOrg: ["POST /orgs/{org}/actions/runners/remove-token"],
+    createRemoveTokenForRepo: [
+      "POST /repos/{owner}/{repo}/actions/runners/remove-token"
+    ],
+    createRepoVariable: ["POST /repos/{owner}/{repo}/actions/variables"],
+    createWorkflowDispatch: [
+      "POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches"
+    ],
+    deleteActionsCacheById: [
+      "DELETE /repos/{owner}/{repo}/actions/caches/{cache_id}"
+    ],
+    deleteActionsCacheByKey: [
+      "DELETE /repos/{owner}/{repo}/actions/caches{?key,ref}"
+    ],
+    deleteArtifact: [
+      "DELETE /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"
+    ],
+    deleteEnvironmentSecret: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
+    ],
+    deleteEnvironmentVariable: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    deleteOrgSecret: ["DELETE /orgs/{org}/actions/secrets/{secret_name}"],
+    deleteOrgVariable: ["DELETE /orgs/{org}/actions/variables/{name}"],
+    deleteRepoSecret: [
+      "DELETE /repos/{owner}/{repo}/actions/secrets/{secret_name}"
+    ],
+    deleteRepoVariable: [
+      "DELETE /repos/{owner}/{repo}/actions/variables/{name}"
+    ],
+    deleteSelfHostedRunnerFromOrg: [
+      "DELETE /orgs/{org}/actions/runners/{runner_id}"
+    ],
+    deleteSelfHostedRunnerFromRepo: [
+      "DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}"
+    ],
+    deleteWorkflowRun: ["DELETE /repos/{owner}/{repo}/actions/runs/{run_id}"],
+    deleteWorkflowRunLogs: [
+      "DELETE /repos/{owner}/{repo}/actions/runs/{run_id}/logs"
+    ],
+    disableSelectedRepositoryGithubActionsOrganization: [
+      "DELETE /orgs/{org}/actions/permissions/repositories/{repository_id}"
+    ],
+    disableWorkflow: [
+      "PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable"
+    ],
+    downloadArtifact: [
+      "GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}/{archive_format}"
+    ],
+    downloadJobLogsForWorkflowRun: [
+      "GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs"
+    ],
+    downloadWorkflowRunAttemptLogs: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/logs"
+    ],
+    downloadWorkflowRunLogs: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/logs"
+    ],
+    enableSelectedRepositoryGithubActionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions/repositories/{repository_id}"
+    ],
+    enableWorkflow: [
+      "PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable"
+    ],
+    forceCancelWorkflowRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel"
+    ],
+    generateRunnerJitconfigForOrg: [
+      "POST /orgs/{org}/actions/runners/generate-jitconfig"
+    ],
+    generateRunnerJitconfigForRepo: [
+      "POST /repos/{owner}/{repo}/actions/runners/generate-jitconfig"
+    ],
+    getActionsCacheList: ["GET /repos/{owner}/{repo}/actions/caches"],
+    getActionsCacheUsage: ["GET /repos/{owner}/{repo}/actions/cache/usage"],
+    getActionsCacheUsageByRepoForOrg: [
+      "GET /orgs/{org}/actions/cache/usage-by-repository"
+    ],
+    getActionsCacheUsageForOrg: ["GET /orgs/{org}/actions/cache/usage"],
+    getAllowedActionsOrganization: [
+      "GET /orgs/{org}/actions/permissions/selected-actions"
+    ],
+    getAllowedActionsRepository: [
+      "GET /repos/{owner}/{repo}/actions/permissions/selected-actions"
+    ],
+    getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    getCustomOidcSubClaimForRepo: [
+      "GET /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
+    getEnvironmentPublicKey: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets/public-key"
+    ],
+    getEnvironmentSecret: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
+    ],
+    getEnvironmentVariable: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    getGithubActionsDefaultWorkflowPermissionsOrganization: [
+      "GET /orgs/{org}/actions/permissions/workflow"
+    ],
+    getGithubActionsDefaultWorkflowPermissionsRepository: [
+      "GET /repos/{owner}/{repo}/actions/permissions/workflow"
+    ],
+    getGithubActionsPermissionsOrganization: [
+      "GET /orgs/{org}/actions/permissions"
+    ],
+    getGithubActionsPermissionsRepository: [
+      "GET /repos/{owner}/{repo}/actions/permissions"
+    ],
+    getJobForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/jobs/{job_id}"],
+    getOrgPublicKey: ["GET /orgs/{org}/actions/secrets/public-key"],
+    getOrgSecret: ["GET /orgs/{org}/actions/secrets/{secret_name}"],
+    getOrgVariable: ["GET /orgs/{org}/actions/variables/{name}"],
+    getPendingDeploymentsForRun: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments"
+    ],
+    getRepoPermissions: [
+      "GET /repos/{owner}/{repo}/actions/permissions",
+      {},
+      { renamed: ["actions", "getGithubActionsPermissionsRepository"] }
+    ],
+    getRepoPublicKey: ["GET /repos/{owner}/{repo}/actions/secrets/public-key"],
+    getRepoSecret: ["GET /repos/{owner}/{repo}/actions/secrets/{secret_name}"],
+    getRepoVariable: ["GET /repos/{owner}/{repo}/actions/variables/{name}"],
+    getReviewsForRun: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/approvals"
+    ],
+    getSelfHostedRunnerForOrg: ["GET /orgs/{org}/actions/runners/{runner_id}"],
+    getSelfHostedRunnerForRepo: [
+      "GET /repos/{owner}/{repo}/actions/runners/{runner_id}"
+    ],
+    getWorkflow: ["GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}"],
+    getWorkflowAccessToRepository: [
+      "GET /repos/{owner}/{repo}/actions/permissions/access"
+    ],
+    getWorkflowRun: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}"],
+    getWorkflowRunAttempt: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}"
+    ],
+    getWorkflowRunUsage: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/timing"
+    ],
+    getWorkflowUsage: [
+      "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/timing"
+    ],
+    listArtifactsForRepo: ["GET /repos/{owner}/{repo}/actions/artifacts"],
+    listEnvironmentSecrets: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/secrets"
+    ],
+    listEnvironmentVariables: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/variables"
+    ],
+    listJobsForWorkflowRun: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
+    ],
+    listJobsForWorkflowRunAttempt: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs"
+    ],
+    listLabelsForSelfHostedRunnerForOrg: [
+      "GET /orgs/{org}/actions/runners/{runner_id}/labels"
+    ],
+    listLabelsForSelfHostedRunnerForRepo: [
+      "GET /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
+    ],
+    listOrgSecrets: ["GET /orgs/{org}/actions/secrets"],
+    listOrgVariables: ["GET /orgs/{org}/actions/variables"],
+    listRepoOrganizationSecrets: [
+      "GET /repos/{owner}/{repo}/actions/organization-secrets"
+    ],
+    listRepoOrganizationVariables: [
+      "GET /repos/{owner}/{repo}/actions/organization-variables"
+    ],
+    listRepoSecrets: ["GET /repos/{owner}/{repo}/actions/secrets"],
+    listRepoVariables: ["GET /repos/{owner}/{repo}/actions/variables"],
+    listRepoWorkflows: ["GET /repos/{owner}/{repo}/actions/workflows"],
+    listRunnerApplicationsForOrg: ["GET /orgs/{org}/actions/runners/downloads"],
+    listRunnerApplicationsForRepo: [
+      "GET /repos/{owner}/{repo}/actions/runners/downloads"
+    ],
+    listSelectedReposForOrgSecret: [
+      "GET /orgs/{org}/actions/secrets/{secret_name}/repositories"
+    ],
+    listSelectedReposForOrgVariable: [
+      "GET /orgs/{org}/actions/variables/{name}/repositories"
+    ],
+    listSelectedRepositoriesEnabledGithubActionsOrganization: [
+      "GET /orgs/{org}/actions/permissions/repositories"
+    ],
+    listSelfHostedRunnersForOrg: ["GET /orgs/{org}/actions/runners"],
+    listSelfHostedRunnersForRepo: ["GET /repos/{owner}/{repo}/actions/runners"],
+    listWorkflowRunArtifacts: [
+      "GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
+    ],
+    listWorkflowRuns: [
+      "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs"
+    ],
+    listWorkflowRunsForRepo: ["GET /repos/{owner}/{repo}/actions/runs"],
+    reRunJobForWorkflowRun: [
+      "POST /repos/{owner}/{repo}/actions/jobs/{job_id}/rerun"
+    ],
+    reRunWorkflow: ["POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun"],
+    reRunWorkflowFailedJobs: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs"
+    ],
+    removeAllCustomLabelsFromSelfHostedRunnerForOrg: [
+      "DELETE /orgs/{org}/actions/runners/{runner_id}/labels"
+    ],
+    removeAllCustomLabelsFromSelfHostedRunnerForRepo: [
+      "DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
+    ],
+    removeCustomLabelFromSelfHostedRunnerForOrg: [
+      "DELETE /orgs/{org}/actions/runners/{runner_id}/labels/{name}"
+    ],
+    removeCustomLabelFromSelfHostedRunnerForRepo: [
+      "DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}/labels/{name}"
+    ],
+    removeSelectedRepoFromOrgSecret: [
+      "DELETE /orgs/{org}/actions/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    removeSelectedRepoFromOrgVariable: [
+      "DELETE /orgs/{org}/actions/variables/{name}/repositories/{repository_id}"
+    ],
+    reviewCustomGatesForRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/deployment_protection_rule"
+    ],
+    reviewPendingDeploymentsForRun: [
+      "POST /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments"
+    ],
+    setAllowedActionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions/selected-actions"
+    ],
+    setAllowedActionsRepository: [
+      "PUT /repos/{owner}/{repo}/actions/permissions/selected-actions"
+    ],
+    setCustomLabelsForSelfHostedRunnerForOrg: [
+      "PUT /orgs/{org}/actions/runners/{runner_id}/labels"
+    ],
+    setCustomLabelsForSelfHostedRunnerForRepo: [
+      "PUT /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
+    ],
+    setCustomOidcSubClaimForRepo: [
+      "PUT /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
+    setGithubActionsDefaultWorkflowPermissionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions/workflow"
+    ],
+    setGithubActionsDefaultWorkflowPermissionsRepository: [
+      "PUT /repos/{owner}/{repo}/actions/permissions/workflow"
+    ],
+    setGithubActionsPermissionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions"
+    ],
+    setGithubActionsPermissionsRepository: [
+      "PUT /repos/{owner}/{repo}/actions/permissions"
+    ],
+    setSelectedReposForOrgSecret: [
+      "PUT /orgs/{org}/actions/secrets/{secret_name}/repositories"
+    ],
+    setSelectedReposForOrgVariable: [
+      "PUT /orgs/{org}/actions/variables/{name}/repositories"
+    ],
+    setSelectedRepositoriesEnabledGithubActionsOrganization: [
+      "PUT /orgs/{org}/actions/permissions/repositories"
+    ],
+    setWorkflowAccessToRepository: [
+      "PUT /repos/{owner}/{repo}/actions/permissions/access"
+    ],
+    updateEnvironmentVariable: [
+      "PATCH /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    updateOrgVariable: ["PATCH /orgs/{org}/actions/variables/{name}"],
+    updateRepoVariable: [
+      "PATCH /repos/{owner}/{repo}/actions/variables/{name}"
+    ]
+  },
+  activity: {
+    checkRepoIsStarredByAuthenticatedUser: ["GET /user/starred/{owner}/{repo}"],
+    deleteRepoSubscription: ["DELETE /repos/{owner}/{repo}/subscription"],
+    deleteThreadSubscription: [
+      "DELETE /notifications/threads/{thread_id}/subscription"
+    ],
+    getFeeds: ["GET /feeds"],
+    getRepoSubscription: ["GET /repos/{owner}/{repo}/subscription"],
+    getThread: ["GET /notifications/threads/{thread_id}"],
+    getThreadSubscriptionForAuthenticatedUser: [
+      "GET /notifications/threads/{thread_id}/subscription"
+    ],
+    listEventsForAuthenticatedUser: ["GET /users/{username}/events"],
+    listNotificationsForAuthenticatedUser: ["GET /notifications"],
+    listOrgEventsForAuthenticatedUser: [
+      "GET /users/{username}/events/orgs/{org}"
+    ],
+    listPublicEvents: ["GET /events"],
+    listPublicEventsForRepoNetwork: ["GET /networks/{owner}/{repo}/events"],
+    listPublicEventsForUser: ["GET /users/{username}/events/public"],
+    listPublicOrgEvents: ["GET /orgs/{org}/events"],
+    listReceivedEventsForUser: ["GET /users/{username}/received_events"],
+    listReceivedPublicEventsForUser: [
+      "GET /users/{username}/received_events/public"
+    ],
+    listRepoEvents: ["GET /repos/{owner}/{repo}/events"],
+    listRepoNotificationsForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/notifications"
+    ],
+    listReposStarredByAuthenticatedUser: ["GET /user/starred"],
+    listReposStarredByUser: ["GET /users/{username}/starred"],
+    listReposWatchedByUser: ["GET /users/{username}/subscriptions"],
+    listStargazersForRepo: ["GET /repos/{owner}/{repo}/stargazers"],
+    listWatchedReposForAuthenticatedUser: ["GET /user/subscriptions"],
+    listWatchersForRepo: ["GET /repos/{owner}/{repo}/subscribers"],
+    markNotificationsAsRead: ["PUT /notifications"],
+    markRepoNotificationsAsRead: ["PUT /repos/{owner}/{repo}/notifications"],
+    markThreadAsDone: ["DELETE /notifications/threads/{thread_id}"],
+    markThreadAsRead: ["PATCH /notifications/threads/{thread_id}"],
+    setRepoSubscription: ["PUT /repos/{owner}/{repo}/subscription"],
+    setThreadSubscription: [
+      "PUT /notifications/threads/{thread_id}/subscription"
+    ],
+    starRepoForAuthenticatedUser: ["PUT /user/starred/{owner}/{repo}"],
+    unstarRepoForAuthenticatedUser: ["DELETE /user/starred/{owner}/{repo}"]
+  },
+  apps: {
+    addRepoToInstallation: [
+      "PUT /user/installations/{installation_id}/repositories/{repository_id}",
+      {},
+      { renamed: ["apps", "addRepoToInstallationForAuthenticatedUser"] }
+    ],
+    addRepoToInstallationForAuthenticatedUser: [
+      "PUT /user/installations/{installation_id}/repositories/{repository_id}"
+    ],
+    checkToken: ["POST /applications/{client_id}/token"],
+    createFromManifest: ["POST /app-manifests/{code}/conversions"],
+    createInstallationAccessToken: [
+      "POST /app/installations/{installation_id}/access_tokens"
+    ],
+    deleteAuthorization: ["DELETE /applications/{client_id}/grant"],
+    deleteInstallation: ["DELETE /app/installations/{installation_id}"],
+    deleteToken: ["DELETE /applications/{client_id}/token"],
+    getAuthenticated: ["GET /app"],
+    getBySlug: ["GET /apps/{app_slug}"],
+    getInstallation: ["GET /app/installations/{installation_id}"],
+    getOrgInstallation: ["GET /orgs/{org}/installation"],
+    getRepoInstallation: ["GET /repos/{owner}/{repo}/installation"],
+    getSubscriptionPlanForAccount: [
+      "GET /marketplace_listing/accounts/{account_id}"
+    ],
+    getSubscriptionPlanForAccountStubbed: [
+      "GET /marketplace_listing/stubbed/accounts/{account_id}"
+    ],
+    getUserInstallation: ["GET /users/{username}/installation"],
+    getWebhookConfigForApp: ["GET /app/hook/config"],
+    getWebhookDelivery: ["GET /app/hook/deliveries/{delivery_id}"],
+    listAccountsForPlan: ["GET /marketplace_listing/plans/{plan_id}/accounts"],
+    listAccountsForPlanStubbed: [
+      "GET /marketplace_listing/stubbed/plans/{plan_id}/accounts"
+    ],
+    listInstallationReposForAuthenticatedUser: [
+      "GET /user/installations/{installation_id}/repositories"
+    ],
+    listInstallationRequestsForAuthenticatedApp: [
+      "GET /app/installation-requests"
+    ],
+    listInstallations: ["GET /app/installations"],
+    listInstallationsForAuthenticatedUser: ["GET /user/installations"],
+    listPlans: ["GET /marketplace_listing/plans"],
+    listPlansStubbed: ["GET /marketplace_listing/stubbed/plans"],
+    listReposAccessibleToInstallation: ["GET /installation/repositories"],
+    listSubscriptionsForAuthenticatedUser: ["GET /user/marketplace_purchases"],
+    listSubscriptionsForAuthenticatedUserStubbed: [
+      "GET /user/marketplace_purchases/stubbed"
+    ],
+    listWebhookDeliveries: ["GET /app/hook/deliveries"],
+    redeliverWebhookDelivery: [
+      "POST /app/hook/deliveries/{delivery_id}/attempts"
+    ],
+    removeRepoFromInstallation: [
+      "DELETE /user/installations/{installation_id}/repositories/{repository_id}",
+      {},
+      { renamed: ["apps", "removeRepoFromInstallationForAuthenticatedUser"] }
+    ],
+    removeRepoFromInstallationForAuthenticatedUser: [
+      "DELETE /user/installations/{installation_id}/repositories/{repository_id}"
+    ],
+    resetToken: ["PATCH /applications/{client_id}/token"],
+    revokeInstallationAccessToken: ["DELETE /installation/token"],
+    scopeToken: ["POST /applications/{client_id}/token/scoped"],
+    suspendInstallation: ["PUT /app/installations/{installation_id}/suspended"],
+    unsuspendInstallation: [
+      "DELETE /app/installations/{installation_id}/suspended"
+    ],
+    updateWebhookConfigForApp: ["PATCH /app/hook/config"]
+  },
+  billing: {
+    getGithubActionsBillingOrg: ["GET /orgs/{org}/settings/billing/actions"],
+    getGithubActionsBillingUser: [
+      "GET /users/{username}/settings/billing/actions"
+    ],
+    getGithubPackagesBillingOrg: ["GET /orgs/{org}/settings/billing/packages"],
+    getGithubPackagesBillingUser: [
+      "GET /users/{username}/settings/billing/packages"
+    ],
+    getSharedStorageBillingOrg: [
+      "GET /orgs/{org}/settings/billing/shared-storage"
+    ],
+    getSharedStorageBillingUser: [
+      "GET /users/{username}/settings/billing/shared-storage"
+    ]
+  },
+  checks: {
+    create: ["POST /repos/{owner}/{repo}/check-runs"],
+    createSuite: ["POST /repos/{owner}/{repo}/check-suites"],
+    get: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}"],
+    getSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}"],
+    listAnnotations: [
+      "GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations"
+    ],
+    listForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-runs"],
+    listForSuite: [
+      "GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs"
+    ],
+    listSuitesForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-suites"],
+    rerequestRun: [
+      "POST /repos/{owner}/{repo}/check-runs/{check_run_id}/rerequest"
+    ],
+    rerequestSuite: [
+      "POST /repos/{owner}/{repo}/check-suites/{check_suite_id}/rerequest"
+    ],
+    setSuitesPreferences: [
+      "PATCH /repos/{owner}/{repo}/check-suites/preferences"
+    ],
+    update: ["PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}"]
+  },
+  codeScanning: {
+    deleteAnalysis: [
+      "DELETE /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}{?confirm_delete}"
+    ],
+    getAlert: [
+      "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}",
+      {},
+      { renamedParameters: { alert_id: "alert_number" } }
+    ],
+    getAnalysis: [
+      "GET /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}"
+    ],
+    getCodeqlDatabase: [
+      "GET /repos/{owner}/{repo}/code-scanning/codeql/databases/{language}"
+    ],
+    getDefaultSetup: ["GET /repos/{owner}/{repo}/code-scanning/default-setup"],
+    getSarif: ["GET /repos/{owner}/{repo}/code-scanning/sarifs/{sarif_id}"],
+    listAlertInstances: [
+      "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances"
+    ],
+    listAlertsForOrg: ["GET /orgs/{org}/code-scanning/alerts"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/code-scanning/alerts"],
+    listAlertsInstances: [
+      "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances",
+      {},
+      { renamed: ["codeScanning", "listAlertInstances"] }
+    ],
+    listCodeqlDatabases: [
+      "GET /repos/{owner}/{repo}/code-scanning/codeql/databases"
+    ],
+    listRecentAnalyses: ["GET /repos/{owner}/{repo}/code-scanning/analyses"],
+    updateAlert: [
+      "PATCH /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}"
+    ],
+    updateDefaultSetup: [
+      "PATCH /repos/{owner}/{repo}/code-scanning/default-setup"
+    ],
+    uploadSarif: ["POST /repos/{owner}/{repo}/code-scanning/sarifs"]
+  },
+  codesOfConduct: {
+    getAllCodesOfConduct: ["GET /codes_of_conduct"],
+    getConductCode: ["GET /codes_of_conduct/{key}"]
+  },
+  codespaces: {
+    addRepositoryForSecretForAuthenticatedUser: [
+      "PUT /user/codespaces/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    addSelectedRepoToOrgSecret: [
+      "PUT /orgs/{org}/codespaces/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    checkPermissionsForDevcontainer: [
+      "GET /repos/{owner}/{repo}/codespaces/permissions_check"
+    ],
+    codespaceMachinesForAuthenticatedUser: [
+      "GET /user/codespaces/{codespace_name}/machines"
+    ],
+    createForAuthenticatedUser: ["POST /user/codespaces"],
+    createOrUpdateOrgSecret: [
+      "PUT /orgs/{org}/codespaces/secrets/{secret_name}"
+    ],
+    createOrUpdateRepoSecret: [
+      "PUT /repos/{owner}/{repo}/codespaces/secrets/{secret_name}"
+    ],
+    createOrUpdateSecretForAuthenticatedUser: [
+      "PUT /user/codespaces/secrets/{secret_name}"
+    ],
+    createWithPrForAuthenticatedUser: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/codespaces"
+    ],
+    createWithRepoForAuthenticatedUser: [
+      "POST /repos/{owner}/{repo}/codespaces"
+    ],
+    deleteForAuthenticatedUser: ["DELETE /user/codespaces/{codespace_name}"],
+    deleteFromOrganization: [
+      "DELETE /orgs/{org}/members/{username}/codespaces/{codespace_name}"
+    ],
+    deleteOrgSecret: ["DELETE /orgs/{org}/codespaces/secrets/{secret_name}"],
+    deleteRepoSecret: [
+      "DELETE /repos/{owner}/{repo}/codespaces/secrets/{secret_name}"
+    ],
+    deleteSecretForAuthenticatedUser: [
+      "DELETE /user/codespaces/secrets/{secret_name}"
+    ],
+    exportForAuthenticatedUser: [
+      "POST /user/codespaces/{codespace_name}/exports"
+    ],
+    getCodespacesForUserInOrg: [
+      "GET /orgs/{org}/members/{username}/codespaces"
+    ],
+    getExportDetailsForAuthenticatedUser: [
+      "GET /user/codespaces/{codespace_name}/exports/{export_id}"
+    ],
+    getForAuthenticatedUser: ["GET /user/codespaces/{codespace_name}"],
+    getOrgPublicKey: ["GET /orgs/{org}/codespaces/secrets/public-key"],
+    getOrgSecret: ["GET /orgs/{org}/codespaces/secrets/{secret_name}"],
+    getPublicKeyForAuthenticatedUser: [
+      "GET /user/codespaces/secrets/public-key"
+    ],
+    getRepoPublicKey: [
+      "GET /repos/{owner}/{repo}/codespaces/secrets/public-key"
+    ],
+    getRepoSecret: [
+      "GET /repos/{owner}/{repo}/codespaces/secrets/{secret_name}"
+    ],
+    getSecretForAuthenticatedUser: [
+      "GET /user/codespaces/secrets/{secret_name}"
+    ],
+    listDevcontainersInRepositoryForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/codespaces/devcontainers"
+    ],
+    listForAuthenticatedUser: ["GET /user/codespaces"],
+    listInOrganization: [
+      "GET /orgs/{org}/codespaces",
+      {},
+      { renamedParameters: { org_id: "org" } }
+    ],
+    listInRepositoryForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/codespaces"
+    ],
+    listOrgSecrets: ["GET /orgs/{org}/codespaces/secrets"],
+    listRepoSecrets: ["GET /repos/{owner}/{repo}/codespaces/secrets"],
+    listRepositoriesForSecretForAuthenticatedUser: [
+      "GET /user/codespaces/secrets/{secret_name}/repositories"
+    ],
+    listSecretsForAuthenticatedUser: ["GET /user/codespaces/secrets"],
+    listSelectedReposForOrgSecret: [
+      "GET /orgs/{org}/codespaces/secrets/{secret_name}/repositories"
+    ],
+    preFlightWithRepoForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/codespaces/new"
+    ],
+    publishForAuthenticatedUser: [
+      "POST /user/codespaces/{codespace_name}/publish"
+    ],
+    removeRepositoryForSecretForAuthenticatedUser: [
+      "DELETE /user/codespaces/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    removeSelectedRepoFromOrgSecret: [
+      "DELETE /orgs/{org}/codespaces/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    repoMachinesForAuthenticatedUser: [
+      "GET /repos/{owner}/{repo}/codespaces/machines"
+    ],
+    setRepositoriesForSecretForAuthenticatedUser: [
+      "PUT /user/codespaces/secrets/{secret_name}/repositories"
+    ],
+    setSelectedReposForOrgSecret: [
+      "PUT /orgs/{org}/codespaces/secrets/{secret_name}/repositories"
+    ],
+    startForAuthenticatedUser: ["POST /user/codespaces/{codespace_name}/start"],
+    stopForAuthenticatedUser: ["POST /user/codespaces/{codespace_name}/stop"],
+    stopInOrganization: [
+      "POST /orgs/{org}/members/{username}/codespaces/{codespace_name}/stop"
+    ],
+    updateForAuthenticatedUser: ["PATCH /user/codespaces/{codespace_name}"]
+  },
+  copilot: {
+    addCopilotSeatsForTeams: [
+      "POST /orgs/{org}/copilot/billing/selected_teams"
+    ],
+    addCopilotSeatsForUsers: [
+      "POST /orgs/{org}/copilot/billing/selected_users"
+    ],
+    cancelCopilotSeatAssignmentForTeams: [
+      "DELETE /orgs/{org}/copilot/billing/selected_teams"
+    ],
+    cancelCopilotSeatAssignmentForUsers: [
+      "DELETE /orgs/{org}/copilot/billing/selected_users"
+    ],
+    getCopilotOrganizationDetails: ["GET /orgs/{org}/copilot/billing"],
+    getCopilotSeatDetailsForUser: [
+      "GET /orgs/{org}/members/{username}/copilot"
+    ],
+    listCopilotSeats: ["GET /orgs/{org}/copilot/billing/seats"],
+    usageMetricsForEnterprise: ["GET /enterprises/{enterprise}/copilot/usage"],
+    usageMetricsForOrg: ["GET /orgs/{org}/copilot/usage"],
+    usageMetricsForTeam: ["GET /orgs/{org}/team/{team_slug}/copilot/usage"]
+  },
+  dependabot: {
+    addSelectedRepoToOrgSecret: [
+      "PUT /orgs/{org}/dependabot/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    createOrUpdateOrgSecret: [
+      "PUT /orgs/{org}/dependabot/secrets/{secret_name}"
+    ],
+    createOrUpdateRepoSecret: [
+      "PUT /repos/{owner}/{repo}/dependabot/secrets/{secret_name}"
+    ],
+    deleteOrgSecret: ["DELETE /orgs/{org}/dependabot/secrets/{secret_name}"],
+    deleteRepoSecret: [
+      "DELETE /repos/{owner}/{repo}/dependabot/secrets/{secret_name}"
+    ],
+    getAlert: ["GET /repos/{owner}/{repo}/dependabot/alerts/{alert_number}"],
+    getOrgPublicKey: ["GET /orgs/{org}/dependabot/secrets/public-key"],
+    getOrgSecret: ["GET /orgs/{org}/dependabot/secrets/{secret_name}"],
+    getRepoPublicKey: [
+      "GET /repos/{owner}/{repo}/dependabot/secrets/public-key"
+    ],
+    getRepoSecret: [
+      "GET /repos/{owner}/{repo}/dependabot/secrets/{secret_name}"
+    ],
+    listAlertsForEnterprise: [
+      "GET /enterprises/{enterprise}/dependabot/alerts"
+    ],
+    listAlertsForOrg: ["GET /orgs/{org}/dependabot/alerts"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/dependabot/alerts"],
+    listOrgSecrets: ["GET /orgs/{org}/dependabot/secrets"],
+    listRepoSecrets: ["GET /repos/{owner}/{repo}/dependabot/secrets"],
+    listSelectedReposForOrgSecret: [
+      "GET /orgs/{org}/dependabot/secrets/{secret_name}/repositories"
+    ],
+    removeSelectedRepoFromOrgSecret: [
+      "DELETE /orgs/{org}/dependabot/secrets/{secret_name}/repositories/{repository_id}"
+    ],
+    setSelectedReposForOrgSecret: [
+      "PUT /orgs/{org}/dependabot/secrets/{secret_name}/repositories"
+    ],
+    updateAlert: [
+      "PATCH /repos/{owner}/{repo}/dependabot/alerts/{alert_number}"
+    ]
+  },
+  dependencyGraph: {
+    createRepositorySnapshot: [
+      "POST /repos/{owner}/{repo}/dependency-graph/snapshots"
+    ],
+    diffRange: [
+      "GET /repos/{owner}/{repo}/dependency-graph/compare/{basehead}"
+    ],
+    exportSbom: ["GET /repos/{owner}/{repo}/dependency-graph/sbom"]
+  },
+  emojis: { get: ["GET /emojis"] },
+  gists: {
+    checkIsStarred: ["GET /gists/{gist_id}/star"],
+    create: ["POST /gists"],
+    createComment: ["POST /gists/{gist_id}/comments"],
+    delete: ["DELETE /gists/{gist_id}"],
+    deleteComment: ["DELETE /gists/{gist_id}/comments/{comment_id}"],
+    fork: ["POST /gists/{gist_id}/forks"],
+    get: ["GET /gists/{gist_id}"],
+    getComment: ["GET /gists/{gist_id}/comments/{comment_id}"],
+    getRevision: ["GET /gists/{gist_id}/{sha}"],
+    list: ["GET /gists"],
+    listComments: ["GET /gists/{gist_id}/comments"],
+    listCommits: ["GET /gists/{gist_id}/commits"],
+    listForUser: ["GET /users/{username}/gists"],
+    listForks: ["GET /gists/{gist_id}/forks"],
+    listPublic: ["GET /gists/public"],
+    listStarred: ["GET /gists/starred"],
+    star: ["PUT /gists/{gist_id}/star"],
+    unstar: ["DELETE /gists/{gist_id}/star"],
+    update: ["PATCH /gists/{gist_id}"],
+    updateComment: ["PATCH /gists/{gist_id}/comments/{comment_id}"]
+  },
+  git: {
+    createBlob: ["POST /repos/{owner}/{repo}/git/blobs"],
+    createCommit: ["POST /repos/{owner}/{repo}/git/commits"],
+    createRef: ["POST /repos/{owner}/{repo}/git/refs"],
+    createTag: ["POST /repos/{owner}/{repo}/git/tags"],
+    createTree: ["POST /repos/{owner}/{repo}/git/trees"],
+    deleteRef: ["DELETE /repos/{owner}/{repo}/git/refs/{ref}"],
+    getBlob: ["GET /repos/{owner}/{repo}/git/blobs/{file_sha}"],
+    getCommit: ["GET /repos/{owner}/{repo}/git/commits/{commit_sha}"],
+    getRef: ["GET /repos/{owner}/{repo}/git/ref/{ref}"],
+    getTag: ["GET /repos/{owner}/{repo}/git/tags/{tag_sha}"],
+    getTree: ["GET /repos/{owner}/{repo}/git/trees/{tree_sha}"],
+    listMatchingRefs: ["GET /repos/{owner}/{repo}/git/matching-refs/{ref}"],
+    updateRef: ["PATCH /repos/{owner}/{repo}/git/refs/{ref}"]
+  },
+  gitignore: {
+    getAllTemplates: ["GET /gitignore/templates"],
+    getTemplate: ["GET /gitignore/templates/{name}"]
+  },
+  interactions: {
+    getRestrictionsForAuthenticatedUser: ["GET /user/interaction-limits"],
+    getRestrictionsForOrg: ["GET /orgs/{org}/interaction-limits"],
+    getRestrictionsForRepo: ["GET /repos/{owner}/{repo}/interaction-limits"],
+    getRestrictionsForYourPublicRepos: [
+      "GET /user/interaction-limits",
+      {},
+      { renamed: ["interactions", "getRestrictionsForAuthenticatedUser"] }
+    ],
+    removeRestrictionsForAuthenticatedUser: ["DELETE /user/interaction-limits"],
+    removeRestrictionsForOrg: ["DELETE /orgs/{org}/interaction-limits"],
+    removeRestrictionsForRepo: [
+      "DELETE /repos/{owner}/{repo}/interaction-limits"
+    ],
+    removeRestrictionsForYourPublicRepos: [
+      "DELETE /user/interaction-limits",
+      {},
+      { renamed: ["interactions", "removeRestrictionsForAuthenticatedUser"] }
+    ],
+    setRestrictionsForAuthenticatedUser: ["PUT /user/interaction-limits"],
+    setRestrictionsForOrg: ["PUT /orgs/{org}/interaction-limits"],
+    setRestrictionsForRepo: ["PUT /repos/{owner}/{repo}/interaction-limits"],
+    setRestrictionsForYourPublicRepos: [
+      "PUT /user/interaction-limits",
+      {},
+      { renamed: ["interactions", "setRestrictionsForAuthenticatedUser"] }
+    ]
+  },
+  issues: {
+    addAssignees: [
+      "POST /repos/{owner}/{repo}/issues/{issue_number}/assignees"
+    ],
+    addLabels: ["POST /repos/{owner}/{repo}/issues/{issue_number}/labels"],
+    checkUserCanBeAssigned: ["GET /repos/{owner}/{repo}/assignees/{assignee}"],
+    checkUserCanBeAssignedToIssue: [
+      "GET /repos/{owner}/{repo}/issues/{issue_number}/assignees/{assignee}"
+    ],
+    create: ["POST /repos/{owner}/{repo}/issues"],
+    createComment: [
+      "POST /repos/{owner}/{repo}/issues/{issue_number}/comments"
+    ],
+    createLabel: ["POST /repos/{owner}/{repo}/labels"],
+    createMilestone: ["POST /repos/{owner}/{repo}/milestones"],
+    deleteComment: [
+      "DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}"
+    ],
+    deleteLabel: ["DELETE /repos/{owner}/{repo}/labels/{name}"],
+    deleteMilestone: [
+      "DELETE /repos/{owner}/{repo}/milestones/{milestone_number}"
+    ],
+    get: ["GET /repos/{owner}/{repo}/issues/{issue_number}"],
+    getComment: ["GET /repos/{owner}/{repo}/issues/comments/{comment_id}"],
+    getEvent: ["GET /repos/{owner}/{repo}/issues/events/{event_id}"],
+    getLabel: ["GET /repos/{owner}/{repo}/labels/{name}"],
+    getMilestone: ["GET /repos/{owner}/{repo}/milestones/{milestone_number}"],
+    list: ["GET /issues"],
+    listAssignees: ["GET /repos/{owner}/{repo}/assignees"],
+    listComments: ["GET /repos/{owner}/{repo}/issues/{issue_number}/comments"],
+    listCommentsForRepo: ["GET /repos/{owner}/{repo}/issues/comments"],
+    listEvents: ["GET /repos/{owner}/{repo}/issues/{issue_number}/events"],
+    listEventsForRepo: ["GET /repos/{owner}/{repo}/issues/events"],
+    listEventsForTimeline: [
+      "GET /repos/{owner}/{repo}/issues/{issue_number}/timeline"
+    ],
+    listForAuthenticatedUser: ["GET /user/issues"],
+    listForOrg: ["GET /orgs/{org}/issues"],
+    listForRepo: ["GET /repos/{owner}/{repo}/issues"],
+    listLabelsForMilestone: [
+      "GET /repos/{owner}/{repo}/milestones/{milestone_number}/labels"
+    ],
+    listLabelsForRepo: ["GET /repos/{owner}/{repo}/labels"],
+    listLabelsOnIssue: [
+      "GET /repos/{owner}/{repo}/issues/{issue_number}/labels"
+    ],
+    listMilestones: ["GET /repos/{owner}/{repo}/milestones"],
+    lock: ["PUT /repos/{owner}/{repo}/issues/{issue_number}/lock"],
+    removeAllLabels: [
+      "DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels"
+    ],
+    removeAssignees: [
+      "DELETE /repos/{owner}/{repo}/issues/{issue_number}/assignees"
+    ],
+    removeLabel: [
+      "DELETE /repos/{owner}/{repo}/issues/{issue_number}/labels/{name}"
+    ],
+    setLabels: ["PUT /repos/{owner}/{repo}/issues/{issue_number}/labels"],
+    unlock: ["DELETE /repos/{owner}/{repo}/issues/{issue_number}/lock"],
+    update: ["PATCH /repos/{owner}/{repo}/issues/{issue_number}"],
+    updateComment: ["PATCH /repos/{owner}/{repo}/issues/comments/{comment_id}"],
+    updateLabel: ["PATCH /repos/{owner}/{repo}/labels/{name}"],
+    updateMilestone: [
+      "PATCH /repos/{owner}/{repo}/milestones/{milestone_number}"
+    ]
+  },
+  licenses: {
+    get: ["GET /licenses/{license}"],
+    getAllCommonlyUsed: ["GET /licenses"],
+    getForRepo: ["GET /repos/{owner}/{repo}/license"]
+  },
+  markdown: {
+    render: ["POST /markdown"],
+    renderRaw: [
+      "POST /markdown/raw",
+      { headers: { "content-type": "text/plain; charset=utf-8" } }
+    ]
+  },
+  meta: {
+    get: ["GET /meta"],
+    getAllVersions: ["GET /versions"],
+    getOctocat: ["GET /octocat"],
+    getZen: ["GET /zen"],
+    root: ["GET /"]
+  },
+  migrations: {
+    deleteArchiveForAuthenticatedUser: [
+      "DELETE /user/migrations/{migration_id}/archive"
+    ],
+    deleteArchiveForOrg: [
+      "DELETE /orgs/{org}/migrations/{migration_id}/archive"
+    ],
+    downloadArchiveForOrg: [
+      "GET /orgs/{org}/migrations/{migration_id}/archive"
+    ],
+    getArchiveForAuthenticatedUser: [
+      "GET /user/migrations/{migration_id}/archive"
+    ],
+    getStatusForAuthenticatedUser: ["GET /user/migrations/{migration_id}"],
+    getStatusForOrg: ["GET /orgs/{org}/migrations/{migration_id}"],
+    listForAuthenticatedUser: ["GET /user/migrations"],
+    listForOrg: ["GET /orgs/{org}/migrations"],
+    listReposForAuthenticatedUser: [
+      "GET /user/migrations/{migration_id}/repositories"
+    ],
+    listReposForOrg: ["GET /orgs/{org}/migrations/{migration_id}/repositories"],
+    listReposForUser: [
+      "GET /user/migrations/{migration_id}/repositories",
+      {},
+      { renamed: ["migrations", "listReposForAuthenticatedUser"] }
+    ],
+    startForAuthenticatedUser: ["POST /user/migrations"],
+    startForOrg: ["POST /orgs/{org}/migrations"],
+    unlockRepoForAuthenticatedUser: [
+      "DELETE /user/migrations/{migration_id}/repos/{repo_name}/lock"
+    ],
+    unlockRepoForOrg: [
+      "DELETE /orgs/{org}/migrations/{migration_id}/repos/{repo_name}/lock"
+    ]
+  },
+  oidc: {
+    getOidcCustomSubTemplateForOrg: [
+      "GET /orgs/{org}/actions/oidc/customization/sub"
+    ],
+    updateOidcCustomSubTemplateForOrg: [
+      "PUT /orgs/{org}/actions/oidc/customization/sub"
+    ]
+  },
+  orgs: {
+    addSecurityManagerTeam: [
+      "PUT /orgs/{org}/security-managers/teams/{team_slug}"
+    ],
+    assignTeamToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    assignUserToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/users/{username}/{role_id}"
+    ],
+    blockUser: ["PUT /orgs/{org}/blocks/{username}"],
+    cancelInvitation: ["DELETE /orgs/{org}/invitations/{invitation_id}"],
+    checkBlockedUser: ["GET /orgs/{org}/blocks/{username}"],
+    checkMembershipForUser: ["GET /orgs/{org}/members/{username}"],
+    checkPublicMembershipForUser: ["GET /orgs/{org}/public_members/{username}"],
+    convertMemberToOutsideCollaborator: [
+      "PUT /orgs/{org}/outside_collaborators/{username}"
+    ],
+    createCustomOrganizationRole: ["POST /orgs/{org}/organization-roles"],
+    createInvitation: ["POST /orgs/{org}/invitations"],
+    createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
+    createOrUpdateCustomPropertiesValuesForRepos: [
+      "PATCH /orgs/{org}/properties/values"
+    ],
+    createOrUpdateCustomProperty: [
+      "PUT /orgs/{org}/properties/schema/{custom_property_name}"
+    ],
+    createWebhook: ["POST /orgs/{org}/hooks"],
+    delete: ["DELETE /orgs/{org}"],
+    deleteCustomOrganizationRole: [
+      "DELETE /orgs/{org}/organization-roles/{role_id}"
+    ],
+    deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
+    enableOrDisableSecurityProductOnAllOrgRepos: [
+      "POST /orgs/{org}/{security_product}/{enablement}"
+    ],
+    get: ["GET /orgs/{org}"],
+    getAllCustomProperties: ["GET /orgs/{org}/properties/schema"],
+    getCustomProperty: [
+      "GET /orgs/{org}/properties/schema/{custom_property_name}"
+    ],
+    getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
+    getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
+    getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
+    getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
+    getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
+    getWebhookDelivery: [
+      "GET /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}"
+    ],
+    list: ["GET /organizations"],
+    listAppInstallations: ["GET /orgs/{org}/installations"],
+    listBlockedUsers: ["GET /orgs/{org}/blocks"],
+    listCustomPropertiesValuesForRepos: ["GET /orgs/{org}/properties/values"],
+    listFailedInvitations: ["GET /orgs/{org}/failed_invitations"],
+    listForAuthenticatedUser: ["GET /user/orgs"],
+    listForUser: ["GET /users/{username}/orgs"],
+    listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
+    listMembers: ["GET /orgs/{org}/members"],
+    listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
+    listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
+    listOrgRoleUsers: ["GET /orgs/{org}/organization-roles/{role_id}/users"],
+    listOrgRoles: ["GET /orgs/{org}/organization-roles"],
+    listOrganizationFineGrainedPermissions: [
+      "GET /orgs/{org}/organization-fine-grained-permissions"
+    ],
+    listOutsideCollaborators: ["GET /orgs/{org}/outside_collaborators"],
+    listPatGrantRepositories: [
+      "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories"
+    ],
+    listPatGrantRequestRepositories: [
+      "GET /orgs/{org}/personal-access-token-requests/{pat_request_id}/repositories"
+    ],
+    listPatGrantRequests: ["GET /orgs/{org}/personal-access-token-requests"],
+    listPatGrants: ["GET /orgs/{org}/personal-access-tokens"],
+    listPendingInvitations: ["GET /orgs/{org}/invitations"],
+    listPublicMembers: ["GET /orgs/{org}/public_members"],
+    listSecurityManagerTeams: ["GET /orgs/{org}/security-managers"],
+    listWebhookDeliveries: ["GET /orgs/{org}/hooks/{hook_id}/deliveries"],
+    listWebhooks: ["GET /orgs/{org}/hooks"],
+    patchCustomOrganizationRole: [
+      "PATCH /orgs/{org}/organization-roles/{role_id}"
+    ],
+    pingWebhook: ["POST /orgs/{org}/hooks/{hook_id}/pings"],
+    redeliverWebhookDelivery: [
+      "POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
+    ],
+    removeCustomProperty: [
+      "DELETE /orgs/{org}/properties/schema/{custom_property_name}"
+    ],
+    removeMember: ["DELETE /orgs/{org}/members/{username}"],
+    removeMembershipForUser: ["DELETE /orgs/{org}/memberships/{username}"],
+    removeOutsideCollaborator: [
+      "DELETE /orgs/{org}/outside_collaborators/{username}"
+    ],
+    removePublicMembershipForAuthenticatedUser: [
+      "DELETE /orgs/{org}/public_members/{username}"
+    ],
+    removeSecurityManagerTeam: [
+      "DELETE /orgs/{org}/security-managers/teams/{team_slug}"
+    ],
+    reviewPatGrantRequest: [
+      "POST /orgs/{org}/personal-access-token-requests/{pat_request_id}"
+    ],
+    reviewPatGrantRequestsInBulk: [
+      "POST /orgs/{org}/personal-access-token-requests"
+    ],
+    revokeAllOrgRolesTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}"
+    ],
+    revokeAllOrgRolesUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}"
+    ],
+    revokeOrgRoleTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    revokeOrgRoleUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}/{role_id}"
+    ],
+    setMembershipForUser: ["PUT /orgs/{org}/memberships/{username}"],
+    setPublicMembershipForAuthenticatedUser: [
+      "PUT /orgs/{org}/public_members/{username}"
+    ],
+    unblockUser: ["DELETE /orgs/{org}/blocks/{username}"],
+    update: ["PATCH /orgs/{org}"],
+    updateMembershipForAuthenticatedUser: [
+      "PATCH /user/memberships/orgs/{org}"
+    ],
+    updatePatAccess: ["POST /orgs/{org}/personal-access-tokens/{pat_id}"],
+    updatePatAccesses: ["POST /orgs/{org}/personal-access-tokens"],
+    updateWebhook: ["PATCH /orgs/{org}/hooks/{hook_id}"],
+    updateWebhookConfigForOrg: ["PATCH /orgs/{org}/hooks/{hook_id}/config"]
+  },
+  packages: {
+    deletePackageForAuthenticatedUser: [
+      "DELETE /user/packages/{package_type}/{package_name}"
+    ],
+    deletePackageForOrg: [
+      "DELETE /orgs/{org}/packages/{package_type}/{package_name}"
+    ],
+    deletePackageForUser: [
+      "DELETE /users/{username}/packages/{package_type}/{package_name}"
+    ],
+    deletePackageVersionForAuthenticatedUser: [
+      "DELETE /user/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    deletePackageVersionForOrg: [
+      "DELETE /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    deletePackageVersionForUser: [
+      "DELETE /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    getAllPackageVersionsForAPackageOwnedByAnOrg: [
+      "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
+      {},
+      { renamed: ["packages", "getAllPackageVersionsForPackageOwnedByOrg"] }
+    ],
+    getAllPackageVersionsForAPackageOwnedByTheAuthenticatedUser: [
+      "GET /user/packages/{package_type}/{package_name}/versions",
+      {},
+      {
+        renamed: [
+          "packages",
+          "getAllPackageVersionsForPackageOwnedByAuthenticatedUser"
+        ]
+      }
+    ],
+    getAllPackageVersionsForPackageOwnedByAuthenticatedUser: [
+      "GET /user/packages/{package_type}/{package_name}/versions"
+    ],
+    getAllPackageVersionsForPackageOwnedByOrg: [
+      "GET /orgs/{org}/packages/{package_type}/{package_name}/versions"
+    ],
+    getAllPackageVersionsForPackageOwnedByUser: [
+      "GET /users/{username}/packages/{package_type}/{package_name}/versions"
+    ],
+    getPackageForAuthenticatedUser: [
+      "GET /user/packages/{package_type}/{package_name}"
+    ],
+    getPackageForOrganization: [
+      "GET /orgs/{org}/packages/{package_type}/{package_name}"
+    ],
+    getPackageForUser: [
+      "GET /users/{username}/packages/{package_type}/{package_name}"
+    ],
+    getPackageVersionForAuthenticatedUser: [
+      "GET /user/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    getPackageVersionForOrganization: [
+      "GET /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    getPackageVersionForUser: [
+      "GET /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}"
+    ],
+    listDockerMigrationConflictingPackagesForAuthenticatedUser: [
+      "GET /user/docker/conflicts"
+    ],
+    listDockerMigrationConflictingPackagesForOrganization: [
+      "GET /orgs/{org}/docker/conflicts"
+    ],
+    listDockerMigrationConflictingPackagesForUser: [
+      "GET /users/{username}/docker/conflicts"
+    ],
+    listPackagesForAuthenticatedUser: ["GET /user/packages"],
+    listPackagesForOrganization: ["GET /orgs/{org}/packages"],
+    listPackagesForUser: ["GET /users/{username}/packages"],
+    restorePackageForAuthenticatedUser: [
+      "POST /user/packages/{package_type}/{package_name}/restore{?token}"
+    ],
+    restorePackageForOrg: [
+      "POST /orgs/{org}/packages/{package_type}/{package_name}/restore{?token}"
+    ],
+    restorePackageForUser: [
+      "POST /users/{username}/packages/{package_type}/{package_name}/restore{?token}"
+    ],
+    restorePackageVersionForAuthenticatedUser: [
+      "POST /user/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"
+    ],
+    restorePackageVersionForOrg: [
+      "POST /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"
+    ],
+    restorePackageVersionForUser: [
+      "POST /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"
+    ]
+  },
+  projects: {
+    addCollaborator: ["PUT /projects/{project_id}/collaborators/{username}"],
+    createCard: ["POST /projects/columns/{column_id}/cards"],
+    createColumn: ["POST /projects/{project_id}/columns"],
+    createForAuthenticatedUser: ["POST /user/projects"],
+    createForOrg: ["POST /orgs/{org}/projects"],
+    createForRepo: ["POST /repos/{owner}/{repo}/projects"],
+    delete: ["DELETE /projects/{project_id}"],
+    deleteCard: ["DELETE /projects/columns/cards/{card_id}"],
+    deleteColumn: ["DELETE /projects/columns/{column_id}"],
+    get: ["GET /projects/{project_id}"],
+    getCard: ["GET /projects/columns/cards/{card_id}"],
+    getColumn: ["GET /projects/columns/{column_id}"],
+    getPermissionForUser: [
+      "GET /projects/{project_id}/collaborators/{username}/permission"
+    ],
+    listCards: ["GET /projects/columns/{column_id}/cards"],
+    listCollaborators: ["GET /projects/{project_id}/collaborators"],
+    listColumns: ["GET /projects/{project_id}/columns"],
+    listForOrg: ["GET /orgs/{org}/projects"],
+    listForRepo: ["GET /repos/{owner}/{repo}/projects"],
+    listForUser: ["GET /users/{username}/projects"],
+    moveCard: ["POST /projects/columns/cards/{card_id}/moves"],
+    moveColumn: ["POST /projects/columns/{column_id}/moves"],
+    removeCollaborator: [
+      "DELETE /projects/{project_id}/collaborators/{username}"
+    ],
+    update: ["PATCH /projects/{project_id}"],
+    updateCard: ["PATCH /projects/columns/cards/{card_id}"],
+    updateColumn: ["PATCH /projects/columns/{column_id}"]
+  },
+  pulls: {
+    checkIfMerged: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/merge"],
+    create: ["POST /repos/{owner}/{repo}/pulls"],
+    createReplyForReviewComment: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies"
+    ],
+    createReview: ["POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews"],
+    createReviewComment: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/comments"
+    ],
+    deletePendingReview: [
+      "DELETE /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}"
+    ],
+    deleteReviewComment: [
+      "DELETE /repos/{owner}/{repo}/pulls/comments/{comment_id}"
+    ],
+    dismissReview: [
+      "PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/dismissals"
+    ],
+    get: ["GET /repos/{owner}/{repo}/pulls/{pull_number}"],
+    getReview: [
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}"
+    ],
+    getReviewComment: ["GET /repos/{owner}/{repo}/pulls/comments/{comment_id}"],
+    list: ["GET /repos/{owner}/{repo}/pulls"],
+    listCommentsForReview: [
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/comments"
+    ],
+    listCommits: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/commits"],
+    listFiles: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/files"],
+    listRequestedReviewers: [
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers"
+    ],
+    listReviewComments: [
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/comments"
+    ],
+    listReviewCommentsForRepo: ["GET /repos/{owner}/{repo}/pulls/comments"],
+    listReviews: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews"],
+    merge: ["PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge"],
+    removeRequestedReviewers: [
+      "DELETE /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers"
+    ],
+    requestReviewers: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers"
+    ],
+    submitReview: [
+      "POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/events"
+    ],
+    update: ["PATCH /repos/{owner}/{repo}/pulls/{pull_number}"],
+    updateBranch: [
+      "PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch"
+    ],
+    updateReview: [
+      "PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}"
+    ],
+    updateReviewComment: [
+      "PATCH /repos/{owner}/{repo}/pulls/comments/{comment_id}"
+    ]
+  },
+  rateLimit: { get: ["GET /rate_limit"] },
+  reactions: {
+    createForCommitComment: [
+      "POST /repos/{owner}/{repo}/comments/{comment_id}/reactions"
+    ],
+    createForIssue: [
+      "POST /repos/{owner}/{repo}/issues/{issue_number}/reactions"
+    ],
+    createForIssueComment: [
+      "POST /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions"
+    ],
+    createForPullRequestReviewComment: [
+      "POST /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions"
+    ],
+    createForRelease: [
+      "POST /repos/{owner}/{repo}/releases/{release_id}/reactions"
+    ],
+    createForTeamDiscussionCommentInOrg: [
+      "POST /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions"
+    ],
+    createForTeamDiscussionInOrg: [
+      "POST /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions"
+    ],
+    deleteForCommitComment: [
+      "DELETE /repos/{owner}/{repo}/comments/{comment_id}/reactions/{reaction_id}"
+    ],
+    deleteForIssue: [
+      "DELETE /repos/{owner}/{repo}/issues/{issue_number}/reactions/{reaction_id}"
+    ],
+    deleteForIssueComment: [
+      "DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions/{reaction_id}"
+    ],
+    deleteForPullRequestComment: [
+      "DELETE /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions/{reaction_id}"
+    ],
+    deleteForRelease: [
+      "DELETE /repos/{owner}/{repo}/releases/{release_id}/reactions/{reaction_id}"
+    ],
+    deleteForTeamDiscussion: [
+      "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions/{reaction_id}"
+    ],
+    deleteForTeamDiscussionComment: [
+      "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions/{reaction_id}"
+    ],
+    listForCommitComment: [
+      "GET /repos/{owner}/{repo}/comments/{comment_id}/reactions"
+    ],
+    listForIssue: ["GET /repos/{owner}/{repo}/issues/{issue_number}/reactions"],
+    listForIssueComment: [
+      "GET /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions"
+    ],
+    listForPullRequestReviewComment: [
+      "GET /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions"
+    ],
+    listForRelease: [
+      "GET /repos/{owner}/{repo}/releases/{release_id}/reactions"
+    ],
+    listForTeamDiscussionCommentInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions"
+    ],
+    listForTeamDiscussionInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions"
+    ]
+  },
+  repos: {
+    acceptInvitation: [
+      "PATCH /user/repository_invitations/{invitation_id}",
+      {},
+      { renamed: ["repos", "acceptInvitationForAuthenticatedUser"] }
+    ],
+    acceptInvitationForAuthenticatedUser: [
+      "PATCH /user/repository_invitations/{invitation_id}"
+    ],
+    addAppAccessRestrictions: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps",
+      {},
+      { mapToData: "apps" }
+    ],
+    addCollaborator: ["PUT /repos/{owner}/{repo}/collaborators/{username}"],
+    addStatusCheckContexts: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts",
+      {},
+      { mapToData: "contexts" }
+    ],
+    addTeamAccessRestrictions: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams",
+      {},
+      { mapToData: "teams" }
+    ],
+    addUserAccessRestrictions: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users",
+      {},
+      { mapToData: "users" }
+    ],
+    cancelPagesDeployment: [
+      "POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel"
+    ],
+    checkAutomatedSecurityFixes: [
+      "GET /repos/{owner}/{repo}/automated-security-fixes"
+    ],
+    checkCollaborator: ["GET /repos/{owner}/{repo}/collaborators/{username}"],
+    checkPrivateVulnerabilityReporting: [
+      "GET /repos/{owner}/{repo}/private-vulnerability-reporting"
+    ],
+    checkVulnerabilityAlerts: [
+      "GET /repos/{owner}/{repo}/vulnerability-alerts"
+    ],
+    codeownersErrors: ["GET /repos/{owner}/{repo}/codeowners/errors"],
+    compareCommits: ["GET /repos/{owner}/{repo}/compare/{base}...{head}"],
+    compareCommitsWithBasehead: [
+      "GET /repos/{owner}/{repo}/compare/{basehead}"
+    ],
+    createAutolink: ["POST /repos/{owner}/{repo}/autolinks"],
+    createCommitComment: [
+      "POST /repos/{owner}/{repo}/commits/{commit_sha}/comments"
+    ],
+    createCommitSignatureProtection: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures"
+    ],
+    createCommitStatus: ["POST /repos/{owner}/{repo}/statuses/{sha}"],
+    createDeployKey: ["POST /repos/{owner}/{repo}/keys"],
+    createDeployment: ["POST /repos/{owner}/{repo}/deployments"],
+    createDeploymentBranchPolicy: [
+      "POST /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies"
+    ],
+    createDeploymentProtectionRule: [
+      "POST /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules"
+    ],
+    createDeploymentStatus: [
+      "POST /repos/{owner}/{repo}/deployments/{deployment_id}/statuses"
+    ],
+    createDispatchEvent: ["POST /repos/{owner}/{repo}/dispatches"],
+    createForAuthenticatedUser: ["POST /user/repos"],
+    createFork: ["POST /repos/{owner}/{repo}/forks"],
+    createInOrg: ["POST /orgs/{org}/repos"],
+    createOrUpdateCustomPropertiesValues: [
+      "PATCH /repos/{owner}/{repo}/properties/values"
+    ],
+    createOrUpdateEnvironment: [
+      "PUT /repos/{owner}/{repo}/environments/{environment_name}"
+    ],
+    createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
+    createOrgRuleset: ["POST /orgs/{org}/rulesets"],
+    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployments"],
+    createPagesSite: ["POST /repos/{owner}/{repo}/pages"],
+    createRelease: ["POST /repos/{owner}/{repo}/releases"],
+    createRepoRuleset: ["POST /repos/{owner}/{repo}/rulesets"],
+    createTagProtection: ["POST /repos/{owner}/{repo}/tags/protection"],
+    createUsingTemplate: [
+      "POST /repos/{template_owner}/{template_repo}/generate"
+    ],
+    createWebhook: ["POST /repos/{owner}/{repo}/hooks"],
+    declineInvitation: [
+      "DELETE /user/repository_invitations/{invitation_id}",
+      {},
+      { renamed: ["repos", "declineInvitationForAuthenticatedUser"] }
+    ],
+    declineInvitationForAuthenticatedUser: [
+      "DELETE /user/repository_invitations/{invitation_id}"
+    ],
+    delete: ["DELETE /repos/{owner}/{repo}"],
+    deleteAccessRestrictions: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions"
+    ],
+    deleteAdminBranchProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"
+    ],
+    deleteAnEnvironment: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}"
+    ],
+    deleteAutolink: ["DELETE /repos/{owner}/{repo}/autolinks/{autolink_id}"],
+    deleteBranchProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection"
+    ],
+    deleteCommitComment: ["DELETE /repos/{owner}/{repo}/comments/{comment_id}"],
+    deleteCommitSignatureProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures"
+    ],
+    deleteDeployKey: ["DELETE /repos/{owner}/{repo}/keys/{key_id}"],
+    deleteDeployment: [
+      "DELETE /repos/{owner}/{repo}/deployments/{deployment_id}"
+    ],
+    deleteDeploymentBranchPolicy: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies/{branch_policy_id}"
+    ],
+    deleteFile: ["DELETE /repos/{owner}/{repo}/contents/{path}"],
+    deleteInvitation: [
+      "DELETE /repos/{owner}/{repo}/invitations/{invitation_id}"
+    ],
+    deleteOrgRuleset: ["DELETE /orgs/{org}/rulesets/{ruleset_id}"],
+    deletePagesSite: ["DELETE /repos/{owner}/{repo}/pages"],
+    deletePullRequestReviewProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"
+    ],
+    deleteRelease: ["DELETE /repos/{owner}/{repo}/releases/{release_id}"],
+    deleteReleaseAsset: [
+      "DELETE /repos/{owner}/{repo}/releases/assets/{asset_id}"
+    ],
+    deleteRepoRuleset: ["DELETE /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
+    deleteTagProtection: [
+      "DELETE /repos/{owner}/{repo}/tags/protection/{tag_protection_id}"
+    ],
+    deleteWebhook: ["DELETE /repos/{owner}/{repo}/hooks/{hook_id}"],
+    disableAutomatedSecurityFixes: [
+      "DELETE /repos/{owner}/{repo}/automated-security-fixes"
+    ],
+    disableDeploymentProtectionRule: [
+      "DELETE /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/{protection_rule_id}"
+    ],
+    disablePrivateVulnerabilityReporting: [
+      "DELETE /repos/{owner}/{repo}/private-vulnerability-reporting"
+    ],
+    disableVulnerabilityAlerts: [
+      "DELETE /repos/{owner}/{repo}/vulnerability-alerts"
+    ],
+    downloadArchive: [
+      "GET /repos/{owner}/{repo}/zipball/{ref}",
+      {},
+      { renamed: ["repos", "downloadZipballArchive"] }
+    ],
+    downloadTarballArchive: ["GET /repos/{owner}/{repo}/tarball/{ref}"],
+    downloadZipballArchive: ["GET /repos/{owner}/{repo}/zipball/{ref}"],
+    enableAutomatedSecurityFixes: [
+      "PUT /repos/{owner}/{repo}/automated-security-fixes"
+    ],
+    enablePrivateVulnerabilityReporting: [
+      "PUT /repos/{owner}/{repo}/private-vulnerability-reporting"
+    ],
+    enableVulnerabilityAlerts: [
+      "PUT /repos/{owner}/{repo}/vulnerability-alerts"
+    ],
+    generateReleaseNotes: [
+      "POST /repos/{owner}/{repo}/releases/generate-notes"
+    ],
+    get: ["GET /repos/{owner}/{repo}"],
+    getAccessRestrictions: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions"
+    ],
+    getAdminBranchProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"
+    ],
+    getAllDeploymentProtectionRules: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules"
+    ],
+    getAllEnvironments: ["GET /repos/{owner}/{repo}/environments"],
+    getAllStatusCheckContexts: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts"
+    ],
+    getAllTopics: ["GET /repos/{owner}/{repo}/topics"],
+    getAppsWithAccessToProtectedBranch: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps"
+    ],
+    getAutolink: ["GET /repos/{owner}/{repo}/autolinks/{autolink_id}"],
+    getBranch: ["GET /repos/{owner}/{repo}/branches/{branch}"],
+    getBranchProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection"
+    ],
+    getBranchRules: ["GET /repos/{owner}/{repo}/rules/branches/{branch}"],
+    getClones: ["GET /repos/{owner}/{repo}/traffic/clones"],
+    getCodeFrequencyStats: ["GET /repos/{owner}/{repo}/stats/code_frequency"],
+    getCollaboratorPermissionLevel: [
+      "GET /repos/{owner}/{repo}/collaborators/{username}/permission"
+    ],
+    getCombinedStatusForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/status"],
+    getCommit: ["GET /repos/{owner}/{repo}/commits/{ref}"],
+    getCommitActivityStats: ["GET /repos/{owner}/{repo}/stats/commit_activity"],
+    getCommitComment: ["GET /repos/{owner}/{repo}/comments/{comment_id}"],
+    getCommitSignatureProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures"
+    ],
+    getCommunityProfileMetrics: ["GET /repos/{owner}/{repo}/community/profile"],
+    getContent: ["GET /repos/{owner}/{repo}/contents/{path}"],
+    getContributorsStats: ["GET /repos/{owner}/{repo}/stats/contributors"],
+    getCustomDeploymentProtectionRule: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/{protection_rule_id}"
+    ],
+    getCustomPropertiesValues: ["GET /repos/{owner}/{repo}/properties/values"],
+    getDeployKey: ["GET /repos/{owner}/{repo}/keys/{key_id}"],
+    getDeployment: ["GET /repos/{owner}/{repo}/deployments/{deployment_id}"],
+    getDeploymentBranchPolicy: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies/{branch_policy_id}"
+    ],
+    getDeploymentStatus: [
+      "GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses/{status_id}"
+    ],
+    getEnvironment: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}"
+    ],
+    getLatestPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/latest"],
+    getLatestRelease: ["GET /repos/{owner}/{repo}/releases/latest"],
+    getOrgRuleSuite: ["GET /orgs/{org}/rulesets/rule-suites/{rule_suite_id}"],
+    getOrgRuleSuites: ["GET /orgs/{org}/rulesets/rule-suites"],
+    getOrgRuleset: ["GET /orgs/{org}/rulesets/{ruleset_id}"],
+    getOrgRulesets: ["GET /orgs/{org}/rulesets"],
+    getPages: ["GET /repos/{owner}/{repo}/pages"],
+    getPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/{build_id}"],
+    getPagesDeployment: [
+      "GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}"
+    ],
+    getPagesHealthCheck: ["GET /repos/{owner}/{repo}/pages/health"],
+    getParticipationStats: ["GET /repos/{owner}/{repo}/stats/participation"],
+    getPullRequestReviewProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"
+    ],
+    getPunchCardStats: ["GET /repos/{owner}/{repo}/stats/punch_card"],
+    getReadme: ["GET /repos/{owner}/{repo}/readme"],
+    getReadmeInDirectory: ["GET /repos/{owner}/{repo}/readme/{dir}"],
+    getRelease: ["GET /repos/{owner}/{repo}/releases/{release_id}"],
+    getReleaseAsset: ["GET /repos/{owner}/{repo}/releases/assets/{asset_id}"],
+    getReleaseByTag: ["GET /repos/{owner}/{repo}/releases/tags/{tag}"],
+    getRepoRuleSuite: [
+      "GET /repos/{owner}/{repo}/rulesets/rule-suites/{rule_suite_id}"
+    ],
+    getRepoRuleSuites: ["GET /repos/{owner}/{repo}/rulesets/rule-suites"],
+    getRepoRuleset: ["GET /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
+    getRepoRulesets: ["GET /repos/{owner}/{repo}/rulesets"],
+    getStatusChecksProtection: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
+    ],
+    getTeamsWithAccessToProtectedBranch: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams"
+    ],
+    getTopPaths: ["GET /repos/{owner}/{repo}/traffic/popular/paths"],
+    getTopReferrers: ["GET /repos/{owner}/{repo}/traffic/popular/referrers"],
+    getUsersWithAccessToProtectedBranch: [
+      "GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users"
+    ],
+    getViews: ["GET /repos/{owner}/{repo}/traffic/views"],
+    getWebhook: ["GET /repos/{owner}/{repo}/hooks/{hook_id}"],
+    getWebhookConfigForRepo: [
+      "GET /repos/{owner}/{repo}/hooks/{hook_id}/config"
+    ],
+    getWebhookDelivery: [
+      "GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}"
+    ],
+    listActivities: ["GET /repos/{owner}/{repo}/activity"],
+    listAutolinks: ["GET /repos/{owner}/{repo}/autolinks"],
+    listBranches: ["GET /repos/{owner}/{repo}/branches"],
+    listBranchesForHeadCommit: [
+      "GET /repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head"
+    ],
+    listCollaborators: ["GET /repos/{owner}/{repo}/collaborators"],
+    listCommentsForCommit: [
+      "GET /repos/{owner}/{repo}/commits/{commit_sha}/comments"
+    ],
+    listCommitCommentsForRepo: ["GET /repos/{owner}/{repo}/comments"],
+    listCommitStatusesForRef: [
+      "GET /repos/{owner}/{repo}/commits/{ref}/statuses"
+    ],
+    listCommits: ["GET /repos/{owner}/{repo}/commits"],
+    listContributors: ["GET /repos/{owner}/{repo}/contributors"],
+    listCustomDeploymentRuleIntegrations: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment_protection_rules/apps"
+    ],
+    listDeployKeys: ["GET /repos/{owner}/{repo}/keys"],
+    listDeploymentBranchPolicies: [
+      "GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies"
+    ],
+    listDeploymentStatuses: [
+      "GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses"
+    ],
+    listDeployments: ["GET /repos/{owner}/{repo}/deployments"],
+    listForAuthenticatedUser: ["GET /user/repos"],
+    listForOrg: ["GET /orgs/{org}/repos"],
+    listForUser: ["GET /users/{username}/repos"],
+    listForks: ["GET /repos/{owner}/{repo}/forks"],
+    listInvitations: ["GET /repos/{owner}/{repo}/invitations"],
+    listInvitationsForAuthenticatedUser: ["GET /user/repository_invitations"],
+    listLanguages: ["GET /repos/{owner}/{repo}/languages"],
+    listPagesBuilds: ["GET /repos/{owner}/{repo}/pages/builds"],
+    listPublic: ["GET /repositories"],
+    listPullRequestsAssociatedWithCommit: [
+      "GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls"
+    ],
+    listReleaseAssets: [
+      "GET /repos/{owner}/{repo}/releases/{release_id}/assets"
+    ],
+    listReleases: ["GET /repos/{owner}/{repo}/releases"],
+    listTagProtection: ["GET /repos/{owner}/{repo}/tags/protection"],
+    listTags: ["GET /repos/{owner}/{repo}/tags"],
+    listTeams: ["GET /repos/{owner}/{repo}/teams"],
+    listWebhookDeliveries: [
+      "GET /repos/{owner}/{repo}/hooks/{hook_id}/deliveries"
+    ],
+    listWebhooks: ["GET /repos/{owner}/{repo}/hooks"],
+    merge: ["POST /repos/{owner}/{repo}/merges"],
+    mergeUpstream: ["POST /repos/{owner}/{repo}/merge-upstream"],
+    pingWebhook: ["POST /repos/{owner}/{repo}/hooks/{hook_id}/pings"],
+    redeliverWebhookDelivery: [
+      "POST /repos/{owner}/{repo}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
+    ],
+    removeAppAccessRestrictions: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps",
+      {},
+      { mapToData: "apps" }
+    ],
+    removeCollaborator: [
+      "DELETE /repos/{owner}/{repo}/collaborators/{username}"
+    ],
+    removeStatusCheckContexts: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts",
+      {},
+      { mapToData: "contexts" }
+    ],
+    removeStatusCheckProtection: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
+    ],
+    removeTeamAccessRestrictions: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams",
+      {},
+      { mapToData: "teams" }
+    ],
+    removeUserAccessRestrictions: [
+      "DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users",
+      {},
+      { mapToData: "users" }
+    ],
+    renameBranch: ["POST /repos/{owner}/{repo}/branches/{branch}/rename"],
+    replaceAllTopics: ["PUT /repos/{owner}/{repo}/topics"],
+    requestPagesBuild: ["POST /repos/{owner}/{repo}/pages/builds"],
+    setAdminBranchProtection: [
+      "POST /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"
+    ],
+    setAppAccessRestrictions: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/apps",
+      {},
+      { mapToData: "apps" }
+    ],
+    setStatusCheckContexts: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts",
+      {},
+      { mapToData: "contexts" }
+    ],
+    setTeamAccessRestrictions: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/teams",
+      {},
+      { mapToData: "teams" }
+    ],
+    setUserAccessRestrictions: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users",
+      {},
+      { mapToData: "users" }
+    ],
+    testPushWebhook: ["POST /repos/{owner}/{repo}/hooks/{hook_id}/tests"],
+    transfer: ["POST /repos/{owner}/{repo}/transfer"],
+    update: ["PATCH /repos/{owner}/{repo}"],
+    updateBranchProtection: [
+      "PUT /repos/{owner}/{repo}/branches/{branch}/protection"
+    ],
+    updateCommitComment: ["PATCH /repos/{owner}/{repo}/comments/{comment_id}"],
+    updateDeploymentBranchPolicy: [
+      "PUT /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies/{branch_policy_id}"
+    ],
+    updateInformationAboutPagesSite: ["PUT /repos/{owner}/{repo}/pages"],
+    updateInvitation: [
+      "PATCH /repos/{owner}/{repo}/invitations/{invitation_id}"
+    ],
+    updateOrgRuleset: ["PUT /orgs/{org}/rulesets/{ruleset_id}"],
+    updatePullRequestReviewProtection: [
+      "PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"
+    ],
+    updateRelease: ["PATCH /repos/{owner}/{repo}/releases/{release_id}"],
+    updateReleaseAsset: [
+      "PATCH /repos/{owner}/{repo}/releases/assets/{asset_id}"
+    ],
+    updateRepoRuleset: ["PUT /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
+    updateStatusCheckPotection: [
+      "PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks",
+      {},
+      { renamed: ["repos", "updateStatusCheckProtection"] }
+    ],
+    updateStatusCheckProtection: [
+      "PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
+    ],
+    updateWebhook: ["PATCH /repos/{owner}/{repo}/hooks/{hook_id}"],
+    updateWebhookConfigForRepo: [
+      "PATCH /repos/{owner}/{repo}/hooks/{hook_id}/config"
+    ],
+    uploadReleaseAsset: [
+      "POST /repos/{owner}/{repo}/releases/{release_id}/assets{?name,label}",
+      { baseUrl: "https://uploads.github.com" }
+    ]
+  },
+  search: {
+    code: ["GET /search/code"],
+    commits: ["GET /search/commits"],
+    issuesAndPullRequests: ["GET /search/issues"],
+    labels: ["GET /search/labels"],
+    repos: ["GET /search/repositories"],
+    topics: ["GET /search/topics"],
+    users: ["GET /search/users"]
+  },
+  secretScanning: {
+    getAlert: [
+      "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"
+    ],
+    listAlertsForEnterprise: [
+      "GET /enterprises/{enterprise}/secret-scanning/alerts"
+    ],
+    listAlertsForOrg: ["GET /orgs/{org}/secret-scanning/alerts"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/secret-scanning/alerts"],
+    listLocationsForAlert: [
+      "GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}/locations"
+    ],
+    updateAlert: [
+      "PATCH /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"
+    ]
+  },
+  securityAdvisories: {
+    createFork: [
+      "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/forks"
+    ],
+    createPrivateVulnerabilityReport: [
+      "POST /repos/{owner}/{repo}/security-advisories/reports"
+    ],
+    createRepositoryAdvisory: [
+      "POST /repos/{owner}/{repo}/security-advisories"
+    ],
+    createRepositoryAdvisoryCveRequest: [
+      "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/cve"
+    ],
+    getGlobalAdvisory: ["GET /advisories/{ghsa_id}"],
+    getRepositoryAdvisory: [
+      "GET /repos/{owner}/{repo}/security-advisories/{ghsa_id}"
+    ],
+    listGlobalAdvisories: ["GET /advisories"],
+    listOrgRepositoryAdvisories: ["GET /orgs/{org}/security-advisories"],
+    listRepositoryAdvisories: ["GET /repos/{owner}/{repo}/security-advisories"],
+    updateRepositoryAdvisory: [
+      "PATCH /repos/{owner}/{repo}/security-advisories/{ghsa_id}"
+    ]
+  },
+  teams: {
+    addOrUpdateMembershipForUserInOrg: [
+      "PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"
+    ],
+    addOrUpdateProjectPermissionsInOrg: [
+      "PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+    ],
+    addOrUpdateRepoPermissionsInOrg: [
+      "PUT /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
+    ],
+    checkPermissionsForProjectInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+    ],
+    checkPermissionsForRepoInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
+    ],
+    create: ["POST /orgs/{org}/teams"],
+    createDiscussionCommentInOrg: [
+      "POST /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments"
+    ],
+    createDiscussionInOrg: ["POST /orgs/{org}/teams/{team_slug}/discussions"],
+    deleteDiscussionCommentInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}"
+    ],
+    deleteDiscussionInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}"
+    ],
+    deleteInOrg: ["DELETE /orgs/{org}/teams/{team_slug}"],
+    getByName: ["GET /orgs/{org}/teams/{team_slug}"],
+    getDiscussionCommentInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}"
+    ],
+    getDiscussionInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}"
+    ],
+    getMembershipForUserInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/memberships/{username}"
+    ],
+    list: ["GET /orgs/{org}/teams"],
+    listChildInOrg: ["GET /orgs/{org}/teams/{team_slug}/teams"],
+    listDiscussionCommentsInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments"
+    ],
+    listDiscussionsInOrg: ["GET /orgs/{org}/teams/{team_slug}/discussions"],
+    listForAuthenticatedUser: ["GET /user/teams"],
+    listMembersInOrg: ["GET /orgs/{org}/teams/{team_slug}/members"],
+    listPendingInvitationsInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/invitations"
+    ],
+    listProjectsInOrg: ["GET /orgs/{org}/teams/{team_slug}/projects"],
+    listReposInOrg: ["GET /orgs/{org}/teams/{team_slug}/repos"],
+    removeMembershipForUserInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/memberships/{username}"
+    ],
+    removeProjectInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+    ],
+    removeRepoInOrg: [
+      "DELETE /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
+    ],
+    updateDiscussionCommentInOrg: [
+      "PATCH /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}"
+    ],
+    updateDiscussionInOrg: [
+      "PATCH /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}"
+    ],
+    updateInOrg: ["PATCH /orgs/{org}/teams/{team_slug}"]
+  },
+  users: {
+    addEmailForAuthenticated: [
+      "POST /user/emails",
+      {},
+      { renamed: ["users", "addEmailForAuthenticatedUser"] }
+    ],
+    addEmailForAuthenticatedUser: ["POST /user/emails"],
+    addSocialAccountForAuthenticatedUser: ["POST /user/social_accounts"],
+    block: ["PUT /user/blocks/{username}"],
+    checkBlocked: ["GET /user/blocks/{username}"],
+    checkFollowingForUser: ["GET /users/{username}/following/{target_user}"],
+    checkPersonIsFollowedByAuthenticated: ["GET /user/following/{username}"],
+    createGpgKeyForAuthenticated: [
+      "POST /user/gpg_keys",
+      {},
+      { renamed: ["users", "createGpgKeyForAuthenticatedUser"] }
+    ],
+    createGpgKeyForAuthenticatedUser: ["POST /user/gpg_keys"],
+    createPublicSshKeyForAuthenticated: [
+      "POST /user/keys",
+      {},
+      { renamed: ["users", "createPublicSshKeyForAuthenticatedUser"] }
+    ],
+    createPublicSshKeyForAuthenticatedUser: ["POST /user/keys"],
+    createSshSigningKeyForAuthenticatedUser: ["POST /user/ssh_signing_keys"],
+    deleteEmailForAuthenticated: [
+      "DELETE /user/emails",
+      {},
+      { renamed: ["users", "deleteEmailForAuthenticatedUser"] }
+    ],
+    deleteEmailForAuthenticatedUser: ["DELETE /user/emails"],
+    deleteGpgKeyForAuthenticated: [
+      "DELETE /user/gpg_keys/{gpg_key_id}",
+      {},
+      { renamed: ["users", "deleteGpgKeyForAuthenticatedUser"] }
+    ],
+    deleteGpgKeyForAuthenticatedUser: ["DELETE /user/gpg_keys/{gpg_key_id}"],
+    deletePublicSshKeyForAuthenticated: [
+      "DELETE /user/keys/{key_id}",
+      {},
+      { renamed: ["users", "deletePublicSshKeyForAuthenticatedUser"] }
+    ],
+    deletePublicSshKeyForAuthenticatedUser: ["DELETE /user/keys/{key_id}"],
+    deleteSocialAccountForAuthenticatedUser: ["DELETE /user/social_accounts"],
+    deleteSshSigningKeyForAuthenticatedUser: [
+      "DELETE /user/ssh_signing_keys/{ssh_signing_key_id}"
+    ],
+    follow: ["PUT /user/following/{username}"],
+    getAuthenticated: ["GET /user"],
+    getByUsername: ["GET /users/{username}"],
+    getContextForUser: ["GET /users/{username}/hovercard"],
+    getGpgKeyForAuthenticated: [
+      "GET /user/gpg_keys/{gpg_key_id}",
+      {},
+      { renamed: ["users", "getGpgKeyForAuthenticatedUser"] }
+    ],
+    getGpgKeyForAuthenticatedUser: ["GET /user/gpg_keys/{gpg_key_id}"],
+    getPublicSshKeyForAuthenticated: [
+      "GET /user/keys/{key_id}",
+      {},
+      { renamed: ["users", "getPublicSshKeyForAuthenticatedUser"] }
+    ],
+    getPublicSshKeyForAuthenticatedUser: ["GET /user/keys/{key_id}"],
+    getSshSigningKeyForAuthenticatedUser: [
+      "GET /user/ssh_signing_keys/{ssh_signing_key_id}"
+    ],
+    list: ["GET /users"],
+    listBlockedByAuthenticated: [
+      "GET /user/blocks",
+      {},
+      { renamed: ["users", "listBlockedByAuthenticatedUser"] }
+    ],
+    listBlockedByAuthenticatedUser: ["GET /user/blocks"],
+    listEmailsForAuthenticated: [
+      "GET /user/emails",
+      {},
+      { renamed: ["users", "listEmailsForAuthenticatedUser"] }
+    ],
+    listEmailsForAuthenticatedUser: ["GET /user/emails"],
+    listFollowedByAuthenticated: [
+      "GET /user/following",
+      {},
+      { renamed: ["users", "listFollowedByAuthenticatedUser"] }
+    ],
+    listFollowedByAuthenticatedUser: ["GET /user/following"],
+    listFollowersForAuthenticatedUser: ["GET /user/followers"],
+    listFollowersForUser: ["GET /users/{username}/followers"],
+    listFollowingForUser: ["GET /users/{username}/following"],
+    listGpgKeysForAuthenticated: [
+      "GET /user/gpg_keys",
+      {},
+      { renamed: ["users", "listGpgKeysForAuthenticatedUser"] }
+    ],
+    listGpgKeysForAuthenticatedUser: ["GET /user/gpg_keys"],
+    listGpgKeysForUser: ["GET /users/{username}/gpg_keys"],
+    listPublicEmailsForAuthenticated: [
+      "GET /user/public_emails",
+      {},
+      { renamed: ["users", "listPublicEmailsForAuthenticatedUser"] }
+    ],
+    listPublicEmailsForAuthenticatedUser: ["GET /user/public_emails"],
+    listPublicKeysForUser: ["GET /users/{username}/keys"],
+    listPublicSshKeysForAuthenticated: [
+      "GET /user/keys",
+      {},
+      { renamed: ["users", "listPublicSshKeysForAuthenticatedUser"] }
+    ],
+    listPublicSshKeysForAuthenticatedUser: ["GET /user/keys"],
+    listSocialAccountsForAuthenticatedUser: ["GET /user/social_accounts"],
+    listSocialAccountsForUser: ["GET /users/{username}/social_accounts"],
+    listSshSigningKeysForAuthenticatedUser: ["GET /user/ssh_signing_keys"],
+    listSshSigningKeysForUser: ["GET /users/{username}/ssh_signing_keys"],
+    setPrimaryEmailVisibilityForAuthenticated: [
+      "PATCH /user/email/visibility",
+      {},
+      { renamed: ["users", "setPrimaryEmailVisibilityForAuthenticatedUser"] }
+    ],
+    setPrimaryEmailVisibilityForAuthenticatedUser: [
+      "PATCH /user/email/visibility"
+    ],
+    unblock: ["DELETE /user/blocks/{username}"],
+    unfollow: ["DELETE /user/following/{username}"],
+    updateAuthenticated: ["PATCH /user"]
+  }
+};
+var endpoints_default = Endpoints;
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/endpoints-to-methods.js
+var endpointMethodsMap = /* @__PURE__ */ new Map();
+for (const [scope, endpoints] of Object.entries(endpoints_default)) {
+  for (const [methodName, endpoint2] of Object.entries(endpoints)) {
+    const [route, defaults, decorations] = endpoint2;
+    const [method, url] = route.split(/ /);
+    const endpointDefaults = Object.assign(
+      {
+        method,
+        url
+      },
+      defaults
+    );
+    if (!endpointMethodsMap.has(scope)) {
+      endpointMethodsMap.set(scope, /* @__PURE__ */ new Map());
+    }
+    endpointMethodsMap.get(scope).set(methodName, {
+      scope,
+      methodName,
+      endpointDefaults,
+      decorations
+    });
+  }
+}
+var handler = {
+  has({ scope }, methodName) {
+    return endpointMethodsMap.get(scope).has(methodName);
+  },
+  getOwnPropertyDescriptor(target, methodName) {
+    return {
+      value: this.get(target, methodName),
+      // ensures method is in the cache
+      configurable: true,
+      writable: true,
+      enumerable: true
+    };
+  },
+  defineProperty(target, methodName, descriptor) {
+    Object.defineProperty(target.cache, methodName, descriptor);
+    return true;
+  },
+  deleteProperty(target, methodName) {
+    delete target.cache[methodName];
+    return true;
+  },
+  ownKeys({ scope }) {
+    return [...endpointMethodsMap.get(scope).keys()];
+  },
+  set(target, methodName, value) {
+    return target.cache[methodName] = value;
+  },
+  get({ octokit, scope, cache }, methodName) {
+    if (cache[methodName]) {
+      return cache[methodName];
+    }
+    const method = endpointMethodsMap.get(scope).get(methodName);
+    if (!method) {
+      return void 0;
+    }
+    const { endpointDefaults, decorations } = method;
+    if (decorations) {
+      cache[methodName] = decorate(
+        octokit,
+        scope,
+        methodName,
+        endpointDefaults,
+        decorations
+      );
+    } else {
+      cache[methodName] = octokit.request.defaults(endpointDefaults);
+    }
+    return cache[methodName];
+  }
+};
+function endpointsToMethods(octokit) {
+  const newMethods = {};
+  for (const scope of endpointMethodsMap.keys()) {
+    newMethods[scope] = new Proxy({ octokit, scope, cache: {} }, handler);
+  }
+  return newMethods;
+}
+function decorate(octokit, scope, methodName, defaults, decorations) {
+  const requestWithDefaults = octokit.request.defaults(defaults);
+  function withDecorations(...args) {
+    let options = requestWithDefaults.endpoint.merge(...args);
+    if (decorations.mapToData) {
+      options = Object.assign({}, options, {
+        data: options[decorations.mapToData],
+        [decorations.mapToData]: void 0
+      });
+      return requestWithDefaults(options);
+    }
+    if (decorations.renamed) {
+      const [newScope, newMethodName] = decorations.renamed;
+      octokit.log.warn(
+        `octokit.${scope}.${methodName}() has been renamed to octokit.${newScope}.${newMethodName}()`
+      );
+    }
+    if (decorations.deprecated) {
+      octokit.log.warn(decorations.deprecated);
+    }
+    if (decorations.renamedParameters) {
+      const options2 = requestWithDefaults.endpoint.merge(...args);
+      for (const [name, alias] of Object.entries(
+        decorations.renamedParameters
+      )) {
+        if (name in options2) {
+          octokit.log.warn(
+            `"${name}" parameter is deprecated for "octokit.${scope}.${methodName}()". Use "${alias}" instead`
+          );
+          if (!(alias in options2)) {
+            options2[alias] = options2[name];
+          }
+          delete options2[name];
+        }
+      }
+      return requestWithDefaults(options2);
+    }
+    return requestWithDefaults(...args);
+  }
+  return Object.assign(withDecorations, requestWithDefaults);
+}
+
+// npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/index.js
+function restEndpointMethods(octokit) {
+  const api = endpointsToMethods(octokit);
+  return {
+    rest: api
+  };
+}
+restEndpointMethods.VERSION = VERSION7;
+function legacyRestEndpointMethods(octokit) {
+  const api = endpointsToMethods(octokit);
+  return {
+    ...api,
+    rest: api
+  };
+}
+legacyRestEndpointMethods.VERSION = VERSION7;
+
+// npm/node_modules/@octokit/rest/dist-src/version.js
+var VERSION8 = "21.0.0";
+
+// npm/node_modules/@octokit/rest/dist-src/index.js
+var Octokit2 = Octokit.plugin(requestLog, legacyRestEndpointMethods, paginateRest).defaults(
+  {
+    userAgent: `octokit-rest.js/${VERSION8}`
+  }
+);
+
 // npm/src/github.ts
-var import_rest = __toESM(require_dist_node14());
 var import_process = __toESM(require("process"));
 var createOctokitForAction = (token) => {
   const baseUrl = import_process.default.env.GITHUB_API_URL ?? "https://api.github.com";
-  return new import_rest.Octokit({
+  return new Octokit2({
     auth: token,
     baseUrl
   });
@@ -27333,11 +27920,11 @@ var fetchWorkflowRunJobs = async (octokit, owner, repo, runId, runAttempt) => {
 
 // npm/src/post.ts
 var main = async () => {
-  const token = (0, import_core.getInput)("github-token", { required: true });
+  const token = (0, import_core2.getInput)("github-token", { required: true });
   const octokit = createOctokitForAction(token);
-  (0, import_core.info)("Wait for workflow API result stability...");
+  (0, import_core2.info)("Wait for workflow API result stability...");
   await (0, import_promises.setTimeout)(1e3);
-  (0, import_core.info)("Fetch workflow...");
+  (0, import_core2.info)("Fetch workflow...");
   const runAttempt = import_process2.default.env.GITHUB_RUN_ATTEMPT ? Number(import_process2.default.env.GITHUB_RUN_ATTEMPT) : 1;
   const workflow = await fetchWorkflow(
     octokit,
@@ -27346,8 +27933,8 @@ var main = async () => {
     github.context.runId,
     runAttempt
   );
-  (0, import_core.debug)(JSON.stringify(workflow, null, 2));
-  (0, import_core.info)("Fetch workflow_job...");
+  (0, import_core2.debug)(JSON.stringify(workflow, null, 2));
+  (0, import_core2.info)("Fetch workflow_job...");
   const workflowJobs = await fetchWorkflowRunJobs(
     octokit,
     github.context.repo.owner,
@@ -27355,12 +27942,12 @@ var main = async () => {
     github.context.runId,
     runAttempt
   );
-  (0, import_core.debug)(JSON.stringify(workflowJobs, null, 2));
-  (0, import_core.info)("Create gantt mermaid diagram...");
+  (0, import_core2.debug)(JSON.stringify(workflowJobs, null, 2));
+  (0, import_core2.info)("Create gantt mermaid diagram...");
   const gantt = createMermaid(workflow, workflowJobs);
-  await import_core.summary.addRaw(gantt).write();
-  (0, import_core.debug)(gantt);
-  (0, import_core.info)("Complete!");
+  await import_core2.summary.addRaw(gantt).write();
+  (0, import_core2.debug)(gantt);
+  (0, import_core2.info)("Complete!");
 };
 main();
 /*! Bundled license information:
