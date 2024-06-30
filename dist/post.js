@@ -27944,7 +27944,7 @@ var main = async () => {
   );
   (0, import_core2.debug)(JSON.stringify(workflowJobs, null, 2));
   (0, import_core2.info)("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflow, workflowJobs);
+  const gantt = createMermaid(workflow}, workflowJobs, {});
   await import_core2.summary.addRaw(gantt).write();
   (0, import_core2.debug)(gantt);
   (0, import_core2.info)("Complete!");

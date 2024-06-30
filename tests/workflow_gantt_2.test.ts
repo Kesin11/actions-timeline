@@ -194,7 +194,7 @@ ${workflowJobs[1].steps![5].name} (0s) :job1-6, after job1-5, 0s
 ${workflowJobs[1].steps![6].name} (0s) :job1-7, after job1-6, 0s
 \`\`\``;
 
-    assertEquals(createMermaid(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
   });
 
   await t.step("Hide skipped jobs", () => {
@@ -277,6 +277,6 @@ ${workflowJobs[0].steps![1].name} (0s) :job0-2, after job0-1, 0s
 ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 \`\`\``;
 
-    assertEquals(createMermaid(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
   });
 });

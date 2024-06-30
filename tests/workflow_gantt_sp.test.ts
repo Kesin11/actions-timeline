@@ -77,7 +77,7 @@ ${expectStepName} (1s) :job0-2, after job0-1, 1s
 ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 \`\`\``;
 
-      assertEquals(createMermaid(workflow, workflowJobs), expect);
+      assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
     },
   );
   await t.step("Retried job", () => {
@@ -151,7 +151,7 @@ ${workflowJobs[0].steps![1].name} (0s) :job0-2, after job0-1, 0s
 ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 \`\`\``;
 
-    assertEquals(createMermaid(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
   });
 
   await t.step(
@@ -227,7 +227,83 @@ ${workflowJobs[0].steps![1].name} (0s) :job0-1, after job0-0, 0s
 ${workflowJobs[0].steps![2].name} (0s) :job0-2, after job0-1, 0s
 \`\`\``;
 
-      assertEquals(createMermaid(workflow, workflowJobs), expect);
+      assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
+    },
+  );
+
+  await t.step(
+    "'Waiting for a runner' step duration is ommited if option 'showWaitingRunner' === false ",
+    () => {
+      const workflow = {
+        "id": 5833450919,
+        "name": "Check self-hosted runner",
+        "run_number": 128,
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "workflow_id": 10970418,
+        "created_at": "2023-08-11T14:00:48Z",
+        "updated_at": "2023-08-11T14:01:56Z",
+        "run_started_at": "2023-08-11T14:00:48Z",
+      } as unknown as Workflow;
+
+      const workflowJobs = [
+        {
+          "id": 15820938470,
+          "run_id": 5833450919,
+          "workflow_name": "Check self-hosted runner",
+          "status": "completed",
+          "conclusion": "success",
+          "created_at": "2023-08-11T14:00:50Z",
+          "started_at": "2023-08-11T14:01:31Z",
+          "completed_at": "2023-08-11T14:01:36Z",
+          "name": "node",
+          "steps": [
+            {
+              "name": "Set up job",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2023-08-11T23:01:30.000+09:00",
+              "completed_at": "2023-08-11T23:01:32.000+09:00",
+            },
+            {
+              "name": "Set up runner",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 2,
+              "started_at": "2023-08-11T23:01:32.000+09:00",
+              "completed_at": "2023-08-11T23:01:32.000+09:00",
+            },
+            {
+              "name": "Run actions/checkout@v3",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 3,
+              "started_at": "2023-08-11T23:01:34.000+09:00",
+              "completed_at": "2023-08-11T23:01:34.000+09:00",
+            },
+          ],
+        },
+      ] as unknown as WorkflowJobs;
+
+      // deno-fmt-ignore
+      const expect = `
+\`\`\`mermaid
+gantt
+title ${workflowJobs[0].workflow_name}
+dateFormat  HH:mm:ss
+axisFormat  %H:%M:%S
+section ${workflowJobs[0].name}
+${workflowJobs[0].steps![0].name} (2s) :job0-0, 00:00:02, 2s
+${workflowJobs[0].steps![1].name} (0s) :job0-1, after job0-0, 0s
+${workflowJobs[0].steps![2].name} (0s) :job0-2, after job0-1, 0s
+\`\`\``;
+
+      assertEquals(
+        createMermaid(workflow, workflowJobs, { showWaitingRunner: false }),
+        expect,
+      );
     },
   );
 

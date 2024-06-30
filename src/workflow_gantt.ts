@@ -8,7 +8,12 @@ import {
   formatName,
   formatSection,
 } from "./format_util.ts";
-import type { ganttJob, ganttStep, StepConclusion } from "./types.ts";
+import type {
+  ganttJob,
+  GanttOptions,
+  ganttStep,
+  StepConclusion,
+} from "./types.ts";
 
 // ref: MAX_TEXTLENGTH https://github.com/mermaid-js/mermaid/blob/develop/packages/mermaid/src/mermaidAPI.ts
 const MERMAID_MAX_CHAR = 50_000;
@@ -29,29 +34,16 @@ const createWaitingRunnerStep = (
   workflow: Workflow,
   job: WorkflowJobs[0],
   jobIndex: number,
-): ganttStep => {
+): ganttStep | undefined => {
   const status: ganttStep["status"] = "active";
 
   // job.created_at does not exist in < GHES v3.9.
   // So it is not possible to calculate the elapsed time the runner is waiting for a job, is not supported instead of the elapsed time.
   // Also, it is not possible to create an exact job start time position. So use job.started_at instead of job.created_at.
   if (job.created_at === undefined) {
-    const startJobElapsedSec = diffSec(
-      workflow.run_started_at,
-      job.started_at,
-    );
-    // dummy sec for gantt look and feel
-    const waitingRunnerElapsedSec = startJobElapsedSec;
-    return {
-      name: `Waiting for a runner (not supported < GHES v3.9)`,
-      id: `job${jobIndex}-0`,
-      status,
-      // dummy position for gantt look and feel
-      position: formatElapsedTime(0),
-      sec: waitingRunnerElapsedSec,
-    };
-    // >= GHES v3.9 or GitHub.com
+    return undefined;
   } else {
+    // >= GHES v3.9 or GitHub.com
     const startJobElapsedSec = diffSec(
       workflow.run_started_at,
       job.created_at,
@@ -70,17 +62,42 @@ const createWaitingRunnerStep = (
 export const createGanttJobs = (
   workflow: Workflow,
   workflowJobs: WorkflowJobs,
+  showWaitingRunner = true,
 ): ganttJob[] => {
   return filterJobs(workflowJobs).map(
-    (job, jobIndex, _jobs): ganttJob => {
+    (job, jobIndex, _jobs): ganttJob | undefined => {
+      if (job.steps === undefined) return undefined;
+
       const section = escapeName(job.name);
+      let firstStep: ganttStep;
+
       const waitingRunnerStep = createWaitingRunnerStep(
         workflow,
         job,
         jobIndex,
       );
+      if (!showWaitingRunner || waitingRunnerStep === undefined) {
+        const rawFirstStep = job.steps.shift();
+        if (rawFirstStep === undefined) return undefined;
 
-      const steps = filterSteps(job.steps ?? []).map(
+        const stepElapsedSec = diffSec(
+          rawFirstStep.started_at,
+          rawFirstStep.completed_at,
+        );
+        firstStep = {
+          name: formatName(rawFirstStep.name, stepElapsedSec),
+          id: `job${jobIndex}-0`,
+          status: convertStepToStatus(
+            rawFirstStep.conclusion as StepConclusion,
+          ),
+          position: formatElapsedTime(stepElapsedSec),
+          sec: stepElapsedSec,
+        };
+      } else {
+        firstStep = waitingRunnerStep;
+      }
+
+      const steps = filterSteps(job.steps).map(
         (step, stepIndex, _steps): ganttStep => {
           const stepElapsedSec = diffSec(step.started_at, step.completed_at);
           return {
@@ -93,9 +110,9 @@ export const createGanttJobs = (
         },
       );
 
-      return { section, steps: [waitingRunnerStep, ...steps] };
+      return { section, steps: [firstStep, ...steps] };
     },
-  );
+  ).filter((gantJobs): gantJobs is ganttJob => gantJobs !== undefined);
 };
 
 export const createGanttDiagrams = (
@@ -135,8 +152,13 @@ axisFormat  %H:%M:%S
 export const createMermaid = (
   workflow: Workflow,
   workflowJobs: WorkflowJobs,
+  options: GanttOptions,
 ): string => {
   const title = workflow.name ?? "";
-  const jobs = createGanttJobs(workflow, workflowJobs);
+  const jobs = createGanttJobs(
+    workflow,
+    workflowJobs,
+    options.showWaitingRunner,
+  );
   return createGanttDiagrams(title, jobs).join("\n");
 };

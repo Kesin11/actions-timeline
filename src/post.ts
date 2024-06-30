@@ -41,7 +41,7 @@ const main = async () => {
   debug(JSON.stringify(workflowJobs, null, 2));
 
   info("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflow, workflowJobs);
+  const gantt = createMermaid(workflow, workflowJobs, {});
   await summary.addRaw(gantt).write();
   debug(gantt);
 

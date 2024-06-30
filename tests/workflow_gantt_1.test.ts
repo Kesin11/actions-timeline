@@ -114,7 +114,7 @@ ${workflowJobs[0].steps![6].name} (0s) :job0-7, after job0-6, 0s
 ${workflowJobs[0].steps![7].name} (0s) :job0-8, after job0-7, 0s
 \`\`\``;
 
-    assertEquals(createMermaid(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
   });
 
   await t.step("job has skipped and failure steps", () => {
@@ -192,7 +192,7 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
 ${workflowJobs[0].steps![3].name} (0s) :job0-4, after job0-3, 0s
 \`\`\``;
 
-    assertEquals(createMermaid(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
   });
 
   await t.step("Hide not completed steps", () => {
@@ -258,6 +258,6 @@ Waiting for a runner (6s) :active, job0-0, 00:04:31, 6s
 ${workflowJobs[0].steps![0].name} (1s) :job0-1, after job0-0, 1s
 \`\`\``;
 
-    assertEquals(createMermaid(workflow, workflowJobs), expect);
+    assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
   });
 });

@@ -21,3 +21,7 @@ export type StepConclusion =
   | "timed_out"
   | "action_required"
   | null;
+
+export type GanttOptions = {
+  showWaitingRunner?: boolean;
+};

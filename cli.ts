@@ -49,7 +49,7 @@ const workflowJobs = await fetchWorkflowRunJobs(
   runUrl.runId,
   runAttempt,
 );
-const gantt = createMermaid(workflow, workflowJobs);
+const gantt = createMermaid(workflow, workflowJobs, {});
 
 if (options.output) {
   await Deno.writeTextFile(options.output, gantt);
