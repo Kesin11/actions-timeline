@@ -6,6 +6,19 @@ import {
 } from "../src/workflow_gantt.ts";
 import { Workflow, WorkflowJobs } from "../src/github.ts";
 
+const commonWorkflow = {
+  "id": 5833450919,
+  "name": "Check self-hosted runner",
+  "run_number": 128,
+  "event": "workflow_dispatch",
+  "status": "completed",
+  "conclusion": "success",
+  "workflow_id": 10970418,
+  "created_at": "2023-08-11T14:00:48Z",
+  "updated_at": "2023-08-11T14:01:56Z",
+  "run_started_at": "2023-08-11T14:00:48Z",
+} as unknown as Workflow;
+
 Deno.test("Special case gantt", async (t) => {
   await t.step(
     "Escape colon char in job name or step name",
@@ -80,22 +93,17 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
       assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
     },
   );
+
   await t.step("Retried job", () => {
     const workflow = {
-      "id": 5833450919,
-      "name": "Check self-hosted runner",
-      "run_number": 128,
-      "event": "workflow_dispatch",
-      "status": "completed",
-      "conclusion": "success",
-      "workflow_id": 10970418,
+      ...commonWorkflow,
       // Retried job does not changed created_at but changed run_started_at.
       // This dummy simulate to retry job after 1 hour.
       "created_at": "2023-08-11T13:00:48Z",
       "updated_at": "2023-08-11T14:01:56Z",
       "run_started_at": "2023-08-11T14:00:48Z",
       "run_attempt": 2,
-    } as unknown as Workflow;
+    };
 
     const workflowJobs = [
       {
@@ -157,19 +165,7 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
   await t.step(
     "'Waiting for a runner' step duration is ommited if workflow_job has not 'created_at' field (< GHES v3.9)",
     () => {
-      const workflow = {
-        "id": 5833450919,
-        "name": "Check self-hosted runner",
-        "run_number": 128,
-        "event": "workflow_dispatch",
-        "status": "completed",
-        "conclusion": "success",
-        "workflow_id": 10970418,
-        "created_at": "2023-08-11T14:00:48Z",
-        "updated_at": "2023-08-11T14:01:56Z",
-        "run_started_at": "2023-08-11T14:00:48Z",
-      } as unknown as Workflow;
-
+      const workflow = { ...commonWorkflow };
       const workflowJobs = [
         {
           "id": 15820938470,
@@ -234,19 +230,7 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-2, after job0-1, 0s
   await t.step(
     "'Waiting for a runner' step duration is ommited if option 'showWaitingRunner' === false ",
     () => {
-      const workflow = {
-        "id": 5833450919,
-        "name": "Check self-hosted runner",
-        "run_number": 128,
-        "event": "workflow_dispatch",
-        "status": "completed",
-        "conclusion": "success",
-        "workflow_id": 10970418,
-        "created_at": "2023-08-11T14:00:48Z",
-        "updated_at": "2023-08-11T14:01:56Z",
-        "run_started_at": "2023-08-11T14:00:48Z",
-      } as unknown as Workflow;
-
+      const workflow = { ...commonWorkflow };
       const workflowJobs = [
         {
           "id": 15820938470,
@@ -310,19 +294,7 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-2, after job0-1, 0s
   await t.step(
     "Split gantt when generated gantt characters reached max limit of mermaid.js",
     () => {
-      const workflow = {
-        "id": 5833450919,
-        "name": "Check self-hosted runner",
-        "run_number": 128,
-        "event": "workflow_dispatch",
-        "status": "completed",
-        "conclusion": "success",
-        "workflow_id": 10970418,
-        "created_at": "2023-08-11T14:00:48Z",
-        "updated_at": "2023-08-11T14:01:56Z",
-        "run_started_at": "2023-08-11T14:00:48Z",
-      } as unknown as Workflow;
-
+      const workflow = { ...commonWorkflow };
       const workflowJobs = [
         {
           "id": 15820938470,

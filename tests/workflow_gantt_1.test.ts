@@ -2,21 +2,22 @@ import { assertEquals } from "https://deno.land/std@0.189.0/testing/asserts.ts";
 import { createMermaid } from "../src/workflow_gantt.ts";
 import { Workflow, WorkflowJobs } from "../src/github.ts";
 
+const commonWorkflow = {
+  "id": 5977929222,
+  "name": "POC",
+  "run_number": 5,
+  "event": "push",
+  "status": "completed",
+  "conclusion": "success",
+  "workflow_id": 66989622,
+  "created_at": "2023-08-25T15:57:51Z",
+  "updated_at": "2023-08-25T15:58:19Z",
+  "run_started_at": "2023-08-25T15:57:51Z",
+} as unknown as Workflow;
+
 Deno.test("1 section gantt", async (t) => {
   await t.step("all steps are success", () => {
-    const workflow = {
-      "id": 5977929222,
-      "name": "POC",
-      "run_number": 5,
-      "event": "push",
-      "status": "completed",
-      "conclusion": "success",
-      "workflow_id": 66989622,
-      "created_at": "2023-08-25T15:57:51Z",
-      "updated_at": "2023-08-25T15:58:19Z",
-      "run_started_at": "2023-08-25T15:57:51Z",
-    } as unknown as Workflow;
-
+    const workflow = { ...commonWorkflow };
     const workflowJobs = [{
       "id": 16218974194,
       "run_id": 5977929222,
@@ -118,19 +119,7 @@ ${workflowJobs[0].steps![7].name} (0s) :job0-8, after job0-7, 0s
   });
 
   await t.step("job has skipped and failure steps", () => {
-    const workflow = {
-      "id": 5977929222,
-      "name": "POC",
-      "run_number": 5,
-      "event": "push",
-      "status": "completed",
-      "conclusion": "failure",
-      "workflow_id": 66989622,
-      "created_at": "2023-08-25T15:57:51Z",
-      "updated_at": "2023-08-25T15:58:19Z",
-      "run_started_at": "2023-08-25T15:57:51Z",
-    } as unknown as Workflow;
-
+    const workflow = { ...commonWorkflow };
     const workflowJobs = [{
       "id": 16218974194,
       "run_id": 5977929222,
