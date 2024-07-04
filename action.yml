@@ -9,6 +9,10 @@ inputs:
     description: The GitHub token used to create an authenticated client
     default: ${{ github.token }}
     required: false
+  show-waiting-runner:
+    description: Show waiting runner time in the timeline.
+    default: true
+    required: false
 runs:
   using: "node20"
   main: "dist/main.js"
