@@ -22,6 +22,9 @@ jobs:
         # e.g.: ${{ secrets.MY_PAT }}
         # Default: ${{ github.token }}
         github-token: ''
+        # Show waiting runner time in the timeline.
+        # Default: true
+        show-waiting-runner: true
 
     # Your build steps...
 ```
@@ -88,7 +91,7 @@ GET `workflow_job` API response does not contain `created_at` field in
 it is added from
 [GHES v3.9](https://docs.github.com/en/enterprise-server@3.9/rest/actions/workflow-jobs?apiVersion=2022-11-28).
 So it is not possible to calculate the elapsed time the runner is waiting for a
-job, `actions-timeline` inserts a dummy step instead.
+job, `actions-timeline` omits `Waiting for a runner` step in the timeline.
 
 # Similar works
 

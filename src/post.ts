@@ -1,6 +1,12 @@
 import { setTimeout } from "node:timers/promises";
 import process from "node:process";
-import { debug, getInput, info, summary } from "npm:@actions/core@1.10.1";
+import {
+  debug,
+  getBooleanInput,
+  getInput,
+  info,
+  summary,
+} from "npm:@actions/core@1.10.1";
 import * as github from "npm:@actions/github@6.0.0";
 import { createMermaid } from "./workflow_gantt.ts";
 import {
@@ -11,6 +17,7 @@ import {
 
 const main = async () => {
   const token = getInput("github-token", { required: true });
+  const showWaitingRunner = getBooleanInput("show-waiting-runner");
   const octokit = createOctokitForAction(token);
 
   info("Wait for workflow API result stability...");
@@ -41,7 +48,7 @@ const main = async () => {
   debug(JSON.stringify(workflowJobs, null, 2));
 
   info("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflow, workflowJobs);
+  const gantt = createMermaid(workflow, workflowJobs, { showWaitingRunner });
   await summary.addRaw(gantt).write();
   debug(gantt);
 

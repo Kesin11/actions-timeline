@@ -16,6 +16,11 @@ const { options, args } = await new Command()
     "-o, --output <output:file>",
     "Output md file path. If not set output to STDOUT. ex: output.md",
   )
+  .option(
+    "--show-waiting-runner <showWaitingRunner:boolean>",
+    "Show waiting runner time in the timeline. Default: true",
+    { default: true },
+  )
   .arguments("<url:string>")
   .parse(Deno.args);
 
@@ -49,7 +54,9 @@ const workflowJobs = await fetchWorkflowRunJobs(
   runUrl.runId,
   runAttempt,
 );
-const gantt = createMermaid(workflow, workflowJobs);
+const gantt = createMermaid(workflow, workflowJobs, {
+  showWaitingRunner: options.showWaitingRunner,
+});
 
 if (options.output) {
   await Deno.writeTextFile(options.output, gantt);

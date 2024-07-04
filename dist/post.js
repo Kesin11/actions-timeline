@@ -18852,7 +18852,7 @@ var require_core = __commonJS({
       return inputs.map((input) => input.trim());
     }
     exports2.getMultilineInput = getMultilineInput;
-    function getBooleanInput(name, options) {
+    function getBooleanInput2(name, options) {
       const trueValue = ["true", "True", "TRUE"];
       const falseValue = ["false", "False", "FALSE"];
       const val = getInput2(name, options);
@@ -18863,7 +18863,7 @@ var require_core = __commonJS({
       throw new TypeError(`Input does not meet YAML 1.2 "Core Schema" specification: ${name}
 Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
     }
-    exports2.getBooleanInput = getBooleanInput;
+    exports2.getBooleanInput = getBooleanInput2;
     function setOutput(name, value) {
       const filePath = process.env["GITHUB_OUTPUT"] || "";
       if (filePath) {
@@ -24638,19 +24638,7 @@ var filterJobs = (jobs) => {
 var createWaitingRunnerStep = (workflow, job, jobIndex) => {
   const status = "active";
   if (job.created_at === void 0) {
-    const startJobElapsedSec = diffSec(
-      workflow.run_started_at,
-      job.started_at
-    );
-    const waitingRunnerElapsedSec = startJobElapsedSec;
-    return {
-      name: `Waiting for a runner (not supported < GHES v3.9)`,
-      id: `job${jobIndex}-0`,
-      status,
-      // dummy position for gantt look and feel
-      position: formatElapsedTime(0),
-      sec: waitingRunnerElapsedSec
-    };
+    return void 0;
   } else {
     const startJobElapsedSec = diffSec(
       workflow.run_started_at,
@@ -24666,16 +24654,41 @@ var createWaitingRunnerStep = (workflow, job, jobIndex) => {
     };
   }
 };
-var createGanttJobs = (workflow, workflowJobs) => {
+var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
   return filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs) => {
+      if (job.steps === void 0) return void 0;
       const section = escapeName(job.name);
+      let firstStep;
       const waitingRunnerStep = createWaitingRunnerStep(
         workflow,
         job,
         jobIndex
       );
-      const steps = filterSteps(job.steps ?? []).map(
+      if (!showWaitingRunner || waitingRunnerStep === void 0) {
+        const rawFirstStep = job.steps.shift();
+        if (rawFirstStep === void 0) return void 0;
+        const startJobElapsedSec = diffSec(
+          workflow.run_started_at,
+          job.started_at
+        );
+        const stepElapsedSec = diffSec(
+          rawFirstStep.started_at,
+          rawFirstStep.completed_at
+        );
+        firstStep = {
+          name: formatName(rawFirstStep.name, stepElapsedSec),
+          id: `job${jobIndex}-0`,
+          status: convertStepToStatus(
+            rawFirstStep.conclusion
+          ),
+          position: formatElapsedTime(startJobElapsedSec),
+          sec: stepElapsedSec
+        };
+      } else {
+        firstStep = waitingRunnerStep;
+      }
+      const steps = filterSteps(job.steps).map(
         (step, stepIndex, _steps) => {
           const stepElapsedSec = diffSec(step.started_at, step.completed_at);
           return {
@@ -24687,9 +24700,9 @@ var createGanttJobs = (workflow, workflowJobs) => {
           };
         }
       );
-      return { section, steps: [waitingRunnerStep, ...steps] };
+      return { section, steps: [firstStep, ...steps] };
     }
-  );
+  ).filter((gantJobs) => gantJobs !== void 0);
 };
 var createGanttDiagrams = (title, ganttJobs, maxChar = MERMAID_MAX_CHAR) => {
   const header = `
@@ -24716,9 +24729,13 @@ axisFormat  %H:%M:%S
   mermaids.push(header + sections.join("\n") + footer);
   return mermaids;
 };
-var createMermaid = (workflow, workflowJobs) => {
+var createMermaid = (workflow, workflowJobs, options) => {
   const title = workflow.name ?? "";
-  const jobs = createGanttJobs(workflow, workflowJobs);
+  const jobs = createGanttJobs(
+    workflow,
+    workflowJobs,
+    options.showWaitingRunner
+  );
   return createGanttDiagrams(title, jobs).join("\n");
 };
 
@@ -25699,8 +25716,7 @@ function normalizePaginatedListResponse(response) {
     };
   }
   const responseNeedsNormalization = "total_count" in response.data && !("url" in response.data);
-  if (!responseNeedsNormalization)
-    return response;
+  if (!responseNeedsNormalization) return response;
   const incompleteResults = response.data.incomplete_results;
   const repositorySelection = response.data.repository_selection;
   const totalCount = response.data.total_count;
@@ -25728,8 +25744,7 @@ function iterator(octokit, route, parameters) {
   return {
     [Symbol.asyncIterator]: () => ({
       async next() {
-        if (!url)
-          return { done: true };
+        if (!url) return { done: true };
         try {
           const response = await requestMethod({ method, url, headers });
           const normalizedResponse = normalizePaginatedListResponse(response);
@@ -25738,8 +25753,7 @@ function iterator(octokit, route, parameters) {
           ) || [])[1];
           return { value: normalizedResponse };
         } catch (error) {
-          if (error.status !== 409)
-            throw error;
+          if (error.status !== 409) throw error;
           url = "";
           return {
             value: {
@@ -25796,7 +25810,7 @@ function paginateRest(octokit) {
 paginateRest.VERSION = VERSION6;
 
 // npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
-var VERSION7 = "13.2.1";
+var VERSION7 = "13.2.4";
 
 // npm/node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/generated/endpoints.js
 var Endpoints = {
@@ -27921,6 +27935,7 @@ var fetchWorkflowRunJobs = async (octokit, owner, repo, runId, runAttempt) => {
 // npm/src/post.ts
 var main = async () => {
   const token = (0, import_core2.getInput)("github-token", { required: true });
+  const showWaitingRunner = (0, import_core2.getBooleanInput)("show-waiting-runner");
   const octokit = createOctokitForAction(token);
   (0, import_core2.info)("Wait for workflow API result stability...");
   await (0, import_promises.setTimeout)(1e3);
@@ -27944,7 +27959,7 @@ var main = async () => {
   );
   (0, import_core2.debug)(JSON.stringify(workflowJobs, null, 2));
   (0, import_core2.info)("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflow, workflowJobs);
+  const gantt = createMermaid(workflow, workflowJobs, { showWaitingRunner });
   await import_core2.summary.addRaw(gantt).write();
   (0, import_core2.debug)(gantt);
   (0, import_core2.info)("Complete!");

@@ -76,5 +76,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: js_dist
-      - name: Run self action
+      - name: Run self action with no options
         uses: ./
+      - name: Run self action with 'show-waiting-runner=false'
+        uses: ./
+        with:
+          show-waiting-runner: false
