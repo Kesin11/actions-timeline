@@ -80,6 +80,10 @@ export const createGanttJobs = (
         const rawFirstStep = job.steps.shift();
         if (rawFirstStep === undefined) return undefined;
 
+        const startJobElapsedSec = diffSec(
+          workflow.run_started_at,
+          job.started_at,
+        );
         const stepElapsedSec = diffSec(
           rawFirstStep.started_at,
           rawFirstStep.completed_at,
@@ -90,7 +94,7 @@ export const createGanttJobs = (
           status: convertStepToStatus(
             rawFirstStep.conclusion as StepConclusion,
           ),
-          position: formatElapsedTime(stepElapsedSec),
+          position: formatElapsedTime(startJobElapsedSec),
           sec: stepElapsedSec,
         };
       } else {

@@ -218,7 +218,7 @@ title ${workflowJobs[0].workflow_name}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
 section ${workflowJobs[0].name}
-${workflowJobs[0].steps![0].name} (2s) :job0-0, 00:00:02, 2s
+${workflowJobs[0].steps![0].name} (2s) :job0-0, 00:00:43, 2s
 ${workflowJobs[0].steps![1].name} (0s) :job0-1, after job0-0, 0s
 ${workflowJobs[0].steps![2].name} (0s) :job0-2, after job0-1, 0s
 \`\`\``;
@@ -279,7 +279,7 @@ title ${workflowJobs[0].workflow_name}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
 section ${workflowJobs[0].name}
-${workflowJobs[0].steps![0].name} (2s) :job0-0, 00:00:02, 2s
+${workflowJobs[0].steps![0].name} (2s) :job0-0, 00:00:43, 2s
 ${workflowJobs[0].steps![1].name} (0s) :job0-1, after job0-0, 0s
 ${workflowJobs[0].steps![2].name} (0s) :job0-2, after job0-1, 0s
 \`\`\``;
