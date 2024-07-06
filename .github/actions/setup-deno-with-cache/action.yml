@@ -9,13 +9,9 @@ runs:
         key: deno-${{ github.job }}-${{ runner.os }}-${{ hashFiles('deno.lock') }}
         restore-keys: |
           deno-${{ github.job }}-${{ runner.os }}-
-    - name: Set .tool-versions to output
-      id: tool-versions
-      run: awk '{ print $1"="$2 }' .tool-versions >> $GITHUB_OUTPUT
-      shell: bash
     - uses: denoland/setup-deno@v1
       with:
-        deno-version: v${{ steps.tool-versions.outputs.deno }}
+        deno-version-file: .tool-versions
     - name: Setup Node.js for dnt
       uses: actions/setup-node@v4
       with:
