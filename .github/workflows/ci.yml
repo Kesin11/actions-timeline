@@ -58,11 +58,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-deno-with-cache
-      - run: deno test
+      - run: deno test --allow-env
       - name: CLI somke test
         run: |
           RUN_URL=$(gh run list -L 1 -w release --json url --jq .[].url)
-          deno run --allow-net --allow-write cli.ts -t "${GITHUB_TOKEN}" -o output.md $RUN_URL
+          deno run --allow-net --allow-write --allow-env=GITHUB_API_URL cli.ts -t "${GITHUB_TOKEN}" -o output.md $RUN_URL
           cat output.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
