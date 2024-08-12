@@ -1,12 +1,6 @@
 import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.3/command/mod.ts";
 import { createMermaid } from "./src/workflow_gantt.ts";
-import {
-  createOctokitForCli,
-  fetchWorkflow,
-  fetchWorkflowLatestAttempt,
-  fetchWorkflowRunJobs,
-} from "./src/github.ts";
-import { parseWorkflowRunUrl } from "./src/github.ts";
+import { Github, parseWorkflowRunUrl } from "@kesin11/gha-utils";
 
 const { options, args } = await new Command()
   .name("actions-timeline-cli")
@@ -27,34 +21,20 @@ const { options, args } = await new Command()
 const url = args[0];
 const runUrl = parseWorkflowRunUrl(url);
 
-const octokit = createOctokitForCli({
-  token: options.token,
-  origin: runUrl.origin,
-});
+const host = (runUrl.origin !== "https://github.com")
+  ? runUrl.origin
+  : undefined;
+const client = new Github({ token: options.token, host });
 
-const runAttempt = runUrl.runAttempt ??
-  await fetchWorkflowLatestAttempt(
-    octokit,
-    runUrl.owner,
-    runUrl.repo,
-    runUrl.runId,
-  );
-
-const workflow = await fetchWorkflow(
-  octokit,
+const workflowRun = await client.fetchWorkflowRun(
   runUrl.owner,
   runUrl.repo,
   runUrl.runId,
-  runAttempt,
+  runUrl.runAttempt,
 );
-const workflowJobs = await fetchWorkflowRunJobs(
-  octokit,
-  runUrl.owner,
-  runUrl.repo,
-  runUrl.runId,
-  runAttempt,
-);
-const gantt = createMermaid(workflow, workflowJobs, {
+const workflowJobs = await client.fetchWorkflowJobs([workflowRun]);
+
+const gantt = createMermaid(workflowRun, workflowJobs, {
   showWaitingRunner: options.showWaitingRunner,
 });
 
