@@ -1,4 +1,4 @@
-import { build, emptyDir } from "https://deno.land/x/dnt@0.40.0/mod.ts";
+import { build, emptyDir } from "jsr:@deno/dnt@0.41.3";
 import * as esbuild from "npm:esbuild@0.23.0";
 
 console.debug("Start dnt ...");
