@@ -4514,7 +4514,7 @@ var require_util2 = __commonJS({
       const protocol = url.protocol;
       return protocol === "http:" || protocol === "https:";
     }
-    var hasOwn7 = Object.hasOwn || ((dict, key) => Object.prototype.hasOwnProperty.call(dict, key));
+    var hasOwn6 = Object.hasOwn || ((dict, key) => Object.prototype.hasOwnProperty.call(dict, key));
     module2.exports = {
       isAborted,
       isCancelled,
@@ -4547,7 +4547,7 @@ var require_util2 = __commonJS({
       makeIterator,
       isValidHeaderName,
       isValidHeaderValue,
-      hasOwn: hasOwn7,
+      hasOwn: hasOwn6,
       isErrorLike,
       fullyReadBody,
       bytesMatch,
@@ -4585,7 +4585,7 @@ var require_webidl = __commonJS({
   "npm/node_modules/undici/lib/fetch/webidl.js"(exports2, module2) {
     "use strict";
     var { types } = require("util");
-    var { hasOwn: hasOwn7, toUSVString } = require_util2();
+    var { hasOwn: hasOwn6, toUSVString } = require_util2();
     var webidl = {};
     webidl.converters = {};
     webidl.util = {};
@@ -4796,7 +4796,7 @@ var require_webidl = __commonJS({
         for (const options of converters) {
           const { key, defaultValue, required, converter } = options;
           if (required === true) {
-            if (!hasOwn7(dictionary, key)) {
+            if (!hasOwn6(dictionary, key)) {
               throw webidl.errors.exception({
                 header: "Dictionary",
                 message: `Missing required key "${key}".`
@@ -4804,7 +4804,7 @@ var require_webidl = __commonJS({
             }
           }
           let value = dictionary[key];
-          const hasDefault = hasOwn7(options, "defaultValue");
+          const hasDefault = hasOwn6(options, "defaultValue");
           if (hasDefault && value !== null) {
             value = value ?? defaultValue;
           }
@@ -26632,6 +26632,7 @@ var require_resolveDns = __commonJS({
       }
       switch (recordType) {
         case "A":
+        /* falls through */
         case "AAAA":
         case "CNAME":
         case "NS":
@@ -32886,10 +32887,23 @@ var import_node_process = __toESM(require("node:process"));
 var import_core4 = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/deno.land/std@0.224.0/collections/deep_merge.ts
-var { hasOwn } = Object;
+// npm/src/deps/jsr.io/@std/collections/1.0.2/chunk.ts
+function chunk(array, size) {
+  if (size <= 0 || !Number.isInteger(size)) {
+    throw new RangeError(
+      `Expected size to be an integer greater than 0 but found ${size}`
+    );
+  }
+  const result = [];
+  let index = 0;
+  while (index < array.length) {
+    result.push(array.slice(index, index + size));
+    index += size;
+  }
+  return result;
+}
 
-// npm/src/deps/deno.land/std@0.224.0/collections/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.0.2/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
@@ -34736,22 +34750,6 @@ var textDecoder = new TextDecoder();
 var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
-
-// npm/src/deps/jsr.io/@std/collections/1.0.2/chunk.ts
-function chunk(array, size) {
-  if (size <= 0 || !Number.isInteger(size)) {
-    throw new RangeError(
-      `Expected size to be an integer greater than 0 but found ${size}`
-    );
-  }
-  const result = [];
-  let index = 0;
-  while (index < array.length) {
-    result.push(array.slice(index, index + size));
-    index += size;
-  }
-  return result;
-}
 
 // npm/node_modules/universal-user-agent/index.js
 function getUserAgent() {
@@ -38924,7 +38922,7 @@ var nil = new Type("tag:yaml.org,2002:null", {
 });
 
 // npm/src/deps/jsr.io/@std/yaml/0.224.3/_type/omap.ts
-var { hasOwn: hasOwn2 } = Object;
+var { hasOwn } = Object;
 var _toString = Object.prototype.toString;
 function resolveYamlOmap(data) {
   const objectKeys = [];
@@ -38934,7 +38932,7 @@ function resolveYamlOmap(data) {
     pairHasKey = false;
     if (_toString.call(pair) !== "[object Object]") return false;
     for (pairKey in pair) {
-      if (hasOwn2(pair, pairKey)) {
+      if (hasOwn(pair, pairKey)) {
         if (!pairHasKey) pairHasKey = true;
         else return false;
       }
@@ -39019,11 +39017,11 @@ var seq = new Type("tag:yaml.org,2002:seq", {
 });
 
 // npm/src/deps/jsr.io/@std/yaml/0.224.3/_type/set.ts
-var { hasOwn: hasOwn3 } = Object;
+var { hasOwn: hasOwn2 } = Object;
 function resolveYamlSet(data) {
   if (data === null) return true;
   for (const key in data) {
-    if (hasOwn3(data, key)) {
+    if (hasOwn2(data, key)) {
       if (data[key] !== null) return false;
     }
   }
@@ -39153,7 +39151,7 @@ var EXTENDED_SCHEMA = new Schema({
 });
 
 // npm/src/deps/jsr.io/@std/yaml/0.224.3/_loader/loader.ts
-var { hasOwn: hasOwn4 } = Object;
+var { hasOwn: hasOwn3 } = Object;
 function simpleEscapeSequence(c) {
   return c === 48 ? "\0" : c === 97 ? "\x07" : c === 98 ? "\b" : c === 116 ? "	" : c === 9 ? "	" : c === 110 ? "\n" : c === 118 ? "\v" : c === 102 ? "\f" : c === 114 ? "\r" : c === 101 ? "\x1B" : c === 32 ? " " : c === 34 ? '"' : c === 47 ? "/" : c === 92 ? "\\" : c === 78 ? "\x85" : c === 95 ? "\xA0" : c === 76 ? "\u2028" : c === 80 ? "\u2029" : "";
 }
@@ -39165,10 +39163,10 @@ for (let i = 0; i < 256; i++) {
 }
 
 // npm/src/deps/jsr.io/@std/yaml/0.224.3/_dumper/dumper_state.ts
-var { hasOwn: hasOwn5 } = Object;
+var { hasOwn: hasOwn4 } = Object;
 
 // npm/src/deps/jsr.io/@std/yaml/0.224.3/_dumper/dumper.ts
-var { hasOwn: hasOwn6 } = Object;
+var { hasOwn: hasOwn5 } = Object;
 var ESCAPE_SEQUENCES = {};
 ESCAPE_SEQUENCES[0] = "\\0";
 ESCAPE_SEQUENCES[7] = "\\a";
