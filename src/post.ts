@@ -9,16 +9,12 @@ import {
 } from "npm:@actions/core@1.10.1";
 import * as github from "npm:@actions/github@6.0.0";
 import { createMermaid } from "./workflow_gantt.ts";
-import {
-  createOctokitForAction,
-  fetchWorkflow,
-  fetchWorkflowRunJobs,
-} from "./github.ts";
+import { Github } from "jsr:@kesin11/gha-utils";
 
 const main = async () => {
   const token = getInput("github-token", { required: true });
   const showWaitingRunner = getBooleanInput("show-waiting-runner");
-  const octokit = createOctokitForAction(token);
+  const client = new Github({ token });
 
   info("Wait for workflow API result stability...");
   await setTimeout(1000);
@@ -29,26 +25,19 @@ const main = async () => {
   const runAttempt = process.env.GITHUB_RUN_ATTEMPT
     ? Number(process.env.GITHUB_RUN_ATTEMPT)
     : 1;
-  const workflow = await fetchWorkflow(
-    octokit,
+  const workflowRun = await client.fetchWorkflowRun(
     github.context.repo.owner,
     github.context.repo.repo,
     github.context.runId,
     runAttempt,
   );
-  debug(JSON.stringify(workflow, null, 2));
+  debug(JSON.stringify(workflowRun, null, 2));
   info("Fetch workflow_job...");
-  const workflowJobs = await fetchWorkflowRunJobs(
-    octokit,
-    github.context.repo.owner,
-    github.context.repo.repo,
-    github.context.runId,
-    runAttempt,
-  );
+  const workflowJobs = await client.fetchWorkflowJobs([workflowRun]);
   debug(JSON.stringify(workflowJobs, null, 2));
 
   info("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflow, workflowJobs, { showWaitingRunner });
+  const gantt = createMermaid(workflowRun, workflowJobs, { showWaitingRunner });
   await summary.addRaw(gantt).write();
   debug(gantt);
 

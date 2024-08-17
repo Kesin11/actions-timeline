@@ -9,5 +9,8 @@
   },
   "lint": {
     "exclude": ["./dist/", "./npm/"]
+  },
+  "imports": {
+    "@kesin11/gha-utils": "jsr:@kesin11/gha-utils@^0.1.0"
   }
 }

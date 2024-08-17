@@ -105,21 +105,21 @@ job, `actions-timeline` omits `Waiting for a runner` step in the timeline.
 `deno run` command.
 
 ```bash
-deno run --allow-net --allow-write \
+deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
   https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
   https://github.com/Kesin11/actions-timeline/actions/runs/8021493760/attempts/1 \
   -t $(gh auth token) \
   -o output.md
 
 # Fetch latest attempt if ommit attempts
-deno run --allow-net --allow-write \
+deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
   https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
   https://github.com/Kesin11/actions-timeline/actions/runs/8021493760/ \
   -t $(gh auth token) \
   -o output.md
 
 # GHES
-deno run --allow-net --allow-write \
+deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
   https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
   https://YOUR_ENTERPRISE_HOST/OWNER/REPO/actions/runs/RUN_ID/attempts/1 \
   -t $(gh auth token -h YOUR_ENTERPRISE_HOST) \
