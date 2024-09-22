@@ -14794,7 +14794,7 @@ var require_util4 = __commonJS({
           if (encoding === "failure") {
             encoding = "UTF-8";
           }
-          return decode(bytes, encoding);
+          return decode2(bytes, encoding);
         }
         case "ArrayBuffer": {
           const sequence = combineByteSequences(bytes);
@@ -14811,7 +14811,7 @@ var require_util4 = __commonJS({
         }
       }
     }
-    function decode(ioQueue, encoding) {
+    function decode2(ioQueue, encoding) {
       const bytes = combineByteSequences(ioQueue);
       const BOMEncoding = BOMSniffing(bytes);
       let slice = 0;
@@ -32887,7 +32887,7 @@ var import_node_process = __toESM(require("node:process"));
 var import_core4 = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/jsr.io/@std/collections/1.0.5/chunk.ts
+// npm/src/deps/jsr.io/@std/collections/1.0.6/chunk.ts
 function chunk(array, size) {
   if (size <= 0 || !Number.isInteger(size)) {
     throw new RangeError(
@@ -32903,7 +32903,7 @@ function chunk(array, size) {
   return result;
 }
 
-// npm/src/deps/jsr.io/@std/collections/1.0.5/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.0.6/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
@@ -34719,18 +34719,18 @@ function createMergeProxy(baseObj, extObj) {
   });
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.1/_validate_binary_like.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/_validate_binary_like.ts
 var encoder = new TextEncoder();
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.1/base32.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/base32.ts
 var lookup = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".split("");
 var revLookup = [];
 lookup.forEach((c, i) => revLookup[c.charCodeAt(0)] = i);
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.1/base58.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/base58.ts
 var base58alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".split("");
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.1/base64.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/base64.ts
 function decodeBase64(b64) {
   const binString = atob(b64);
   const size = binString.length;
@@ -34741,12 +34741,12 @@ function decodeBase64(b64) {
   return bytes;
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.1/hex.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/hex.ts
 var hexTable = new TextEncoder().encode("0123456789abcdef");
 var textEncoder = new TextEncoder();
 var textDecoder = new TextDecoder();
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.1/varint.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/varint.ts
 var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
@@ -38091,6 +38091,7 @@ throttling.triggersNotification = triggersNotification;
 
 // npm/node_modules/@octokit/plugin-retry/dist-bundle/index.js
 var import_light2 = __toESM(require_light(), 1);
+var VERSION10 = "0.0.0-development";
 async function errorRequest(state, octokit, error, options) {
   if (!error.request || !error.request.request) {
     throw error;
@@ -38119,7 +38120,7 @@ async function wrapRequest2(state, octokit, request2, options) {
 }
 async function requestWithGraphqlErrorHandling(state, octokit, request2, options) {
   const response = await request2(request2, options);
-  if (response.data && response.data.errors && /Something went wrong while executing your query/.test(
+  if (response.data && response.data.errors && response.data.errors.length > 0 && /Something went wrong while executing your query/.test(
     response.data.errors[0].message
   )) {
     const error = new RequestError(response.data.errors[0].message, 500, {
@@ -38130,7 +38131,6 @@ async function requestWithGraphqlErrorHandling(state, octokit, request2, options
   }
   return response;
 }
-var VERSION10 = "0.0.0-development";
 function retry(octokit, octokitOptions) {
   const state = Object.assign(
     {
