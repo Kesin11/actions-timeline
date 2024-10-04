@@ -6,7 +6,7 @@ import {
   getInput,
   info,
   summary,
-} from "npm:@actions/core@1.10.1";
+} from "npm:@actions/core@1.11.0";
 import * as github from "npm:@actions/github@6.0.0";
 import { createMermaid } from "./workflow_gantt.ts";
 import { Github } from "jsr:@kesin11/gha-utils";
