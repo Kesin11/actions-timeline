@@ -16,17 +16,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    # Register this action before your build step. It will then be executed at the end of the job post-processing.
-    - uses: Kesin11/actions-timeline@v2
-      with:
-        # e.g.: ${{ secrets.MY_PAT }}
-        # Default: ${{ github.token }}
-        github-token: ''
-        # Show waiting runner time in the timeline.
-        # Default: true
-        show-waiting-runner: true
+      # Register this action before your build step. It will then be executed at the end of the job post-processing.
+      - uses: Kesin11/actions-timeline@v2
+        with:
+          # e.g.: ${{ secrets.MY_PAT }}
+          # Default: ${{ github.token }}
+          github-token: ""
+          # Show waiting runner time in the timeline.
+          # Default: true
+          show-waiting-runner: true
 
-    # Your build steps...
+      # Your build steps...
 ```
 
 If your workflow has many jobs, you should run `actions-timeline` in the job
@@ -38,12 +38,12 @@ jobs:
   build-1:
   build-2:
   build-3:
-  
+
   actions-timeline:
     needs: [build-1, build-2, build-3]
     runs-on: ubuntu-latest
     steps:
-    - uses: Kesin11/actions-timeline@v2
+      - uses: Kesin11/actions-timeline@v2
 ```
 
 ## How it works
@@ -81,7 +81,7 @@ jobs:
       actions: read
     runs-on: ubuntu-latest
     steps:
-    - uses: Kesin11/actions-timeline@v2
+      - uses: Kesin11/actions-timeline@v2
 ```
 
 ### 'Waiting for a runner' step is not supported < GHES v3.9
