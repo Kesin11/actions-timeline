@@ -33694,7 +33694,7 @@ var import_node_process = __toESM(require("node:process"));
 var import_core4 = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/jsr.io/@std/collections/1.0.7/chunk.ts
+// npm/src/deps/jsr.io/@std/collections/1.0.8/chunk.ts
 function chunk(array, size) {
   if (size <= 0 || !Number.isInteger(size)) {
     throw new RangeError(
@@ -33710,7 +33710,7 @@ function chunk(array, size) {
   return result;
 }
 
-// npm/src/deps/jsr.io/@std/collections/1.0.7/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.0.8/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
