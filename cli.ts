@@ -1,4 +1,4 @@
-import { Command } from "https://deno.land/x/cliffy@v1.0.0-rc.3/command/mod.ts";
+import { Command } from "@cliffy/command";
 import { createMermaid } from "./src/workflow_gantt.ts";
 import { Github, parseWorkflowRunUrl } from "@kesin11/gha-utils";
 
