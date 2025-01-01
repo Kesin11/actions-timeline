@@ -28952,6 +28952,102 @@ var require_dist2 = __commonJS({
   }
 });
 
+// npm/node_modules/fast-content-type-parse/index.js
+var require_fast_content_type_parse = __commonJS({
+  "npm/node_modules/fast-content-type-parse/index.js"(exports2, module2) {
+    "use strict";
+    var NullObject = function NullObject2() {
+    };
+    NullObject.prototype = /* @__PURE__ */ Object.create(null);
+    var paramRE = /; *([!#$%&'*+.^\w`|~-]+)=("(?:[\v\u0020\u0021\u0023-\u005b\u005d-\u007e\u0080-\u00ff]|\\[\v\u0020-\u00ff])*"|[!#$%&'*+.^\w`|~-]+) */gu;
+    var quotedPairRE = /\\([\v\u0020-\u00ff])/gu;
+    var mediaTypeRE = /^[!#$%&'*+.^\w|~-]+\/[!#$%&'*+.^\w|~-]+$/u;
+    var defaultContentType = { type: "", parameters: new NullObject() };
+    Object.freeze(defaultContentType.parameters);
+    Object.freeze(defaultContentType);
+    function parse3(header) {
+      if (typeof header !== "string") {
+        throw new TypeError("argument header is required and must be a string");
+      }
+      let index = header.indexOf(";");
+      const type = index !== -1 ? header.slice(0, index).trim() : header.trim();
+      if (mediaTypeRE.test(type) === false) {
+        throw new TypeError("invalid media type");
+      }
+      const result = {
+        type: type.toLowerCase(),
+        parameters: new NullObject()
+      };
+      if (index === -1) {
+        return result;
+      }
+      let key;
+      let match2;
+      let value;
+      paramRE.lastIndex = index;
+      while (match2 = paramRE.exec(header)) {
+        if (match2.index !== index) {
+          throw new TypeError("invalid parameter format");
+        }
+        index += match2[0].length;
+        key = match2[1].toLowerCase();
+        value = match2[2];
+        if (value[0] === '"') {
+          value = value.slice(1, value.length - 1);
+          quotedPairRE.test(value) && (value = value.replace(quotedPairRE, "$1"));
+        }
+        result.parameters[key] = value;
+      }
+      if (index !== header.length) {
+        throw new TypeError("invalid parameter format");
+      }
+      return result;
+    }
+    function safeParse2(header) {
+      if (typeof header !== "string") {
+        return defaultContentType;
+      }
+      let index = header.indexOf(";");
+      const type = index !== -1 ? header.slice(0, index).trim() : header.trim();
+      if (mediaTypeRE.test(type) === false) {
+        return defaultContentType;
+      }
+      const result = {
+        type: type.toLowerCase(),
+        parameters: new NullObject()
+      };
+      if (index === -1) {
+        return result;
+      }
+      let key;
+      let match2;
+      let value;
+      paramRE.lastIndex = index;
+      while (match2 = paramRE.exec(header)) {
+        if (match2.index !== index) {
+          return defaultContentType;
+        }
+        index += match2[0].length;
+        key = match2[1].toLowerCase();
+        value = match2[2];
+        if (value[0] === '"') {
+          value = value.slice(1, value.length - 1);
+          quotedPairRE.test(value) && (value = value.replace(quotedPairRE, "$1"));
+        }
+        result.parameters[key] = value;
+      }
+      if (index !== header.length) {
+        return defaultContentType;
+      }
+      return result;
+    }
+    module2.exports.default = { parse: parse3, safeParse: safeParse2 };
+    module2.exports.parse = parse3;
+    module2.exports.safeParse = safeParse2;
+    module2.exports.defaultContentType = defaultContentType;
+  }
+});
+
 // npm/node_modules/bottleneck/light.js
 var require_light = __commonJS({
   "npm/node_modules/bottleneck/light.js"(exports2, module2) {
@@ -35528,18 +35624,18 @@ function createMergeProxy(baseObj, extObj) {
   });
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.5/_validate_binary_like.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.6/_validate_binary_like.ts
 var encoder = new TextEncoder();
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.5/base32.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.6/base32.ts
 var lookup = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".split("");
 var revLookup = [];
 lookup.forEach((c, i) => revLookup[c.charCodeAt(0)] = i);
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.5/base58.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.6/base58.ts
 var base58alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".split("");
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.5/base64.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.6/base64.ts
 function decodeBase64(b64) {
   const binString = atob(b64);
   const size = binString.length;
@@ -35550,12 +35646,12 @@ function decodeBase64(b64) {
   return bytes;
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.5/hex.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.6/hex.ts
 var hexTable = new TextEncoder().encode("0123456789abcdef");
 var textEncoder = new TextEncoder();
 var textDecoder = new TextDecoder();
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.5/varint.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.6/varint.ts
 var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
@@ -35701,13 +35797,10 @@ function lowercaseKeys(object) {
   }, {});
 }
 function isPlainObject(value) {
-  if (typeof value !== "object" || value === null)
-    return false;
-  if (Object.prototype.toString.call(value) !== "[object Object]")
-    return false;
+  if (typeof value !== "object" || value === null) return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]") return false;
   const proto = Object.getPrototypeOf(value);
-  if (proto === null)
-    return true;
+  if (proto === null) return true;
   const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
   return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
 }
@@ -35715,10 +35808,8 @@ function mergeDeep(defaults, options) {
   const result = Object.assign({}, defaults);
   Object.keys(options).forEach((key) => {
     if (isPlainObject(options[key])) {
-      if (!(key in defaults))
-        Object.assign(result, { [key]: options[key] });
-      else
-        result[key] = mergeDeep(defaults[key], options[key]);
+      if (!(key in defaults)) Object.assign(result, { [key]: options[key] });
+      else result[key] = mergeDeep(defaults[key], options[key]);
     } else {
       Object.assign(result, { [key]: options[key] });
     }
@@ -35995,6 +36086,9 @@ function withDefaults(oldDefaults, newDefaults) {
 }
 var endpoint = withDefaults(null, DEFAULTS);
 
+// npm/node_modules/@octokit/request/dist-bundle/index.js
+var import_fast_content_type_parse = __toESM(require_fast_content_type_parse(), 1);
+
 // npm/node_modules/@octokit/request-error/dist-src/index.js
 var RequestError = class extends Error {
   name;
@@ -36149,13 +36243,23 @@ async function fetchWrapper(requestOptions) {
 }
 async function getResponseData(response) {
   const contentType = response.headers.get("content-type");
-  if (/application\/json/.test(contentType)) {
-    return response.json().catch(() => response.text()).catch(() => "");
+  if (!contentType) {
+    return response.text().catch(() => "");
   }
-  if (!contentType || /^text\/|charset=utf-8$/.test(contentType)) {
-    return response.text();
+  const mimetype = (0, import_fast_content_type_parse.safeParse)(contentType);
+  if (mimetype.type === "application/json") {
+    let text = "";
+    try {
+      text = await response.text();
+      return JSON.parse(text);
+    } catch (err) {
+      return text;
+    }
+  } else if (mimetype.type.startsWith("text/") || mimetype.parameters.charset?.toLowerCase() === "utf-8") {
+    return response.text().catch(() => "");
+  } else {
+    return response.arrayBuffer().catch(() => new ArrayBuffer(0));
   }
-  return response.arrayBuffer();
 }
 function toErrorMessage(data) {
   if (typeof data === "string") {
@@ -36236,8 +36340,7 @@ function graphql(request2, query, options) {
       );
     }
     for (const key in options) {
-      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key))
-        continue;
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
       return Promise.reject(
         new Error(
           `[@octokit/graphql] "${key}" cannot be used as variable name`
