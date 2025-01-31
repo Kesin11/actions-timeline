@@ -21028,13 +21028,13 @@ var require_dist_node7 = __commonJS({
       createTokenAuth: () => createTokenAuth3
     });
     module2.exports = __toCommonJS(dist_src_exports);
-    var REGEX_IS_INSTALLATION_LEGACY2 = /^v1\./;
-    var REGEX_IS_INSTALLATION2 = /^ghs_/;
-    var REGEX_IS_USER_TO_SERVER2 = /^ghu_/;
+    var REGEX_IS_INSTALLATION_LEGACY = /^v1\./;
+    var REGEX_IS_INSTALLATION = /^ghs_/;
+    var REGEX_IS_USER_TO_SERVER = /^ghu_/;
     async function auth2(token) {
       const isApp = token.split(/\./).length === 3;
-      const isInstallation = REGEX_IS_INSTALLATION_LEGACY2.test(token) || REGEX_IS_INSTALLATION2.test(token);
-      const isUserToServer = REGEX_IS_USER_TO_SERVER2.test(token);
+      const isInstallation = REGEX_IS_INSTALLATION_LEGACY.test(token) || REGEX_IS_INSTALLATION.test(token);
+      const isUserToServer = REGEX_IS_USER_TO_SERVER.test(token);
       const tokenType = isApp ? "app" : isInstallation ? "installation" : isUserToServer ? "user-to-server" : "oauth";
       return {
         type: "token",
@@ -25986,9 +25986,9 @@ var require_cjs = __commonJS({
 var require_lib2 = __commonJS({
   "npm/node_modules/which/lib/index.js"(exports2, module2) {
     var { isexe, sync: isexeSync } = require_cjs();
-    var { join, delimiter, sep, posix } = require("path");
+    var { join, delimiter, sep: sep2, posix } = require("path");
     var isWindows = process.platform === "win32";
-    var rSlash = new RegExp(`[${posix.sep}${sep === posix.sep ? "" : sep}]`.replace(/(\\)/g, "\\$1"));
+    var rSlash = new RegExp(`[${posix.sep}${sep2 === posix.sep ? "" : sep2}]`.replace(/(\\)/g, "\\$1"));
     var rRel = new RegExp(`^\\.${rSlash.source}`);
     var getNotFoundError = (cmd) => Object.assign(new Error(`not found: ${cmd}`), { code: "ENOENT" });
     var getPathInfo = (cmd, {
@@ -36416,13 +36416,14 @@ function withCustomRequest(customRequest) {
 }
 
 // npm/node_modules/@octokit/auth-token/dist-bundle/index.js
-var REGEX_IS_INSTALLATION_LEGACY = /^v1\./;
-var REGEX_IS_INSTALLATION = /^ghs_/;
-var REGEX_IS_USER_TO_SERVER = /^ghu_/;
+var b64url = "(?:[a-zA-Z0-9_-]+)";
+var sep = "\\.";
+var jwtRE = new RegExp(`^${b64url}${sep}${b64url}${sep}${b64url}$`);
+var isJWT = jwtRE.test.bind(jwtRE);
 async function auth(token) {
-  const isApp = token.split(/\./).length === 3;
-  const isInstallation = REGEX_IS_INSTALLATION_LEGACY.test(token) || REGEX_IS_INSTALLATION.test(token);
-  const isUserToServer = REGEX_IS_USER_TO_SERVER.test(token);
+  const isApp = isJWT(token);
+  const isInstallation = token.startsWith("v1.") || token.startsWith("ghs_");
+  const isUserToServer = token.startsWith("ghu_");
   const tokenType = isApp ? "app" : isInstallation ? "installation" : isUserToServer ? "user-to-server" : "oauth";
   return {
     type: "token",
