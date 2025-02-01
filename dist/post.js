@@ -21028,13 +21028,13 @@ var require_dist_node7 = __commonJS({
       createTokenAuth: () => createTokenAuth3
     });
     module2.exports = __toCommonJS(dist_src_exports);
-    var REGEX_IS_INSTALLATION_LEGACY2 = /^v1\./;
-    var REGEX_IS_INSTALLATION2 = /^ghs_/;
-    var REGEX_IS_USER_TO_SERVER2 = /^ghu_/;
+    var REGEX_IS_INSTALLATION_LEGACY = /^v1\./;
+    var REGEX_IS_INSTALLATION = /^ghs_/;
+    var REGEX_IS_USER_TO_SERVER = /^ghu_/;
     async function auth2(token) {
       const isApp = token.split(/\./).length === 3;
-      const isInstallation = REGEX_IS_INSTALLATION_LEGACY2.test(token) || REGEX_IS_INSTALLATION2.test(token);
-      const isUserToServer = REGEX_IS_USER_TO_SERVER2.test(token);
+      const isInstallation = REGEX_IS_INSTALLATION_LEGACY.test(token) || REGEX_IS_INSTALLATION.test(token);
+      const isUserToServer = REGEX_IS_USER_TO_SERVER.test(token);
       const tokenType = isApp ? "app" : isInstallation ? "installation" : isUserToServer ? "user-to-server" : "oauth";
       return {
         type: "token",
@@ -25986,9 +25986,9 @@ var require_cjs = __commonJS({
 var require_lib2 = __commonJS({
   "npm/node_modules/which/lib/index.js"(exports2, module2) {
     var { isexe, sync: isexeSync } = require_cjs();
-    var { join, delimiter, sep, posix } = require("path");
+    var { join, delimiter, sep: sep2, posix } = require("path");
     var isWindows = process.platform === "win32";
-    var rSlash = new RegExp(`[${posix.sep}${sep === posix.sep ? "" : sep}]`.replace(/(\\)/g, "\\$1"));
+    var rSlash = new RegExp(`[${posix.sep}${sep2 === posix.sep ? "" : sep2}]`.replace(/(\\)/g, "\\$1"));
     var rRel = new RegExp(`^\\.${rSlash.source}`);
     var getNotFoundError = (cmd) => Object.assign(new Error(`not found: ${cmd}`), { code: "ENOENT" });
     var getPathInfo = (cmd, {
@@ -33797,7 +33797,7 @@ var import_node_process = __toESM(require("node:process"));
 var import_core4 = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/jsr.io/@std/collections/1.0.9/chunk.ts
+// npm/src/deps/jsr.io/@std/collections/1.0.8/chunk.ts
 function chunk(array, size) {
   if (size <= 0 || !Number.isInteger(size)) {
     throw new RangeError(
@@ -33813,7 +33813,7 @@ function chunk(array, size) {
   return result;
 }
 
-// npm/src/deps/jsr.io/@std/collections/1.0.9/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.0.8/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
@@ -35631,18 +35631,18 @@ function createMergeProxy(baseObj, extObj) {
   });
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.6/_validate_binary_like.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/_validate_binary_like.ts
 var encoder = new TextEncoder();
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.6/base32.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/base32.ts
 var lookup = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".split("");
 var revLookup = [];
 lookup.forEach((c, i) => revLookup[c.charCodeAt(0)] = i);
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.6/base58.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/base58.ts
 var base58alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".split("");
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.6/base64.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/base64.ts
 function decodeBase64(b64) {
   const binString = atob(b64);
   const size = binString.length;
@@ -35653,12 +35653,12 @@ function decodeBase64(b64) {
   return bytes;
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.6/hex.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/hex.ts
 var hexTable = new TextEncoder().encode("0123456789abcdef");
 var textEncoder = new TextEncoder();
 var textDecoder = new TextDecoder();
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.6/varint.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.5/varint.ts
 var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
@@ -36338,7 +36338,8 @@ var NON_VARIABLE_OPTIONS = [
   "headers",
   "request",
   "query",
-  "mediaType"
+  "mediaType",
+  "operationName"
 ];
 var FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
 var GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
@@ -36416,13 +36417,14 @@ function withCustomRequest(customRequest) {
 }
 
 // npm/node_modules/@octokit/auth-token/dist-bundle/index.js
-var REGEX_IS_INSTALLATION_LEGACY = /^v1\./;
-var REGEX_IS_INSTALLATION = /^ghs_/;
-var REGEX_IS_USER_TO_SERVER = /^ghu_/;
+var b64url = "(?:[a-zA-Z0-9_-]+)";
+var sep = "\\.";
+var jwtRE = new RegExp(`^${b64url}${sep}${b64url}${sep}${b64url}$`);
+var isJWT = jwtRE.test.bind(jwtRE);
 async function auth(token) {
-  const isApp = token.split(/\./).length === 3;
-  const isInstallation = REGEX_IS_INSTALLATION_LEGACY.test(token) || REGEX_IS_INSTALLATION.test(token);
-  const isUserToServer = REGEX_IS_USER_TO_SERVER.test(token);
+  const isApp = isJWT(token);
+  const isInstallation = token.startsWith("v1.") || token.startsWith("ghs_");
+  const isUserToServer = token.startsWith("ghu_");
   const tokenType = isApp ? "app" : isInstallation ? "installation" : isUserToServer ? "user-to-server" : "oauth";
   return {
     type: "token",
@@ -40238,6 +40240,18 @@ ESCAPE_SEQUENCES[160] = "\\_";
 ESCAPE_SEQUENCES[8232] = "\\L";
 ESCAPE_SEQUENCES[8233] = "\\P";
 
+// npm/src/github.ts
+var fetchWorkflowRunJobs = async (octokit, owner, repo, runId, runAttempt) => {
+  const workflowJob = await octokit.rest.actions.listJobsForWorkflowRunAttempt({
+    owner,
+    repo,
+    run_id: runId,
+    attempt_number: runAttempt,
+    per_page: 100
+  });
+  return workflowJob.data.jobs;
+};
+
 // npm/src/post.ts
 var main = async () => {
   const token = (0, import_core4.getInput)("github-token", { required: true });
@@ -40255,7 +40269,13 @@ var main = async () => {
   );
   (0, import_core4.debug)(JSON.stringify(workflowRun, null, 2));
   (0, import_core4.info)("Fetch workflow_job...");
-  const workflowJobs = await client.fetchWorkflowJobs([workflowRun]);
+  const workflowJobs = await fetchWorkflowRunJobs(
+    client.octokit,
+    github.context.repo.owner,
+    github.context.repo.repo,
+    github.context.runId,
+    runAttempt
+  );
   (0, import_core4.debug)(JSON.stringify(workflowJobs, null, 2));
   (0, import_core4.info)("Create gantt mermaid diagram...");
   const gantt = createMermaid(workflowRun, workflowJobs, { showWaitingRunner });
