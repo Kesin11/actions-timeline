@@ -1,7 +1,6 @@
 import { Command } from "@cliffy/command";
 import { createMermaid } from "./src/workflow_gantt.ts";
 import { Github, parseWorkflowRunUrl } from "@kesin11/gha-utils";
-import { fetchWorkflowRunJobs } from "./src/github.ts";
 
 const { options, args } = await new Command()
   .name("actions-timeline-cli")
@@ -34,12 +33,7 @@ const workflowRun = await client.fetchWorkflowRun(
   runUrl.runAttempt,
 );
 // const workflowJobs = await client.fetchWorkflowJobs([workflowRun]);
-const workflowJobs = await fetchWorkflowRunJobs(client.octokit, 
-  runUrl.owner,
-  runUrl.repo,
-  runUrl.runId,
-  1
-);
+const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
 
 const gantt = createMermaid(workflowRun, workflowJobs, {
   showWaitingRunner: options.showWaitingRunner,
