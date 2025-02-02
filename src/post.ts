@@ -9,7 +9,7 @@ import {
 } from "npm:@actions/core@1.11.1";
 import * as github from "npm:@actions/github@6.0.0";
 import { createMermaid } from "./workflow_gantt.ts";
-import { Github } from "jsr:@kesin11/gha-utils";
+import { Github } from "@kesin11/gha-utils";
 
 const main = async () => {
   const token = getInput("github-token", { required: true });
@@ -33,7 +33,8 @@ const main = async () => {
   );
   debug(JSON.stringify(workflowRun, null, 2));
   info("Fetch workflow_job...");
-  const workflowJobs = await client.fetchWorkflowJobs([workflowRun]);
+  const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
+
   debug(JSON.stringify(workflowJobs, null, 2));
 
   info("Create gantt mermaid diagram...");
