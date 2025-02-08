@@ -36722,7 +36722,7 @@ function paginateRest(octokit) {
 paginateRest.VERSION = VERSION6;
 
 // npm/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
-var VERSION7 = "13.3.0";
+var VERSION7 = "13.3.1";
 
 // npm/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/generated/endpoints.js
 var Endpoints = {
