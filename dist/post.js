@@ -20682,7 +20682,7 @@ var require_dist_node5 = __commonJS({
     module2.exports = __toCommonJS(dist_src_exports);
     var import_endpoint2 = require_dist_node2();
     var import_universal_user_agent5 = require_dist_node();
-    var VERSION11 = "8.4.0";
+    var VERSION11 = "8.4.1";
     function isPlainObject4(value) {
       if (typeof value !== "object" || value === null)
         return false;
@@ -20733,7 +20733,7 @@ var require_dist_node5 = __commonJS({
           headers[keyAndValue[0]] = keyAndValue[1];
         }
         if ("deprecation" in headers) {
-          const matches = headers.link && headers.link.match(/<([^>]+)>; rel="deprecation"/);
+          const matches = headers.link && headers.link.match(/<([^<>]+)>; rel="deprecation"/);
           const deprecationLink = matches && matches.pop();
           log.warn(
             `[@octokit/request] "${requestOptions.method} ${requestOptions.url}" is deprecated. It is scheduled to be removed on ${headers.sunset}${deprecationLink ? `. See ${deprecationLink}` : ""}`
@@ -23417,7 +23417,7 @@ var require_dist_node10 = __commonJS({
       paginatingEndpoints: () => paginatingEndpoints
     });
     module2.exports = __toCommonJS(dist_src_exports);
-    var VERSION11 = "9.2.1";
+    var VERSION11 = "9.2.2";
     function normalizePaginatedListResponse2(response) {
       if (!response.data) {
         return {
@@ -23461,7 +23461,7 @@ var require_dist_node10 = __commonJS({
               const response = await requestMethod({ method, url, headers });
               const normalizedResponse = normalizePaginatedListResponse2(response);
               url = ((normalizedResponse.headers.link || "").match(
-                /<([^>]+)>;\s*rel="next"/
+                /<([^<>]+)>;\s*rel="next"/
               ) || [])[1];
               return { value: normalizedResponse };
             } catch (error) {
