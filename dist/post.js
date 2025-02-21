@@ -20885,16 +20885,16 @@ var require_dist_node6 = __commonJS({
       return to;
     };
     var __toCommonJS = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
-    var dist_src_exports = {};
-    __export(dist_src_exports, {
+    var index_exports = {};
+    __export(index_exports, {
       GraphqlResponseError: () => GraphqlResponseError2,
       graphql: () => graphql22,
       withCustomRequest: () => withCustomRequest2
     });
-    module2.exports = __toCommonJS(dist_src_exports);
+    module2.exports = __toCommonJS(index_exports);
     var import_request3 = require_dist_node5();
     var import_universal_user_agent5 = require_dist_node();
-    var VERSION11 = "7.1.0";
+    var VERSION11 = "7.1.1";
     var import_request22 = require_dist_node5();
     var import_request4 = require_dist_node5();
     function _buildMessageForResponseErrors2(data) {
@@ -20934,8 +20934,7 @@ var require_dist_node6 = __commonJS({
           );
         }
         for (const key in options) {
-          if (!FORBIDDEN_VARIABLE_OPTIONS2.includes(key))
-            continue;
+          if (!FORBIDDEN_VARIABLE_OPTIONS2.includes(key)) continue;
           return Promise.reject(
             new Error(
               `[@octokit/graphql] "${key}" cannot be used as variable name`
