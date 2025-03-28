@@ -5277,8 +5277,8 @@ var require_body = __commonJS({
     }
     var ReadableStream = globalThis.ReadableStream;
     var File = NativeFile ?? UndiciFile;
-    var textEncoder2 = new TextEncoder();
-    var textDecoder2 = new TextDecoder();
+    var textEncoder = new TextEncoder();
+    var textDecoder = new TextDecoder();
     function extractBody(object, keepalive = false) {
       if (!ReadableStream) {
         ReadableStream = require("stream/web").ReadableStream;
@@ -5292,7 +5292,7 @@ var require_body = __commonJS({
         stream = new ReadableStream({
           async pull(controller) {
             controller.enqueue(
-              typeof source === "string" ? textEncoder2.encode(source) : source
+              typeof source === "string" ? textEncoder.encode(source) : source
             );
             queueMicrotask(() => readableStreamClose(controller));
           },
@@ -5328,14 +5328,14 @@ Content-Disposition: form-data`;
         let hasUnknownSizeValue = false;
         for (const [name, value] of object) {
           if (typeof value === "string") {
-            const chunk3 = textEncoder2.encode(prefix + `; name="${escape(normalizeLinefeeds(name))}"\r
+            const chunk3 = textEncoder.encode(prefix + `; name="${escape(normalizeLinefeeds(name))}"\r
 \r
 ${normalizeLinefeeds(value)}\r
 `);
             blobParts.push(chunk3);
             length += chunk3.byteLength;
           } else {
-            const chunk3 = textEncoder2.encode(`${prefix}; name="${escape(normalizeLinefeeds(name))}"` + (value.name ? `; filename="${escape(value.name)}"` : "") + `\r
+            const chunk3 = textEncoder.encode(`${prefix}; name="${escape(normalizeLinefeeds(name))}"` + (value.name ? `; filename="${escape(value.name)}"` : "") + `\r
 Content-Type: ${value.type || "application/octet-stream"}\r
 \r
 `);
@@ -5347,7 +5347,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
             }
           }
         }
-        const chunk2 = textEncoder2.encode(`--${boundary}--`);
+        const chunk2 = textEncoder.encode(`--${boundary}--`);
         blobParts.push(chunk2);
         length += chunk2.byteLength;
         if (hasUnknownSizeValue) {
@@ -5598,7 +5598,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
       if (buffer[0] === 239 && buffer[1] === 187 && buffer[2] === 191) {
         buffer = buffer.subarray(3);
       }
-      const output = textDecoder2.decode(buffer);
+      const output = textDecoder.decode(buffer);
       return output;
     }
     function parseJSONFromBytes(bytes) {
@@ -8873,6 +8873,14 @@ var require_pool = __commonJS({
         this[kOptions] = { ...util.deepClone(options), connect, allowH2 };
         this[kOptions].interceptors = options.interceptors ? { ...options.interceptors } : void 0;
         this[kFactory] = factory;
+        this.on("connectionError", (origin2, targets, error) => {
+          for (const target of targets) {
+            const idx = this[kClients].indexOf(target);
+            if (idx !== -1) {
+              this[kClients].splice(idx, 1);
+            }
+          }
+        });
       }
       [kGetDispatcher]() {
         let dispatcher = this[kClients].find((dispatcher2) => !dispatcher2[kNeedDrain]);
@@ -11543,6 +11551,7 @@ var require_headers = __commonJS({
       isValidHeaderName,
       isValidHeaderValue
     } = require_util2();
+    var util = require("util");
     var { webidl } = require_webidl();
     var assert = require("assert");
     var kHeadersMap = Symbol("headers map");
@@ -11894,6 +11903,9 @@ var require_headers = __commonJS({
       [Symbol.toStringTag]: {
         value: "Headers",
         configurable: true
+      },
+      [util.inspect.custom]: {
+        enumerable: false
       }
     });
     webidl.converters.HeadersInit = function(V) {
@@ -11948,7 +11960,7 @@ var require_response = __commonJS({
     var assert = require("assert");
     var { types } = require("util");
     var ReadableStream = globalThis.ReadableStream || require("stream/web").ReadableStream;
-    var textEncoder2 = new TextEncoder("utf-8");
+    var textEncoder = new TextEncoder("utf-8");
     var Response = class _Response {
       // Creates network error Response.
       static error() {
@@ -11967,7 +11979,7 @@ var require_response = __commonJS({
         if (init !== null) {
           init = webidl.converters.ResponseInit(init);
         }
-        const bytes = textEncoder2.encode(
+        const bytes = textEncoder.encode(
           serializeJavascriptValueToJSONString(data)
         );
         const body = extractBody(bytes);
@@ -14468,7 +14480,7 @@ var require_util4 = __commonJS({
           if (encoding === "failure") {
             encoding = "UTF-8";
           }
-          return decode2(bytes, encoding);
+          return decode4(bytes, encoding);
         }
         case "ArrayBuffer": {
           const sequence = combineByteSequences(bytes);
@@ -14485,7 +14497,7 @@ var require_util4 = __commonJS({
         }
       }
     }
-    function decode2(ioQueue, encoding) {
+    function decode4(ioQueue, encoding) {
       const bytes = combineByteSequences(ioQueue);
       const BOMEncoding = BOMSniffing(bytes);
       let slice = 0;
@@ -15483,8 +15495,6 @@ var require_constants4 = __commonJS({
 var require_util6 = __commonJS({
   "npm/node_modules/undici/lib/cookies/util.js"(exports2, module2) {
     "use strict";
-    var assert = require("assert");
-    var { kHeadersList } = require_symbols();
     function isCTLExcludingHtab(value) {
       if (value.length === 0) {
         return false;
@@ -15615,25 +15625,13 @@ var require_util6 = __commonJS({
       }
       return out.join("; ");
     }
-    var kHeadersListNode;
-    function getHeadersList(headers) {
-      if (headers[kHeadersList]) {
-        return headers[kHeadersList];
-      }
-      if (!kHeadersListNode) {
-        kHeadersListNode = Object.getOwnPropertySymbols(headers).find(
-          (symbol) => symbol.description === "headers list"
-        );
-        assert(kHeadersListNode, "Headers cannot be parsed");
-      }
-      const headersList = headers[kHeadersListNode];
-      assert(headersList);
-      return headersList;
-    }
     module2.exports = {
       isCTLExcludingHtab,
-      stringify,
-      getHeadersList
+      validateCookieName,
+      validateCookiePath,
+      validateCookieValue,
+      toIMFDate,
+      stringify
     };
   }
 });
@@ -15783,7 +15781,7 @@ var require_cookies = __commonJS({
   "npm/node_modules/undici/lib/cookies/index.js"(exports2, module2) {
     "use strict";
     var { parseSetCookie } = require_parse();
-    var { stringify, getHeadersList } = require_util6();
+    var { stringify } = require_util6();
     var { webidl } = require_webidl();
     var { Headers } = require_headers();
     function getCookies(headers) {
@@ -15815,11 +15813,11 @@ var require_cookies = __commonJS({
     function getSetCookies(headers) {
       webidl.argumentLengthCheck(arguments, 1, { header: "getSetCookies" });
       webidl.brandCheck(headers, Headers, { strict: false });
-      const cookies = getHeadersList(headers).cookies;
+      const cookies = headers.getSetCookie();
       if (!cookies) {
         return [];
       }
-      return cookies.map((pair) => parseSetCookie(Array.isArray(pair) ? pair[1] : pair));
+      return cookies.map((pair) => parseSetCookie(pair));
     }
     function setCookie(headers, cookie) {
       webidl.argumentLengthCheck(arguments, 2, { header: "setCookie" });
@@ -21093,17 +21091,17 @@ var require_dist_node8 = __commonJS({
       return to;
     };
     var __toCommonJS = (mod) => __copyProps2(__defProp2({}, "__esModule", { value: true }), mod);
-    var dist_src_exports = {};
-    __export(dist_src_exports, {
+    var index_exports = {};
+    __export(index_exports, {
       Octokit: () => Octokit3
     });
-    module2.exports = __toCommonJS(dist_src_exports);
+    module2.exports = __toCommonJS(index_exports);
     var import_universal_user_agent5 = require_dist_node();
     var import_before_after_hook2 = require_before_after_hook();
     var import_request3 = require_dist_node5();
     var import_graphql2 = require_dist_node6();
     var import_auth_token2 = require_dist_node7();
-    var VERSION11 = "5.2.0";
+    var VERSION11 = "5.2.1";
     var noop3 = () => {
     };
     var consoleWarn2 = console.warn.bind(console);
@@ -35630,34 +35628,93 @@ function createMergeProxy(baseObj, extObj) {
   });
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.7/_validate_binary_like.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.8/_validate_binary_like.ts
 var encoder = new TextEncoder();
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.7/base32.ts
-var lookup = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".split("");
-var revLookup = [];
-lookup.forEach((c, i) => revLookup[c.charCodeAt(0)] = i);
+// npm/src/deps/jsr.io/@std/encoding/1.0.8/base32.ts
+var padding = "=".charCodeAt(0);
+var alphabet = new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567");
+var rAlphabet = new Uint8Array(128).fill(32);
+alphabet.forEach((byte, i) => rAlphabet[byte] = i);
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.7/base58.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.8/base58.ts
 var base58alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".split("");
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.7/base64.ts
-function decodeBase64(b64) {
-  const binString = atob(b64);
-  const size = binString.length;
-  const bytes = new Uint8Array(size);
-  for (let i = 0; i < size; i++) {
-    bytes[i] = binString.charCodeAt(i);
+// npm/src/deps/jsr.io/@std/encoding/1.0.8/_common64.ts
+function decode2(buffer, i, o, alphabet5, padding4) {
+  for (let x = buffer.length - 2; x < buffer.length; ++x) {
+    if (buffer[x] === padding4) {
+      for (let y = x + 1; y < buffer.length; ++y) {
+        if (buffer[y] !== padding4) {
+          throw new TypeError(
+            `Cannot decode input as base64: Invalid character (${String.fromCharCode(buffer[y])})`
+          );
+        }
+      }
+      buffer = buffer.subarray(0, x);
+      break;
+    }
   }
-  return bytes;
+  if ((buffer.length - o) % 4 === 1) {
+    throw new RangeError(
+      `Cannot decode input as base64: Length (${buffer.length - o}), excluding padding, must not have a remainder of 1 when divided by 4`
+    );
+  }
+  i += 3;
+  for (; i < buffer.length; i += 4) {
+    const x = getByte(buffer[i - 3], alphabet5) << 18 | getByte(buffer[i - 2], alphabet5) << 12 | getByte(buffer[i - 1], alphabet5) << 6 | getByte(buffer[i], alphabet5);
+    buffer[o++] = x >> 16;
+    buffer[o++] = x >> 8 & 255;
+    buffer[o++] = x & 255;
+  }
+  switch (i) {
+    case buffer.length + 1: {
+      const x = getByte(buffer[i - 3], alphabet5) << 18 | getByte(buffer[i - 2], alphabet5) << 12;
+      buffer[o++] = x >> 16;
+      break;
+    }
+    case buffer.length: {
+      const x = getByte(buffer[i - 3], alphabet5) << 18 | getByte(buffer[i - 2], alphabet5) << 12 | getByte(buffer[i - 1], alphabet5) << 6;
+      buffer[o++] = x >> 16;
+      buffer[o++] = x >> 8 & 255;
+      break;
+    }
+  }
+  return o;
+}
+function getByte(char, alphabet5) {
+  const byte = alphabet5[char] ?? 64;
+  if (byte === 64) {
+    throw new TypeError(
+      `Cannot decode input as base64: Invalid character (${String.fromCharCode(char)})`
+    );
+  }
+  return byte;
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.7/hex.ts
-var hexTable = new TextEncoder().encode("0123456789abcdef");
-var textEncoder = new TextEncoder();
-var textDecoder = new TextDecoder();
+// npm/src/deps/jsr.io/@std/encoding/1.0.8/base64.ts
+var padding2 = "=".charCodeAt(0);
+var alphabet2 = new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+var rAlphabet2 = new Uint8Array(128).fill(64);
+alphabet2.forEach((byte, i) => rAlphabet2[byte] = i);
+function decodeBase64(b64) {
+  const output = new TextEncoder().encode(b64);
+  return new Uint8Array(output.buffer.transfer(decode2(output, 0, 0, rAlphabet2, padding2)));
+}
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.7/varint.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.8/base64url.ts
+var padding3 = "=".charCodeAt(0);
+var alphabet3 = new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
+var rAlphabet3 = new Uint8Array(128).fill(64);
+alphabet3.forEach((byte, i) => rAlphabet3[byte] = i);
+
+// npm/src/deps/jsr.io/@std/encoding/1.0.8/hex.ts
+var alphabet4 = new TextEncoder().encode("0123456789abcdef");
+var rAlphabet4 = new Uint8Array(128).fill(16);
+alphabet4.forEach((byte, i) => rAlphabet4[byte] = i);
+new TextEncoder().encode("ABCDEF").forEach((byte, i) => rAlphabet4[byte] = i + 10);
+
+// npm/src/deps/jsr.io/@std/encoding/1.0.8/varint.ts
 var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
@@ -36721,7 +36778,7 @@ function paginateRest(octokit) {
 paginateRest.VERSION = VERSION6;
 
 // npm/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
-var VERSION7 = "13.3.1";
+var VERSION7 = "13.5.0";
 
 // npm/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/generated/endpoints.js
 var Endpoints = {
@@ -36750,6 +36807,7 @@ var Endpoints = {
     createEnvironmentVariable: [
       "POST /repos/{owner}/{repo}/environments/{environment_name}/variables"
     ],
+    createHostedRunnerForOrg: ["POST /orgs/{org}/actions/hosted-runners"],
     createOrUpdateEnvironmentSecret: [
       "PUT /repos/{owner}/{repo}/environments/{environment_name}/secrets/{secret_name}"
     ],
@@ -36786,6 +36844,9 @@ var Endpoints = {
     ],
     deleteEnvironmentVariable: [
       "DELETE /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    deleteHostedRunnerForOrg: [
+      "DELETE /orgs/{org}/actions/hosted-runners/{hosted_runner_id}"
     ],
     deleteOrgSecret: ["DELETE /orgs/{org}/actions/secrets/{secret_name}"],
     deleteOrgVariable: ["DELETE /orgs/{org}/actions/variables/{name}"],
@@ -36875,6 +36936,24 @@ var Endpoints = {
     getGithubActionsPermissionsRepository: [
       "GET /repos/{owner}/{repo}/actions/permissions"
     ],
+    getHostedRunnerForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/{hosted_runner_id}"
+    ],
+    getHostedRunnersGithubOwnedImagesForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/images/github-owned"
+    ],
+    getHostedRunnersLimitsForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/limits"
+    ],
+    getHostedRunnersMachineSpecsForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/machine-sizes"
+    ],
+    getHostedRunnersPartnerImagesForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/images/partner"
+    ],
+    getHostedRunnersPlatformsForOrg: [
+      "GET /orgs/{org}/actions/hosted-runners/platforms"
+    ],
     getJobForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/jobs/{job_id}"],
     getOrgPublicKey: ["GET /orgs/{org}/actions/secrets/public-key"],
     getOrgSecret: ["GET /orgs/{org}/actions/secrets/{secret_name}"],
@@ -36918,6 +36997,10 @@ var Endpoints = {
     listEnvironmentVariables: [
       "GET /repos/{owner}/{repo}/environments/{environment_name}/variables"
     ],
+    listGithubHostedRunnersInGroupForOrg: [
+      "GET /orgs/{org}/actions/runner-groups/{runner_group_id}/hosted-runners"
+    ],
+    listHostedRunnersForOrg: ["GET /orgs/{org}/actions/hosted-runners"],
     listJobsForWorkflowRun: [
       "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
     ],
@@ -37035,6 +37118,9 @@ var Endpoints = {
     ],
     updateEnvironmentVariable: [
       "PATCH /repos/{owner}/{repo}/environments/{environment_name}/variables/{name}"
+    ],
+    updateHostedRunnerForOrg: [
+      "PATCH /orgs/{org}/actions/hosted-runners/{hosted_runner_id}"
     ],
     updateOrgVariable: ["PATCH /orgs/{org}/actions/variables/{name}"],
     updateRepoVariable: [
@@ -37553,6 +37639,26 @@ var Endpoints = {
     getAllTemplates: ["GET /gitignore/templates"],
     getTemplate: ["GET /gitignore/templates/{name}"]
   },
+  hostedCompute: {
+    createNetworkConfigurationForOrg: [
+      "POST /orgs/{org}/settings/network-configurations"
+    ],
+    deleteNetworkConfigurationFromOrg: [
+      "DELETE /orgs/{org}/settings/network-configurations/{network_configuration_id}"
+    ],
+    getNetworkConfigurationForOrg: [
+      "GET /orgs/{org}/settings/network-configurations/{network_configuration_id}"
+    ],
+    getNetworkSettingsForOrg: [
+      "GET /orgs/{org}/settings/network-settings/{network_settings_id}"
+    ],
+    listNetworkConfigurationsForOrg: [
+      "GET /orgs/{org}/settings/network-configurations"
+    ],
+    updateNetworkConfigurationForOrg: [
+      "PATCH /orgs/{org}/settings/network-configurations/{network_configuration_id}"
+    ]
+  },
   interactions: {
     getRestrictionsForAuthenticatedUser: ["GET /user/interaction-limits"],
     getRestrictionsForOrg: ["GET /orgs/{org}/interaction-limits"],
@@ -37744,6 +37850,7 @@ var Endpoints = {
       "PUT /orgs/{org}/outside_collaborators/{username}"
     ],
     createInvitation: ["POST /orgs/{org}/invitations"],
+    createIssueType: ["POST /orgs/{org}/issue-types"],
     createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
     createOrUpdateCustomPropertiesValuesForRepos: [
       "PATCH /orgs/{org}/properties/values"
@@ -37753,6 +37860,7 @@ var Endpoints = {
     ],
     createWebhook: ["POST /orgs/{org}/hooks"],
     delete: ["DELETE /orgs/{org}"],
+    deleteIssueType: ["DELETE /orgs/{org}/issue-types/{issue_type_id}"],
     deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
     enableOrDisableSecurityProductOnAllOrgRepos: [
       "POST /orgs/{org}/{security_product}/{enablement}",
@@ -37769,6 +37877,10 @@ var Endpoints = {
     getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
     getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
+    getOrgRulesetHistory: ["GET /orgs/{org}/rulesets/{ruleset_id}/history"],
+    getOrgRulesetVersion: [
+      "GET /orgs/{org}/rulesets/{ruleset_id}/history/{version_id}"
+    ],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
     getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
     getWebhookDelivery: [
@@ -37783,6 +37895,7 @@ var Endpoints = {
     listForAuthenticatedUser: ["GET /user/orgs"],
     listForUser: ["GET /users/{username}/orgs"],
     listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
+    listIssueTypes: ["GET /orgs/{org}/issue-types"],
     listMembers: ["GET /orgs/{org}/members"],
     listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
     listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
@@ -37857,6 +37970,7 @@ var Endpoints = {
     ],
     unblockUser: ["DELETE /orgs/{org}/blocks/{username}"],
     update: ["PATCH /orgs/{org}"],
+    updateIssueType: ["PUT /orgs/{org}/issue-types/{issue_type_id}"],
     updateMembershipForAuthenticatedUser: [
       "PATCH /user/memberships/orgs/{org}"
     ],
@@ -37970,35 +38084,181 @@ var Endpoints = {
     ]
   },
   projects: {
-    addCollaborator: ["PUT /projects/{project_id}/collaborators/{username}"],
-    createCard: ["POST /projects/columns/{column_id}/cards"],
-    createColumn: ["POST /projects/{project_id}/columns"],
-    createForAuthenticatedUser: ["POST /user/projects"],
-    createForOrg: ["POST /orgs/{org}/projects"],
-    createForRepo: ["POST /repos/{owner}/{repo}/projects"],
-    delete: ["DELETE /projects/{project_id}"],
-    deleteCard: ["DELETE /projects/columns/cards/{card_id}"],
-    deleteColumn: ["DELETE /projects/columns/{column_id}"],
-    get: ["GET /projects/{project_id}"],
-    getCard: ["GET /projects/columns/cards/{card_id}"],
-    getColumn: ["GET /projects/columns/{column_id}"],
+    addCollaborator: [
+      "PUT /projects/{project_id}/collaborators/{username}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.addCollaborator() is deprecated, see https://docs.github.com/rest/projects/collaborators#add-project-collaborator"
+      }
+    ],
+    createCard: [
+      "POST /projects/columns/{column_id}/cards",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createCard() is deprecated, see https://docs.github.com/rest/projects/cards#create-a-project-card"
+      }
+    ],
+    createColumn: [
+      "POST /projects/{project_id}/columns",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createColumn() is deprecated, see https://docs.github.com/rest/projects/columns#create-a-project-column"
+      }
+    ],
+    createForAuthenticatedUser: [
+      "POST /user/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createForAuthenticatedUser() is deprecated, see https://docs.github.com/rest/projects/projects#create-a-user-project"
+      }
+    ],
+    createForOrg: [
+      "POST /orgs/{org}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createForOrg() is deprecated, see https://docs.github.com/rest/projects/projects#create-an-organization-project"
+      }
+    ],
+    createForRepo: [
+      "POST /repos/{owner}/{repo}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.createForRepo() is deprecated, see https://docs.github.com/rest/projects/projects#create-a-repository-project"
+      }
+    ],
+    delete: [
+      "DELETE /projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.delete() is deprecated, see https://docs.github.com/rest/projects/projects#delete-a-project"
+      }
+    ],
+    deleteCard: [
+      "DELETE /projects/columns/cards/{card_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.deleteCard() is deprecated, see https://docs.github.com/rest/projects/cards#delete-a-project-card"
+      }
+    ],
+    deleteColumn: [
+      "DELETE /projects/columns/{column_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.deleteColumn() is deprecated, see https://docs.github.com/rest/projects/columns#delete-a-project-column"
+      }
+    ],
+    get: [
+      "GET /projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.get() is deprecated, see https://docs.github.com/rest/projects/projects#get-a-project"
+      }
+    ],
+    getCard: [
+      "GET /projects/columns/cards/{card_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.getCard() is deprecated, see https://docs.github.com/rest/projects/cards#get-a-project-card"
+      }
+    ],
+    getColumn: [
+      "GET /projects/columns/{column_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.getColumn() is deprecated, see https://docs.github.com/rest/projects/columns#get-a-project-column"
+      }
+    ],
     getPermissionForUser: [
-      "GET /projects/{project_id}/collaborators/{username}/permission"
+      "GET /projects/{project_id}/collaborators/{username}/permission",
+      {},
+      {
+        deprecated: "octokit.rest.projects.getPermissionForUser() is deprecated, see https://docs.github.com/rest/projects/collaborators#get-project-permission-for-a-user"
+      }
     ],
-    listCards: ["GET /projects/columns/{column_id}/cards"],
-    listCollaborators: ["GET /projects/{project_id}/collaborators"],
-    listColumns: ["GET /projects/{project_id}/columns"],
-    listForOrg: ["GET /orgs/{org}/projects"],
-    listForRepo: ["GET /repos/{owner}/{repo}/projects"],
-    listForUser: ["GET /users/{username}/projects"],
-    moveCard: ["POST /projects/columns/cards/{card_id}/moves"],
-    moveColumn: ["POST /projects/columns/{column_id}/moves"],
+    listCards: [
+      "GET /projects/columns/{column_id}/cards",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listCards() is deprecated, see https://docs.github.com/rest/projects/cards#list-project-cards"
+      }
+    ],
+    listCollaborators: [
+      "GET /projects/{project_id}/collaborators",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listCollaborators() is deprecated, see https://docs.github.com/rest/projects/collaborators#list-project-collaborators"
+      }
+    ],
+    listColumns: [
+      "GET /projects/{project_id}/columns",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listColumns() is deprecated, see https://docs.github.com/rest/projects/columns#list-project-columns"
+      }
+    ],
+    listForOrg: [
+      "GET /orgs/{org}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listForOrg() is deprecated, see https://docs.github.com/rest/projects/projects#list-organization-projects"
+      }
+    ],
+    listForRepo: [
+      "GET /repos/{owner}/{repo}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listForRepo() is deprecated, see https://docs.github.com/rest/projects/projects#list-repository-projects"
+      }
+    ],
+    listForUser: [
+      "GET /users/{username}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.projects.listForUser() is deprecated, see https://docs.github.com/rest/projects/projects#list-user-projects"
+      }
+    ],
+    moveCard: [
+      "POST /projects/columns/cards/{card_id}/moves",
+      {},
+      {
+        deprecated: "octokit.rest.projects.moveCard() is deprecated, see https://docs.github.com/rest/projects/cards#move-a-project-card"
+      }
+    ],
+    moveColumn: [
+      "POST /projects/columns/{column_id}/moves",
+      {},
+      {
+        deprecated: "octokit.rest.projects.moveColumn() is deprecated, see https://docs.github.com/rest/projects/columns#move-a-project-column"
+      }
+    ],
     removeCollaborator: [
-      "DELETE /projects/{project_id}/collaborators/{username}"
+      "DELETE /projects/{project_id}/collaborators/{username}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.removeCollaborator() is deprecated, see https://docs.github.com/rest/projects/collaborators#remove-user-as-a-collaborator"
+      }
     ],
-    update: ["PATCH /projects/{project_id}"],
-    updateCard: ["PATCH /projects/columns/cards/{card_id}"],
-    updateColumn: ["PATCH /projects/columns/{column_id}"]
+    update: [
+      "PATCH /projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.update() is deprecated, see https://docs.github.com/rest/projects/projects#update-a-project"
+      }
+    ],
+    updateCard: [
+      "PATCH /projects/columns/cards/{card_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.updateCard() is deprecated, see https://docs.github.com/rest/projects/cards#update-an-existing-project-card"
+      }
+    ],
+    updateColumn: [
+      "PATCH /projects/columns/{column_id}",
+      {},
+      {
+        deprecated: "octokit.rest.projects.updateColumn() is deprecated, see https://docs.github.com/rest/projects/columns#update-an-existing-project-column"
+      }
+    ]
   },
   pulls: {
     checkIfMerged: ["GET /repos/{owner}/{repo}/pulls/{pull_number}/merge"],
@@ -38371,6 +38631,12 @@ var Endpoints = {
     ],
     getRepoRuleSuites: ["GET /repos/{owner}/{repo}/rulesets/rule-suites"],
     getRepoRuleset: ["GET /repos/{owner}/{repo}/rulesets/{ruleset_id}"],
+    getRepoRulesetHistory: [
+      "GET /repos/{owner}/{repo}/rulesets/{ruleset_id}/history"
+    ],
+    getRepoRulesetVersion: [
+      "GET /repos/{owner}/{repo}/rulesets/{ruleset_id}/history/{version_id}"
+    ],
     getRepoRulesets: ["GET /repos/{owner}/{repo}/rulesets"],
     getStatusChecksProtection: [
       "GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"
@@ -38544,7 +38810,13 @@ var Endpoints = {
   search: {
     code: ["GET /search/code"],
     commits: ["GET /search/commits"],
-    issuesAndPullRequests: ["GET /search/issues"],
+    issuesAndPullRequests: [
+      "GET /search/issues",
+      {},
+      {
+        deprecated: "octokit.rest.search.issuesAndPullRequests() is deprecated, see https://docs.github.com/rest/search/search#search-issues-and-pull-requests"
+      }
+    ],
     labels: ["GET /search/labels"],
     repos: ["GET /search/repositories"],
     topics: ["GET /search/topics"],
@@ -38599,13 +38871,35 @@ var Endpoints = {
       "PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"
     ],
     addOrUpdateProjectPermissionsInOrg: [
-      "PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+      "PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.addOrUpdateProjectPermissionsInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#add-or-update-team-project-permissions"
+      }
+    ],
+    addOrUpdateProjectPermissionsLegacy: [
+      "PUT /teams/{team_id}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.addOrUpdateProjectPermissionsLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#add-or-update-team-project-permissions-legacy"
+      }
     ],
     addOrUpdateRepoPermissionsInOrg: [
       "PUT /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
     ],
     checkPermissionsForProjectInOrg: [
-      "GET /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+      "GET /orgs/{org}/teams/{team_slug}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.checkPermissionsForProjectInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#check-team-permissions-for-a-project"
+      }
+    ],
+    checkPermissionsForProjectLegacy: [
+      "GET /teams/{team_id}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.checkPermissionsForProjectLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#check-team-permissions-for-a-project-legacy"
+      }
     ],
     checkPermissionsForRepoInOrg: [
       "GET /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
@@ -38643,13 +38937,37 @@ var Endpoints = {
     listPendingInvitationsInOrg: [
       "GET /orgs/{org}/teams/{team_slug}/invitations"
     ],
-    listProjectsInOrg: ["GET /orgs/{org}/teams/{team_slug}/projects"],
+    listProjectsInOrg: [
+      "GET /orgs/{org}/teams/{team_slug}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.teams.listProjectsInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#list-team-projects"
+      }
+    ],
+    listProjectsLegacy: [
+      "GET /teams/{team_id}/projects",
+      {},
+      {
+        deprecated: "octokit.rest.teams.listProjectsLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#list-team-projects-legacy"
+      }
+    ],
     listReposInOrg: ["GET /orgs/{org}/teams/{team_slug}/repos"],
     removeMembershipForUserInOrg: [
       "DELETE /orgs/{org}/teams/{team_slug}/memberships/{username}"
     ],
     removeProjectInOrg: [
-      "DELETE /orgs/{org}/teams/{team_slug}/projects/{project_id}"
+      "DELETE /orgs/{org}/teams/{team_slug}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.removeProjectInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#remove-a-project-from-a-team"
+      }
+    ],
+    removeProjectLegacy: [
+      "DELETE /teams/{team_id}/projects/{project_id}",
+      {},
+      {
+        deprecated: "octokit.rest.teams.removeProjectLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#remove-a-project-from-a-team-legacy"
+      }
     ],
     removeRepoInOrg: [
       "DELETE /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
@@ -39191,7 +39509,7 @@ function retry(octokit, octokitOptions) {
     {
       enabled: true,
       retryAfterBaseValue: 1e3,
-      doNotRetry: [400, 401, 403, 404, 422, 451],
+      doNotRetry: [400, 401, 403, 404, 410, 422, 451],
       retries: 3
     },
     octokitOptions.retry
@@ -39220,8 +39538,8 @@ var FileContent = class {
   content;
   constructor(getContentResponse) {
     this.raw = getContentResponse;
-    const textDecoder2 = new TextDecoder();
-    this.content = textDecoder2.decode(decodeBase64(getContentResponse.content));
+    const textDecoder = new TextDecoder();
+    this.content = textDecoder.decode(decodeBase64(getContentResponse.content));
   }
 };
 var Github = class _Github {
