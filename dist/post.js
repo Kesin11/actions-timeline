@@ -39267,8 +39267,9 @@ function wrapRequest(state, request2, options) {
   return state.retryLimiter.schedule(doRequest, state, request2, options);
 }
 async function doRequest(state, request2, options) {
-  const isWrite = options.method !== "GET" && options.method !== "HEAD";
   const { pathname } = new URL(options.url, "http://github.test");
+  const isAuth = isAuthRequest(options.method, pathname);
+  const isWrite = !isAuth && options.method !== "GET" && options.method !== "HEAD";
   const isSearch = options.method === "GET" && pathname.startsWith("/search/");
   const isGraphQL = pathname.startsWith("/graphql");
   const retryCount = ~~request2.retryCount;
@@ -39285,7 +39286,7 @@ async function doRequest(state, request2, options) {
   if (isSearch) {
     await state.search.key(state.id).schedule(jobOptions, noop2);
   }
-  const req = state.global.key(state.id).schedule(jobOptions, request2, options);
+  const req = (isAuth ? state.auth : state.global).key(state.id).schedule(jobOptions, request2, options);
   if (isGraphQL) {
     const res = await req;
     if (res.data.errors != null && res.data.errors.some((error) => error.type === "RATE_LIMITED")) {
@@ -39297,6 +39298,13 @@ async function doRequest(state, request2, options) {
     }
   }
   return req;
+}
+function isAuthRequest(method, pathname) {
+  return method === "PATCH" && // https://docs.github.com/en/rest/apps/apps?apiVersion=2022-11-28#create-a-scoped-access-token
+  /^\/applications\/[^/]+\/token\/scoped$/.test(pathname) || method === "POST" && // https://docs.github.com/en/rest/apps/oauth-applications?apiVersion=2022-11-28#reset-a-token
+  (/^\/applications\/[^/]+\/token$/.test(pathname) || // https://docs.github.com/en/rest/apps/apps?apiVersion=2022-11-28#create-an-installation-access-token-for-an-app
+  /^\/app\/installations\/[^/]+\/access_tokens$/.test(pathname) || // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+  pathname === "/login/oauth/access_token");
 }
 var triggers_notification_paths_default = [
   "/orgs/{org}/invitations",
@@ -39333,6 +39341,11 @@ var createGroups = function(Bottleneck2, common) {
   groups.global = new Bottleneck2.Group({
     id: "octokit-global",
     maxConcurrent: 10,
+    ...common
+  });
+  groups.auth = new Bottleneck2.Group({
+    id: "octokit-auth",
+    maxConcurrent: 1,
     ...common
   });
   groups.search = new Bottleneck2.Group({
