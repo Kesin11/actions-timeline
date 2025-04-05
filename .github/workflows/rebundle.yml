@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # To bypass branch rule sets, we need to use GitHub App that allowed to bypass status check.
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app-id: ${{ secrets.BYPASS_APP_ID }}
