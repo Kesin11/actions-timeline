@@ -33831,23 +33831,37 @@ var import_node_process = __toESM(require("node:process"));
 var import_core2 = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/jsr.io/@std/collections/1.0.11/chunk.ts
-function chunk(array, size) {
+// npm/src/deps/jsr.io/@std/collections/1.1.0/chunk.ts
+function chunk(iterable, size) {
   if (size <= 0 || !Number.isInteger(size)) {
     throw new RangeError(
       `Expected size to be an integer greater than 0 but found ${size}`
     );
   }
   const result = [];
-  let index = 0;
-  while (index < array.length) {
-    result.push(array.slice(index, index + size));
-    index += size;
+  if (Array.isArray(iterable)) {
+    let index = 0;
+    while (index < iterable.length) {
+      result.push(iterable.slice(index, index + size));
+      index += size;
+    }
+    return result;
+  }
+  let chunk2 = [];
+  for (const item of iterable) {
+    chunk2.push(item);
+    if (chunk2.length === size) {
+      result.push(chunk2);
+      chunk2 = [];
+    }
+  }
+  if (chunk2.length > 0) {
+    result.push(chunk2);
   }
   return result;
 }
 
-// npm/src/deps/jsr.io/@std/collections/1.0.11/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.0/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
