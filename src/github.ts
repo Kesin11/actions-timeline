@@ -1,4 +1,4 @@
-import { Octokit, RestEndpointMethodTypes } from "npm:@octokit/rest@^21.0.0";
+import { Octokit, RestEndpointMethodTypes } from "npm:@octokit/rest@^22.0.0";
 import process from "node:process";
 
 export type Workflow =
