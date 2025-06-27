@@ -36278,7 +36278,7 @@ var RequestError = class extends Error {
 };
 
 // npm/node_modules/@octokit/core/node_modules/@octokit/request/dist-bundle/index.js
-var VERSION2 = "0.0.0-development";
+var VERSION2 = "9.2.4";
 var defaults_default = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION2} ${getUserAgent()}`
@@ -36807,7 +36807,7 @@ var RequestError2 = class extends Error {
 };
 
 // npm/node_modules/@octokit/graphql/node_modules/@octokit/request/dist-bundle/index.js
-var VERSION4 = "0.0.0-development";
+var VERSION4 = "9.2.4";
 var defaults_default2 = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION4} ${getUserAgent()}`
