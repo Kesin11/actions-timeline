@@ -5277,8 +5277,8 @@ var require_body = __commonJS({
     }
     var ReadableStream = globalThis.ReadableStream;
     var File = NativeFile ?? UndiciFile;
-    var textEncoder = new TextEncoder();
-    var textDecoder = new TextDecoder();
+    var textEncoder2 = new TextEncoder();
+    var textDecoder2 = new TextDecoder();
     function extractBody(object, keepalive = false) {
       if (!ReadableStream) {
         ReadableStream = require("stream/web").ReadableStream;
@@ -5292,7 +5292,7 @@ var require_body = __commonJS({
         stream = new ReadableStream({
           async pull(controller) {
             controller.enqueue(
-              typeof source === "string" ? textEncoder.encode(source) : source
+              typeof source === "string" ? textEncoder2.encode(source) : source
             );
             queueMicrotask(() => readableStreamClose(controller));
           },
@@ -5328,14 +5328,14 @@ Content-Disposition: form-data`;
         let hasUnknownSizeValue = false;
         for (const [name, value] of object) {
           if (typeof value === "string") {
-            const chunk3 = textEncoder.encode(prefix + `; name="${escape(normalizeLinefeeds(name))}"\r
+            const chunk3 = textEncoder2.encode(prefix + `; name="${escape(normalizeLinefeeds(name))}"\r
 \r
 ${normalizeLinefeeds(value)}\r
 `);
             blobParts.push(chunk3);
             length += chunk3.byteLength;
           } else {
-            const chunk3 = textEncoder.encode(`${prefix}; name="${escape(normalizeLinefeeds(name))}"` + (value.name ? `; filename="${escape(value.name)}"` : "") + `\r
+            const chunk3 = textEncoder2.encode(`${prefix}; name="${escape(normalizeLinefeeds(name))}"` + (value.name ? `; filename="${escape(value.name)}"` : "") + `\r
 Content-Type: ${value.type || "application/octet-stream"}\r
 \r
 `);
@@ -5347,7 +5347,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
             }
           }
         }
-        const chunk2 = textEncoder.encode(`--${boundary}--`);
+        const chunk2 = textEncoder2.encode(`--${boundary}--`);
         blobParts.push(chunk2);
         length += chunk2.byteLength;
         if (hasUnknownSizeValue) {
@@ -5598,7 +5598,7 @@ Content-Type: ${value.type || "application/octet-stream"}\r
       if (buffer[0] === 239 && buffer[1] === 187 && buffer[2] === 191) {
         buffer = buffer.subarray(3);
       }
-      const output = textDecoder.decode(buffer);
+      const output = textDecoder2.decode(buffer);
       return output;
     }
     function parseJSONFromBytes(bytes) {
@@ -11960,7 +11960,7 @@ var require_response = __commonJS({
     var assert = require("assert");
     var { types } = require("util");
     var ReadableStream = globalThis.ReadableStream || require("stream/web").ReadableStream;
-    var textEncoder = new TextEncoder("utf-8");
+    var textEncoder2 = new TextEncoder("utf-8");
     var Response = class _Response {
       // Creates network error Response.
       static error() {
@@ -11979,7 +11979,7 @@ var require_response = __commonJS({
         if (init !== null) {
           init = webidl.converters.ResponseInit(init);
         }
-        const bytes = textEncoder.encode(
+        const bytes = textEncoder2.encode(
           serializeJavascriptValueToJSONString(data)
         );
         const body = extractBody(bytes);
@@ -14480,7 +14480,7 @@ var require_util4 = __commonJS({
           if (encoding === "failure") {
             encoding = "UTF-8";
           }
-          return decode4(bytes, encoding);
+          return decode2(bytes, encoding);
         }
         case "ArrayBuffer": {
           const sequence = combineByteSequences(bytes);
@@ -14497,7 +14497,7 @@ var require_util4 = __commonJS({
         }
       }
     }
-    function decode4(ioQueue, encoding) {
+    function decode2(ioQueue, encoding) {
       const bytes = combineByteSequences(ioQueue);
       const BOMEncoding = BOMSniffing(bytes);
       let slice = 0;
@@ -33831,37 +33831,23 @@ var import_node_process = __toESM(require("node:process"));
 var import_core2 = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/jsr.io/@std/collections/1.1.1/chunk.ts
-function chunk(iterable, size) {
+// npm/src/deps/jsr.io/@std/collections/1.0.10/chunk.ts
+function chunk(array, size) {
   if (size <= 0 || !Number.isInteger(size)) {
     throw new RangeError(
       `Expected size to be an integer greater than 0 but found ${size}`
     );
   }
   const result = [];
-  if (Array.isArray(iterable)) {
-    let index = 0;
-    while (index < iterable.length) {
-      result.push(iterable.slice(index, index + size));
-      index += size;
-    }
-    return result;
-  }
-  let chunk2 = [];
-  for (const item of iterable) {
-    chunk2.push(item);
-    if (chunk2.length === size) {
-      result.push(chunk2);
-      chunk2 = [];
-    }
-  }
-  if (chunk2.length > 0) {
-    result.push(chunk2);
+  let index = 0;
+  while (index < array.length) {
+    result.push(array.slice(index, index + size));
+    index += size;
   }
   return result;
 }
 
-// npm/src/deps/jsr.io/@std/collections/1.1.1/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.0.10/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
@@ -35597,7 +35583,7 @@ axisFormat  %H:%M:%S
   let sections = [];
   for (const job of ganttJobs) {
     const newSection = formatSection(job);
-    const sectionsSumLength = sumOf(sections, (section) => section.length);
+    const sectionsSumLength = sumOf(sections, (section) => section.length) + Math.max(0, sections.length - 1);
     if (headerFooterLength + sectionsSumLength + newSection.length > maxChar) {
       mermaids.push(header + sections.join("\n") + footer);
       sections = [newSection];
@@ -35679,128 +35665,34 @@ function createMergeProxy(baseObj, extObj) {
   });
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/_validate_binary_like.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.7/_validate_binary_like.ts
 var encoder = new TextEncoder();
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/_common32.ts
-var padding = "=".charCodeAt(0);
-var alphabet = {
-  base32: new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"),
-  base32hex: new TextEncoder().encode("0123456789ABCDEFGHIJKLMNOPQRSTUV"),
-  base32crockford: new TextEncoder().encode("0123456789ABCDEFGHJKMNPQRSTVWXYZ")
-};
-var rAlphabet = {
-  base32: new Uint8Array(128).fill(32),
-  // alphabet.base32.length
-  base32hex: new Uint8Array(128).fill(32),
-  base32crockford: new Uint8Array(128).fill(32)
-};
-alphabet.base32.forEach((byte, i) => rAlphabet.base32[byte] = i);
-alphabet.base32hex.forEach((byte, i) => rAlphabet.base32hex[byte] = i);
-alphabet.base32crockford.forEach((byte, i) => rAlphabet.base32crockford[byte] = i);
+// npm/src/deps/jsr.io/@std/encoding/1.0.7/base32.ts
+var lookup = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".split("");
+var revLookup = [];
+lookup.forEach((c, i) => revLookup[c.charCodeAt(0)] = i);
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/base32.ts
-var padding2 = "=".charCodeAt(0);
-var alphabet2 = new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567");
-var rAlphabet2 = new Uint8Array(128).fill(32);
-alphabet2.forEach((byte, i) => rAlphabet2[byte] = i);
-
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/base58.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.7/base58.ts
 var base58alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".split("");
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/_common64.ts
-var padding3 = "=".charCodeAt(0);
-var alphabet3 = {
-  base64: new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"),
-  base64url: new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
-};
-var rAlphabet3 = {
-  base64: new Uint8Array(128).fill(64),
-  // alphabet.base64.length
-  base64url: new Uint8Array(128).fill(64)
-};
-alphabet3.base64.forEach((byte, i) => rAlphabet3.base64[byte] = i);
-alphabet3.base64url.forEach((byte, i) => rAlphabet3.base64url[byte] = i);
-function decode2(buffer, i, o, alphabet8, padding6) {
-  for (let x = buffer.length - 2; x < buffer.length; ++x) {
-    if (buffer[x] === padding6) {
-      for (let y = x + 1; y < buffer.length; ++y) {
-        if (buffer[y] !== padding6) {
-          throw new TypeError(
-            `Cannot decode input as base64: Invalid character (${String.fromCharCode(buffer[y])})`
-          );
-        }
-      }
-      buffer = buffer.subarray(0, x);
-      break;
-    }
-  }
-  if ((buffer.length - o) % 4 === 1) {
-    throw new RangeError(
-      `Cannot decode input as base64: Length (${buffer.length - o}), excluding padding, must not have a remainder of 1 when divided by 4`
-    );
-  }
-  i += 3;
-  for (; i < buffer.length; i += 4) {
-    const x = getByte(buffer[i - 3], alphabet8) << 18 | getByte(buffer[i - 2], alphabet8) << 12 | getByte(buffer[i - 1], alphabet8) << 6 | getByte(buffer[i], alphabet8);
-    buffer[o++] = x >> 16;
-    buffer[o++] = x >> 8 & 255;
-    buffer[o++] = x & 255;
-  }
-  switch (i) {
-    case buffer.length + 1: {
-      const x = getByte(buffer[i - 3], alphabet8) << 18 | getByte(buffer[i - 2], alphabet8) << 12;
-      buffer[o++] = x >> 16;
-      break;
-    }
-    case buffer.length: {
-      const x = getByte(buffer[i - 3], alphabet8) << 18 | getByte(buffer[i - 2], alphabet8) << 12 | getByte(buffer[i - 1], alphabet8) << 6;
-      buffer[o++] = x >> 16;
-      buffer[o++] = x >> 8 & 255;
-      break;
-    }
-  }
-  return o;
-}
-function getByte(char, alphabet8) {
-  const byte = alphabet8[char] ?? 64;
-  if (byte === 64) {
-    throw new TypeError(
-      `Cannot decode input as base64: Invalid character (${String.fromCharCode(char)})`
-    );
-  }
-  return byte;
-}
-
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/base64.ts
-var padding4 = "=".charCodeAt(0);
-var alphabet4 = new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
-var rAlphabet4 = new Uint8Array(128).fill(64);
-alphabet4.forEach((byte, i) => rAlphabet4[byte] = i);
+// npm/src/deps/jsr.io/@std/encoding/1.0.7/base64.ts
 function decodeBase64(b64) {
-  const output = new TextEncoder().encode(b64);
-  return new Uint8Array(output.buffer.transfer(decode2(output, 0, 0, rAlphabet4, padding4)));
+  const binString = atob(b64);
+  const size = binString.length;
+  const bytes = new Uint8Array(size);
+  for (let i = 0; i < size; i++) {
+    bytes[i] = binString.charCodeAt(i);
+  }
+  return bytes;
 }
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/base64url.ts
-var padding5 = "=".charCodeAt(0);
-var alphabet5 = new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
-var rAlphabet5 = new Uint8Array(128).fill(64);
-alphabet5.forEach((byte, i) => rAlphabet5[byte] = i);
+// npm/src/deps/jsr.io/@std/encoding/1.0.7/hex.ts
+var hexTable = new TextEncoder().encode("0123456789abcdef");
+var textEncoder = new TextEncoder();
+var textDecoder = new TextDecoder();
 
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/_common16.ts
-var alphabet6 = new TextEncoder().encode("0123456789abcdef");
-var rAlphabet6 = new Uint8Array(128).fill(16);
-alphabet6.forEach((byte, i) => rAlphabet6[byte] = i);
-new TextEncoder().encode("ABCDEF").forEach((byte, i) => rAlphabet6[byte] = i + 10);
-
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/hex.ts
-var alphabet7 = new TextEncoder().encode("0123456789abcdef");
-var rAlphabet7 = new Uint8Array(128).fill(16);
-alphabet7.forEach((byte, i) => rAlphabet7[byte] = i);
-new TextEncoder().encode("ABCDEF").forEach((byte, i) => rAlphabet7[byte] = i + 10);
-
-// npm/src/deps/jsr.io/@std/encoding/1.0.10/varint.ts
+// npm/src/deps/jsr.io/@std/encoding/1.0.7/varint.ts
 var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
@@ -40207,8 +40099,8 @@ var FileContent = class {
   content;
   constructor(getContentResponse) {
     this.raw = getContentResponse;
-    const textDecoder = new TextDecoder();
-    this.content = textDecoder.decode(decodeBase64(getContentResponse.content));
+    const textDecoder2 = new TextDecoder();
+    this.content = textDecoder2.decode(decodeBase64(getContentResponse.content));
   }
 };
 var Github = class _Github {
@@ -40434,7 +40326,7 @@ var Github = class _Github {
 var import_yaml_ast_parser = __toESM(require_src());
 var import_structured_source = __toESM(require_structured_source());
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/binary.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/binary.ts
 var BASE64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r";
 function resolveYamlBinary(data) {
   if (data === null) return false;
@@ -40522,7 +40414,7 @@ var binary = {
   resolve: resolveYamlBinary
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/bool.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/bool.ts
 var YAML_TRUE_BOOLEANS = ["true", "True", "TRUE"];
 var YAML_FALSE_BOOLEANS = ["false", "False", "FALSE"];
 var YAML_BOOLEANS = [...YAML_TRUE_BOOLEANS, ...YAML_FALSE_BOOLEANS];
@@ -40552,7 +40444,7 @@ var bool = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_utils.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_utils.ts
 function isNegativeZero(i) {
   return i === 0 && Number.NEGATIVE_INFINITY === 1 / i;
 }
@@ -40560,7 +40452,7 @@ function isPlainObject5(object) {
   return Object.prototype.toString.call(object) === "[object Object]";
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/float.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/float.ts
 var YAML_FLOAT_PATTERN = new RegExp(
   // 2.5e4, 2.5 and integers
   "^(?:[-+]?(?:0|[1-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"
@@ -40637,7 +40529,7 @@ var float = {
   resolve: resolveYamlFloat
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/int.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/int.ts
 function isCharCodeInRange(c, lower, upper) {
   return lower <= c && c <= upper;
 }
@@ -40759,7 +40651,7 @@ var int = {
   resolve: resolveYamlInteger
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/map.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/map.ts
 var map = {
   tag: "tag:yaml.org,2002:map",
   resolve() {
@@ -40771,7 +40663,7 @@ var map = {
   kind: "mapping"
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/merge.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/merge.ts
 var merge3 = {
   tag: "tag:yaml.org,2002:merge",
   kind: "scalar",
@@ -40779,7 +40671,7 @@ var merge3 = {
   construct: (data) => data
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/nil.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/nil.ts
 var nil = {
   tag: "tag:yaml.org,2002:null",
   kind: "scalar",
@@ -40796,7 +40688,7 @@ var nil = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/omap.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/omap.ts
 function resolveYamlOmap(data) {
   const objectKeys = /* @__PURE__ */ new Set();
   for (const object of data) {
@@ -40819,7 +40711,7 @@ var omap = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/pairs.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/pairs.ts
 function resolveYamlPairs(data) {
   if (data === null) return true;
   return data.every((it) => isPlainObject5(it) && Object.keys(it).length === 1);
@@ -40833,7 +40725,7 @@ var pairs = {
   resolve: resolveYamlPairs
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/regexp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/regexp.ts
 var REGEXP = /^\/(?<regexp>[\s\S]+)\/(?<modifiers>[gismuy]*)$/;
 var regexp = {
   tag: "tag:yaml.org,2002:js/regexp",
@@ -40856,7 +40748,7 @@ var regexp = {
   represent: (object) => object.toString()
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/seq.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/seq.ts
 var seq = {
   tag: "tag:yaml.org,2002:seq",
   kind: "sequence",
@@ -40864,7 +40756,7 @@ var seq = {
   construct: (data) => data !== null ? data : []
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/set.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/set.ts
 var set = {
   tag: "tag:yaml.org,2002:set",
   kind: "mapping",
@@ -40875,7 +40767,7 @@ var set = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/str.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/str.ts
 var str = {
   tag: "tag:yaml.org,2002:str",
   kind: "scalar",
@@ -40883,7 +40775,7 @@ var str = {
   construct: (data) => data !== null ? data : ""
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/timestamp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/timestamp.ts
 var YAML_DATE_REGEXP = new RegExp(
   "^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$"
   // [3] day
@@ -40948,7 +40840,7 @@ var timestamp = {
   resolve: resolveYamlTimestamp
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_type/undefined.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_type/undefined.ts
 var undefinedType = {
   tag: "tag:yaml.org,2002:js/undefined",
   kind: "scalar",
@@ -40966,7 +40858,7 @@ var undefinedType = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.8/_schema.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.5/_schema.ts
 function createTypeMap(implicitTypes, explicitTypes) {
   const result = {
     fallback: /* @__PURE__ */ new Map(),
