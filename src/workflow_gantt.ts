@@ -119,6 +119,18 @@ export const createGanttJobs = (
   ).filter((gantJobs): gantJobs is ganttJob => gantJobs !== undefined);
 };
 
+/**
+ * Creates Mermaid gantt diagrams from workflow jobs data.
+ *
+ * This function generates one or more Mermaid gantt chart strings, automatically
+ * splitting them into multiple diagrams if the content exceeds the maxChar limit.
+ * This prevents "Maximum text size in diagram exceeded" errors in Mermaid.js.
+ *
+ * @param title - The title to display in the gantt chart
+ * @param ganttJobs - Array of processed job data containing sections and steps
+ * @param maxChar - Maximum character limit per diagram (default: 50,000)
+ * @returns Array of complete Mermaid diagram strings (markdown code blocks)
+ */
 export const createGanttDiagrams = (
   title: string,
   ganttJobs: ganttJob[],
@@ -134,20 +146,29 @@ axisFormat  %H:%M:%S
   const footer = "\n\`\`\`";
   const headerFooterLength = header.length + footer.length;
 
-  // Split mermaid body by maxChar
+  // Split mermaid body by maxChar to avoid exceeding Mermaid.js text size limit
   const mermaids = [];
   let sections: string[] = [];
   for (const job of ganttJobs) {
     const newSection = formatSection(job);
 
-    const sectionsSumLength = sumOf(sections, (section) => section.length);
+    // Calculate total length of existing sections including newlines between them
+    // sections.join("\n") adds (sections.length - 1) newline characters
+    // This fix addresses issue #222 where newlines were not counted in the original calculation
+    const sectionsSumLength = sumOf(sections, (section) => section.length) +
+      Math.max(0, sections.length - 1);
+
+    // Check if adding the new section would exceed maxChar limit
     if (headerFooterLength + sectionsSumLength + newSection.length > maxChar) {
+      // Exceeds limit: finalize current diagram and start a new one
       mermaids.push(header + sections.join("\n") + footer);
       sections = [newSection];
     } else {
+      // Within limit: add section to current diagram
       sections.push(newSection);
     }
   }
+  // Add the final diagram
   mermaids.push(header + sections.join("\n") + footer);
 
   return mermaids;
