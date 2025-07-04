@@ -4,6 +4,7 @@ import {
   createGanttJobs,
   createMermaid,
 } from "../src/workflow_gantt.ts";
+import { formatSection } from "../src/format_util.ts";
 import { Workflow, WorkflowJobs } from "../src/github.ts";
 
 const commonWorkflow = {
@@ -425,6 +426,99 @@ ${workflowJobs[1].steps![3].name} (0s) :job1-4, after job1-3, 0s
       const actual = createGanttDiagrams(title, ganttJobs, maxCharForTest);
 
       assertEquals(actual, expect);
+    },
+  );
+
+  await t.step(
+    "Newline characters properly counted in split gantt calculation (issue #222)",
+    () => {
+      const workflow = { ...commonWorkflow };
+      const workflowJobs = [
+        {
+          "id": 1,
+          "run_id": 5833450919,
+          "workflow_name": "Test",
+          "status": "completed",
+          "conclusion": "success",
+          "created_at": "2023-08-11T14:00:50Z",
+          "started_at": "2023-08-11T14:01:31Z",
+          "completed_at": "2023-08-11T14:01:36Z",
+          "name": "a",
+          "steps": [
+            {
+              "name": "x",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2023-08-11T23:01:30.000+09:00",
+              "completed_at": "2023-08-11T23:01:32.000+09:00",
+            },
+          ],
+        },
+        {
+          "id": 2,
+          "run_id": 5833450919,
+          "workflow_name": "Test",
+          "status": "completed",
+          "conclusion": "success",
+          "created_at": "2023-08-11T14:00:51Z",
+          "started_at": "2023-08-11T14:01:30Z",
+          "completed_at": "2023-08-11T14:01:50Z",
+          "name": "b",
+          "steps": [
+            {
+              "name": "y",
+              "status": "completed",
+              "conclusion": "success",
+              "number": 1,
+              "started_at": "2023-08-11T23:01:29.000+09:00",
+              "completed_at": "2023-08-11T23:01:32.000+09:00",
+            },
+          ],
+        },
+      ] as unknown as WorkflowJobs;
+
+      const title = workflow.name ?? "";
+      const ganttJobs = createGanttJobs(workflow, workflowJobs);
+
+      const header = `
+\`\`\`mermaid
+gantt
+title Check self-hosted runner
+dateFormat  HH:mm:ss
+axisFormat  %H:%M:%S
+`;
+      const footer = "\n\`\`\`";
+      const headerFooterLength = header.length + footer.length;
+
+      const section1 = formatSection(ganttJobs[0]);
+      const section2 = formatSection(ganttJobs[1]);
+
+      // Set maxChar to be just less than the total including newlines
+      // This should now properly trigger splitting
+      const totalWithNewlines = headerFooterLength + section1.length + 1 +
+        section2.length;
+      const maxCharForTest = totalWithNewlines - 5; // A bit less to trigger split
+
+      const result = createGanttDiagrams(title, ganttJobs, maxCharForTest);
+
+      assertEquals(
+        result.length,
+        2,
+        "Properly splits when including newline calculations",
+      );
+
+      // Each diagram should be within the limit
+      assertEquals(
+        result[0].length <= maxCharForTest,
+        true,
+        "First diagram within limit",
+      );
+      assertEquals(
+        result[1].length <= maxCharForTest,
+        true,
+        "Second diagram within limit",
+      );
     },
   );
 });
