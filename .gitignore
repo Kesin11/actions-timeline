@@ -16,3 +16,6 @@
 
 # dnt
 /npm
+
+# Claude Code
+.claude/settings.local.json
