@@ -1,5 +1,5 @@
 import { sumOf } from "jsr:@std/collections@^1.0.0";
-import { Workflow, WorkflowJobs } from "./github.ts";
+import type { WorkflowJobs, WorkflowRun } from "@kesin11/gha-utils";
 import {
   convertStepToStatus,
   diffSec,
@@ -31,7 +31,7 @@ const filterJobs = (jobs: WorkflowJobs): WorkflowJobs => {
 };
 
 const createWaitingRunnerStep = (
-  workflow: Workflow,
+  workflow: WorkflowRun,
   job: WorkflowJobs[0],
   jobIndex: number,
 ): ganttStep | undefined => {
@@ -60,7 +60,7 @@ const createWaitingRunnerStep = (
 };
 
 export const createGanttJobs = (
-  workflow: Workflow,
+  workflow: WorkflowRun,
   workflowJobs: WorkflowJobs,
   showWaitingRunner = true,
 ): ganttJob[] => {
@@ -175,7 +175,7 @@ axisFormat  %H:%M:%S
 };
 
 export const createMermaid = (
-  workflow: Workflow,
+  workflow: WorkflowRun,
   workflowJobs: WorkflowJobs,
   options: GanttOptions,
 ): string => {

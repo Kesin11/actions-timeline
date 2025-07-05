@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Commands
 
 ### Development
+
 - `deno task bundle` - Build the bundle (outputs to dist/ folder)
 - `deno task bundle:commit` - Bundle and commit changes
 - `deno fmt` - Format code
@@ -12,6 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `deno test` - Run tests
 
 ### CLI tool
+
 - `deno run --allow-net --allow-write --allow-env=GITHUB_API_URL cli.ts` - Run CLI version
 
 ## Architecture
