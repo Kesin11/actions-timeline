@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { createMermaid } from "../src/workflow_gantt.ts";
-import { WorkflowRun, WorkflowJobs } from "@kesin11/gha-utils";
+import { WorkflowJobs, WorkflowRun } from "@kesin11/gha-utils";
 
 const commonWorkflow = {
   "id": 5977929222,

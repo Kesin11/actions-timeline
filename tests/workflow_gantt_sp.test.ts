@@ -5,7 +5,7 @@ import {
   createMermaid,
 } from "../src/workflow_gantt.ts";
 import { formatSection } from "../src/format_util.ts";
-import { WorkflowRun, WorkflowJobs } from "@kesin11/gha-utils";
+import { WorkflowJobs, WorkflowRun } from "@kesin11/gha-utils";
 
 const commonWorkflow = {
   "id": 5833450919,
