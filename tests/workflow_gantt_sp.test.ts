@@ -5,7 +5,7 @@ import {
   createMermaid,
 } from "../src/workflow_gantt.ts";
 import { formatSection } from "../src/format_util.ts";
-import { Workflow, WorkflowJobs } from "../src/github.ts";
+import { WorkflowRun, WorkflowJobs } from "@kesin11/gha-utils";
 
 const commonWorkflow = {
   "id": 5833450919,
@@ -18,7 +18,7 @@ const commonWorkflow = {
   "created_at": "2023-08-11T14:00:48Z",
   "updated_at": "2023-08-11T14:01:56Z",
   "run_started_at": "2023-08-11T14:00:48Z",
-} as unknown as Workflow;
+} as unknown as WorkflowRun;
 
 Deno.test("Special case gantt", async (t) => {
   await t.step(
@@ -35,7 +35,7 @@ Deno.test("Special case gantt", async (t) => {
         "created_at": "2023-09-25T15:55:47Z",
         "updated_at": "2023-09-25T15:57:36Z",
         "run_started_at": "2023-09-25T15:55:47Z",
-      } as unknown as Workflow;
+      } as unknown as WorkflowRun;
 
       const workflowJobs = [{
         "id": 17107722147,

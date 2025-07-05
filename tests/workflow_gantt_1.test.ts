@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { createMermaid } from "../src/workflow_gantt.ts";
-import { Workflow, WorkflowJobs } from "../src/github.ts";
+import { WorkflowRun, WorkflowJobs } from "@kesin11/gha-utils";
 
 const commonWorkflow = {
   "id": 5977929222,
@@ -13,7 +13,7 @@ const commonWorkflow = {
   "created_at": "2023-08-25T15:57:51Z",
   "updated_at": "2023-08-25T15:58:19Z",
   "run_started_at": "2023-08-25T15:57:51Z",
-} as unknown as Workflow;
+} as unknown as WorkflowRun;
 
 Deno.test("1 section gantt", async (t) => {
   await t.step("all steps are success", () => {
@@ -195,7 +195,7 @@ ${workflowJobs[0].steps![3].name} (0s) :job0-4, after job0-3, 0s
       "created_at": "2023-09-24T15:41:23Z",
       "updated_at": "2023-09-24T15:46:01Z",
       "run_started_at": "2023-09-24T15:41:23Z",
-    } as unknown as Workflow;
+    } as unknown as WorkflowRun;
 
     const workflowJobs = [{
       "id": 17078901763,
