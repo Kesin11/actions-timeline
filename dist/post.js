@@ -21138,11 +21138,26 @@ var require_dist_node10 = __commonJS({
     var import_request3 = require_dist_node7();
     var import_graphql2 = require_dist_node8();
     var import_auth_token2 = require_dist_node9();
-    var VERSION13 = "5.2.1";
+    var VERSION13 = "5.2.2";
     var noop3 = () => {
     };
     var consoleWarn2 = console.warn.bind(console);
     var consoleError2 = console.error.bind(console);
+    function createLogger2(logger = {}) {
+      if (typeof logger.debug !== "function") {
+        logger.debug = noop3;
+      }
+      if (typeof logger.info !== "function") {
+        logger.info = noop3;
+      }
+      if (typeof logger.warn !== "function") {
+        logger.warn = consoleWarn2;
+      }
+      if (typeof logger.error !== "function") {
+        logger.error = consoleError2;
+      }
+      return logger;
+    }
     var userAgentTrail2 = `octokit-core.js/${VERSION13} ${(0, import_universal_user_agent7.getUserAgent)()}`;
     var Octokit3 = class {
       static {
@@ -21216,15 +21231,7 @@ var require_dist_node10 = __commonJS({
         }
         this.request = import_request3.request.defaults(requestDefaults);
         this.graphql = (0, import_graphql2.withCustomRequest)(this.request).defaults(requestDefaults);
-        this.log = Object.assign(
-          {
-            debug: noop3,
-            info: noop3,
-            warn: consoleWarn2,
-            error: consoleError2
-          },
-          options.log
-        );
+        this.log = createLogger2(options.log);
         this.hook = hook2;
         if (!options.authStrategy) {
           if (!options.auth) {
@@ -37133,13 +37140,28 @@ var createTokenAuth = function createTokenAuth2(token) {
 };
 
 // npm/node_modules/@octokit/core/dist-src/version.js
-var VERSION6 = "7.0.2";
+var VERSION6 = "7.0.3";
 
 // npm/node_modules/@octokit/core/dist-src/index.js
 var noop = () => {
 };
 var consoleWarn = console.warn.bind(console);
 var consoleError = console.error.bind(console);
+function createLogger(logger = {}) {
+  if (typeof logger.debug !== "function") {
+    logger.debug = noop;
+  }
+  if (typeof logger.info !== "function") {
+    logger.info = noop;
+  }
+  if (typeof logger.warn !== "function") {
+    logger.warn = consoleWarn;
+  }
+  if (typeof logger.error !== "function") {
+    logger.error = consoleError;
+  }
+  return logger;
+}
 var userAgentTrail = `octokit-core.js/${VERSION6} ${getUserAgent()}`;
 var Octokit = class {
   static VERSION = VERSION6;
@@ -37207,15 +37229,7 @@ var Octokit = class {
     }
     this.request = request.defaults(requestDefaults);
     this.graphql = withCustomRequest(this.request).defaults(requestDefaults);
-    this.log = Object.assign(
-      {
-        debug: noop,
-        info: noop,
-        warn: consoleWarn,
-        error: consoleError
-      },
-      options.log
-    );
+    this.log = createLogger(options.log);
     this.hook = hook2;
     if (!options.authStrategy) {
       if (!options.auth) {
