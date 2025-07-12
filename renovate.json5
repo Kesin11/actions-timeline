@@ -2,7 +2,7 @@
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
   extends: [
     'github>Kesin11/renovate-config:oss',
-    "github>Kesin11/renovate-config:deno",
+    'github>Omochice/renovate-config:deno',
     ':prConcurrentLimit10',
     'schedule:weekends',
   ]
