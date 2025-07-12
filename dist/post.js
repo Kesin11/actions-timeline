@@ -40004,10 +40004,16 @@ function retry(octokit, octokitOptions) {
 }
 retry.VERSION = VERSION12;
 
-// npm/src/deps/jsr.io/@kesin11/gha-utils/0.2.1/api_client/api_client.ts
+// npm/src/deps/jsr.io/@kesin11/gha-utils/0.2.2/api_client/api_client.ts
 var FileContent = class {
+  /** Raw file content response from GitHub API */
   raw;
+  /** Decoded text content */
   content;
+  /**
+   * Creates a new FileContent instance
+   * @param getContentResponse - GitHub API file content response
+   */
   constructor(getContentResponse) {
     this.raw = getContentResponse;
     const textDecoder = new TextDecoder();
@@ -40015,11 +40021,25 @@ var FileContent = class {
   }
 };
 var Github = class _Github {
+  /** Octokit instance for GitHub API calls */
   octokit;
+  /** GitHub token for authentication */
   token;
+  /** Base URL for GitHub API */
   baseUrl;
+  /** Whether this is GitHub Enterprise Server */
   isGHES;
+  /** Cache for file content responses */
   contentCache = /* @__PURE__ */ new Map();
+  /**
+   * Creates a new GitHub API client
+   *
+   * @param options - Configuration options
+   * @param options.token - GitHub token (defaults to GITHUB_TOKEN env var)
+   * @param options.host - GitHub host for GHES (defaults to github.com)
+   * @param options.debug - Enable debug logging
+   * @param options._workaroundDenoTest - Internal workaround for Deno tests
+   */
   constructor(options) {
     this.baseUrl = _Github.getBaseUrl(options?.host);
     this.isGHES = this.baseUrl !== "https://api.github.com";
@@ -40047,6 +40067,11 @@ var Github = class _Github {
       }
     });
   }
+  /**
+   * Gets the base URL for GitHub API
+   * @param host - GitHub host for GHES
+   * @returns Base URL for GitHub API
+   */
   static getBaseUrl(host) {
     if (host) {
       return host.startsWith("https://") ? `${host}/api/v3` : `https://${host}/api/v3`;
@@ -40056,6 +40081,19 @@ var Github = class _Github {
       return "https://api.github.com";
     }
   }
+  /**
+   * Fetches repository information
+   *
+   * @param owner - Repository owner
+   * @param repo - Repository name
+   * @returns Repository data
+   *
+   * @example
+   * ```typescript
+   * const repo = await github.fetchRepository("owner", "repo");
+   * console.log(repo.name); // "repo"
+   * ```
+   */
   async fetchRepository(owner, repo) {
     const res = await this.octokit.repos.get({
       owner,
@@ -40063,9 +40101,23 @@ var Github = class _Github {
     });
     return res.data;
   }
-  // NOTE: このリクエスト数はworkflowRunsの数とイコールなので100を余裕で超えてしまう
-  // 本来はFetch APIなどhttpクライアント側でリクエスト数制限をかけるべきだが、Denoだと方法が分からない
-  // chunk数で並列数を制限してキャッシュを活用することでAPIリクエスト数を抑える
+  /**
+   * Fetches workflow run usage data for multiple workflow runs
+   *
+   * Note: This API is not supported on GitHub Enterprise Server.
+   *
+   * Uses chunking to limit concurrent requests and reduce API usage
+   *
+   * @param workflowRuns - Array of workflow runs
+   * @param chunkSize - Number of concurrent requests (default: 20)
+   * @returns Array of workflow run usage data, or undefined for GHES
+   *
+   * @example
+   * ```typescript
+   * const runs = await github.fetchWorkflowRuns("owner", "repo");
+   * const usages = await github.fetchWorkflowRunUsages(runs);
+   * ```
+   */
   async fetchWorkflowRunUsages(workflowRuns, chunkSize = 20) {
     if (this.isGHES) return void 0;
     const workflowRunsChunks = chunk(workflowRuns, chunkSize);
@@ -40083,8 +40135,22 @@ var Github = class _Github {
     }
     return workflowRunsUsages;
   }
-  // NOTE: This function might have something wrong. A bug occurred in the actions-timeline.
-  // see: https://github.com/Kesin11/actions-timeline/issues/186
+  /**
+   * Fetches workflow jobs for multiple workflow runs
+   *
+   * Note: This function might have bugs. See: https://github.com/Kesin11/actions-timeline/issues/186
+   * Uses chunking to limit concurrent requests
+   *
+   * @param workflowRuns - Array of workflow runs
+   * @param chunkSize - Number of concurrent requests (default: 20)
+   * @returns Array of workflow jobs
+   *
+   * @example
+   * ```typescript
+   * const runs = await github.fetchWorkflowRuns("owner", "repo");
+   * const jobs = await github.fetchWorkflowJobs(runs);
+   * ```
+   */
   async fetchWorkflowJobs(workflowRuns, chunkSize = 20) {
     const workflowJobs = [];
     const workflowJobsChunks = chunk(workflowRuns, chunkSize);
@@ -40106,6 +40172,18 @@ var Github = class _Github {
     }
     return workflowJobs;
   }
+  /**
+   * Fetches workflow jobs for a single workflow run
+   *
+   * @param workflowRun - Workflow run
+   * @returns Array of workflow jobs
+   *
+   * @example
+   * ```typescript
+   * const run = await github.fetchWorkflowRun("owner", "repo", 12345);
+   * const jobs = await github.fetchWorkflowRunJobs(run);
+   * ```
+   */
   async fetchWorkflowRunJobs(workflowRun) {
     const workflowJobs = await this.octokit.actions.listJobsForWorkflowRunAttempt({
       owner: workflowRun.repository.owner.login,
@@ -40117,6 +40195,20 @@ var Github = class _Github {
     });
     return workflowJobs.data.jobs;
   }
+  /**
+   * Fetches workflow runs for a repository
+   *
+   * @param owner - Repository owner
+   * @param repo - Repository name
+   * @param branch - Optional branch filter
+   * @returns Array of workflow runs (excludes dynamic runs like CodeQL)
+   *
+   * @example
+   * ```typescript
+   * const runs = await github.fetchWorkflowRuns("owner", "repo");
+   * const mainRuns = await github.fetchWorkflowRuns("owner", "repo", "main");
+   * ```
+   */
   async fetchWorkflowRuns(owner, repo, branch) {
     const res = await this.octokit.actions.listWorkflowRunsForRepo(
       {
@@ -40129,6 +40221,21 @@ var Github = class _Github {
     );
     return res.data.workflow_runs.filter((run) => run.event !== "dynamic");
   }
+  /**
+   * Fetches a single workflow run
+   *
+   * @param owner - Repository owner
+   * @param repo - Repository name
+   * @param runId - Workflow run ID
+   * @param runAttempt - Optional run attempt number
+   * @returns Workflow run data
+   *
+   * @example
+   * ```typescript
+   * const run = await github.fetchWorkflowRun("owner", "repo", 12345);
+   * const attempt = await github.fetchWorkflowRun("owner", "repo", 12345, 2);
+   * ```
+   */
   async fetchWorkflowRun(owner, repo, runId, runAttempt) {
     if (runAttempt) {
       const res = await this.octokit.actions.getWorkflowRunAttempt({
@@ -40147,6 +40254,22 @@ var Github = class _Github {
       return res.data;
     }
   }
+  /**
+   * Fetches workflow runs with creation date filter
+   *
+   * @param owner - Repository owner
+   * @param repo - Repository name
+   * @param created - ISO 8601 date string or range (e.g., "2023-01-01..2023-12-31")
+   * @param branch - Optional branch filter
+   * @returns Array of workflow runs (excludes dynamic runs like CodeQL)
+   *
+   * @example
+   * ```typescript
+   * const runs = await github.fetchWorkflowRunsWithCreated(
+   *   "owner", "repo", "2023-01-01..2023-12-31"
+   * );
+   * ```
+   */
   async fetchWorkflowRunsWithCreated(owner, repo, created, branch) {
     const workflowRuns = await this.octokit.paginate(
       this.octokit.actions.listWorkflowRunsForRepo,
@@ -40161,6 +40284,19 @@ var Github = class _Github {
     );
     return workflowRuns.filter((run) => run.event !== "dynamic");
   }
+  /**
+   * Fetches Actions cache usage for a repository
+   *
+   * @param owner - Repository owner
+   * @param repo - Repository name
+   * @returns Actions cache usage data
+   *
+   * @example
+   * ```typescript
+   * const usage = await github.fetchActionsCacheUsage("owner", "repo");
+   * console.log(usage.full_name); // "owner/repo"
+   * ```
+   */
   async fetchActionsCacheUsage(owner, repo) {
     const res = await this.octokit.actions.getActionsCacheUsage({
       owner,
@@ -40168,6 +40304,20 @@ var Github = class _Github {
     });
     return res.data;
   }
+  /**
+   * Fetches Actions cache list for a repository
+   *
+   * @param owner - Repository owner
+   * @param repo - Repository name
+   * @param perPage - Number of items per page (default: 100, max: 100)
+   * @returns Actions cache list data
+   *
+   * @example
+   * ```typescript
+   * const caches = await github.fetchActionsCacheList("owner", "repo");
+   * console.log(caches.actions_caches.length);
+   * ```
+   */
   async fetchActionsCacheList(owner, repo, perPage = 100) {
     const res = await this.octokit.actions.getActionsCacheList({
       owner,
@@ -40177,6 +40327,18 @@ var Github = class _Github {
     });
     return res.data;
   }
+  /**
+   * Fetches workflow files for multiple workflow runs
+   *
+   * @param workflowRuns - Array of workflow runs
+   * @returns Array of file contents (undefined if file not found)
+   *
+   * @example
+   * ```typescript
+   * const runs = await github.fetchWorkflowRuns("owner", "repo");
+   * const files = await github.fetchWorkflowFiles(runs);
+   * ```
+   */
   async fetchWorkflowFiles(workflowRuns) {
     const promises = workflowRuns.map((workflowRun) => {
       return this.fetchContent({
@@ -40188,10 +40350,23 @@ var Github = class _Github {
     });
     return await Promise.all(promises);
   }
-  // NOTE: このリクエスト数はworkflowRunsの数とイコールなので100を余裕で超えてしまう
-  // fetchContent自体を並列に呼び出すとキャッシュにセットする前に次のリクエストが来る可能性があり、実質あまりキャッシュできていない
-  // 本来はFetch APIなどhttpクライアント側でリクエスト数制限をかけるべきだが、Denoだと方法が分からない
-  // chunk数で並列数を制限してキャッシュを活用することでAPIリクエスト数を抑える
+  /**
+   * Fetches workflow files for multiple workflow runs at a specific ref
+   *
+   * Uses chunking to limit concurrent requests and leverage caching
+   * to reduce API usage
+   *
+   * @param workflowRuns - Array of workflow runs
+   * @param ref - Git reference (commit hash, branch, or tag)
+   * @param chunkSize - Number of concurrent requests (default: 20)
+   * @returns Array of file contents (undefined if file not found)
+   *
+   * @example
+   * ```typescript
+   * const runs = await github.fetchWorkflowRuns("owner", "repo");
+   * const files = await github.fetchWorkflowFilesByRef(runs, "main");
+   * ```
+   */
   async fetchWorkflowFilesByRef(workflowRuns, ref, chunkSize = 20) {
     const workflowRunsChunks = chunk(workflowRuns, chunkSize);
     const results = [];
@@ -40208,7 +40383,32 @@ var Github = class _Github {
     }
     return results;
   }
-  // NOTE: This is a cacheable API if ref is a commit hash; it is also cacheable if ref is a branch, as long as it is short-lived.
+  /**
+   * Fetches file content from GitHub repository
+   *
+   * This method is cacheable - responses are cached if ref is a commit hash
+   * or for short-lived branch references
+   *
+   * @param params - Parameters for fetching content
+   * @param params.owner - Repository owner
+   * @param params.repo - Repository name
+   * @param params.path - File path
+   * @param params.ref - Git reference (commit hash, branch, or tag)
+   * @returns File content or undefined if not found
+   *
+   * @example
+   * ```typescript
+   * const content = await github.fetchContent({
+   *   owner: "owner",
+   *   repo: "repo",
+   *   path: ".github/workflows/ci.yml",
+   *   ref: "main"
+   * });
+   * if (content) {
+   *   console.log(content.content); // YAML content
+   * }
+   * ```
+   */
   // deno-lint-ignore require-await
   async fetchContent(params) {
     const cache = this.contentCache.get(JSON.stringify(params));
@@ -40233,7 +40433,7 @@ var Github = class _Github {
   }
 };
 
-// npm/src/deps/jsr.io/@kesin11/gha-utils/0.2.1/workflow_model/src/workflow_ast.ts
+// npm/src/deps/jsr.io/@kesin11/gha-utils/0.2.2/workflow_model/src/workflow_ast.ts
 var import_yaml_ast_parser = __toESM(require_src());
 var import_structured_source = __toESM(require_structured_source());
 
