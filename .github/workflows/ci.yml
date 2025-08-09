@@ -73,7 +73,7 @@ jobs:
     needs: [check, check-dist, test]
     steps:
       - name: Download bundled dist
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: js_dist
       - name: Run self action with no options
