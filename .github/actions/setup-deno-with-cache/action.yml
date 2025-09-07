@@ -14,6 +14,6 @@ runs:
       with:
         deno-version-file: .tool-versions
     - name: Setup Node.js for dnt
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version-file: .tool-versions
