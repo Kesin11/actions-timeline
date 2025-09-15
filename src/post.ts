@@ -1,13 +1,7 @@
 import { setTimeout } from "node:timers/promises";
 import process from "node:process";
-import {
-  debug,
-  getBooleanInput,
-  getInput,
-  info,
-  summary,
-} from "npm:@actions/core@1.11.1";
-import * as github from "npm:@actions/github@6.0.1";
+import { debug, getBooleanInput, getInput, info, summary } from "@actions/core";
+import * as github from "@actions/github";
 import { createMermaid } from "./workflow_gantt.ts";
 import { Github } from "@kesin11/gha-utils";
 
