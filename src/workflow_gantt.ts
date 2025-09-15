@@ -1,4 +1,4 @@
-import { sumOf } from "jsr:@std/collections@^1.1.2";
+import { sumOf } from "@std/collections";
 import type { WorkflowJobs, WorkflowRun } from "@kesin11/gha-utils";
 import {
   convertStepToStatus,
