@@ -9208,7 +9208,7 @@ var require_readable = __commonJS({
     var kBody = Symbol("kBody");
     var kAbort = Symbol("abort");
     var kContentType = Symbol("kContentType");
-    var noop3 = () => {
+    var noop5 = () => {
     };
     module2.exports = class BodyReadable extends Readable {
       constructor({
@@ -9330,7 +9330,7 @@ var require_readable = __commonJS({
         return new Promise((resolve, reject) => {
           const signalListenerCleanup = signal ? util.addAbortListener(signal, () => {
             this.destroy();
-          }) : noop3;
+          }) : noop5;
           this.on("close", function() {
             signalListenerCleanup();
             if (signal && signal.aborted) {
@@ -9338,7 +9338,7 @@ var require_readable = __commonJS({
             } else {
               resolve(null);
             }
-          }).on("error", noop3).on("data", function(chunk2) {
+          }).on("error", noop5).on("data", function(chunk2) {
             limit -= chunk2.length;
             if (limit <= 0) {
               this.destroy();
@@ -21139,16 +21139,16 @@ var require_dist_node10 = __commonJS({
     var import_graphql2 = require_dist_node8();
     var import_auth_token2 = require_dist_node9();
     var VERSION13 = "5.2.2";
-    var noop3 = () => {
+    var noop5 = () => {
     };
     var consoleWarn2 = console.warn.bind(console);
     var consoleError2 = console.error.bind(console);
     function createLogger2(logger = {}) {
       if (typeof logger.debug !== "function") {
-        logger.debug = noop3;
+        logger.debug = noop5;
       }
       if (typeof logger.info !== "function") {
-        logger.info = noop3;
+        logger.info = noop5;
       }
       if (typeof logger.warn !== "function") {
         logger.warn = consoleWarn2;
@@ -36261,7 +36261,7 @@ var RequestError = class extends Error {
    */
   response;
   constructor(message2, statusCode, options) {
-    super(message2);
+    super(message2, { cause: options.cause });
     this.name = "HttpError";
     this.status = Number.parseInt(statusCode);
     if (Number.isNaN(this.status)) {
@@ -36285,7 +36285,7 @@ var RequestError = class extends Error {
 };
 
 // npm/node_modules/@octokit/core/node_modules/@octokit/request/dist-bundle/index.js
-var VERSION2 = "10.0.6";
+var VERSION2 = "10.0.7";
 var defaults_default = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION2} ${getUserAgent()}`
@@ -36299,6 +36299,7 @@ function isPlainObject2(value) {
   const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
   return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
 }
+var noop = () => "";
 async function fetchWrapper(requestOptions) {
   const fetch = requestOptions.request?.fetch || globalThis.fetch;
   if (!fetch) {
@@ -36400,7 +36401,7 @@ async function fetchWrapper(requestOptions) {
 async function getResponseData(response) {
   const contentType = response.headers.get("content-type");
   if (!contentType) {
-    return response.text().catch(() => "");
+    return response.text().catch(noop);
   }
   const mimetype = (0, import_fast_content_type_parse.safeParse)(contentType);
   if (isJSONResponse(mimetype)) {
@@ -36412,9 +36413,12 @@ async function getResponseData(response) {
       return text;
     }
   } else if (mimetype.type.startsWith("text/") || mimetype.parameters.charset?.toLowerCase() === "utf-8") {
-    return response.text().catch(() => "");
+    return response.text().catch(noop);
   } else {
-    return response.arrayBuffer().catch(() => new ArrayBuffer(0));
+    return response.arrayBuffer().catch(
+      /* v8 ignore next -- @preserve */
+      () => new ArrayBuffer(0)
+    );
   }
 }
 function isJSONResponse(mimetype) {
@@ -36790,7 +36794,7 @@ var RequestError2 = class extends Error {
    */
   response;
   constructor(message2, statusCode, options) {
-    super(message2);
+    super(message2, { cause: options.cause });
     this.name = "HttpError";
     this.status = Number.parseInt(statusCode);
     if (Number.isNaN(this.status)) {
@@ -36814,7 +36818,7 @@ var RequestError2 = class extends Error {
 };
 
 // npm/node_modules/@octokit/graphql/node_modules/@octokit/request/dist-bundle/index.js
-var VERSION4 = "10.0.6";
+var VERSION4 = "10.0.7";
 var defaults_default2 = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION4} ${getUserAgent()}`
@@ -36828,6 +36832,7 @@ function isPlainObject4(value) {
   const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
   return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
 }
+var noop2 = () => "";
 async function fetchWrapper2(requestOptions) {
   const fetch = requestOptions.request?.fetch || globalThis.fetch;
   if (!fetch) {
@@ -36929,7 +36934,7 @@ async function fetchWrapper2(requestOptions) {
 async function getResponseData2(response) {
   const contentType = response.headers.get("content-type");
   if (!contentType) {
-    return response.text().catch(() => "");
+    return response.text().catch(noop2);
   }
   const mimetype = (0, import_fast_content_type_parse2.safeParse)(contentType);
   if (isJSONResponse2(mimetype)) {
@@ -36941,9 +36946,12 @@ async function getResponseData2(response) {
       return text;
     }
   } else if (mimetype.type.startsWith("text/") || mimetype.parameters.charset?.toLowerCase() === "utf-8") {
-    return response.text().catch(() => "");
+    return response.text().catch(noop2);
   } else {
-    return response.arrayBuffer().catch(() => new ArrayBuffer(0));
+    return response.arrayBuffer().catch(
+      /* v8 ignore next -- @preserve */
+      () => new ArrayBuffer(0)
+    );
   }
 }
 function isJSONResponse2(mimetype) {
@@ -37143,16 +37151,16 @@ var createTokenAuth = function createTokenAuth2(token) {
 var VERSION6 = "7.0.6";
 
 // npm/node_modules/@octokit/core/dist-src/index.js
-var noop = () => {
+var noop3 = () => {
 };
 var consoleWarn = console.warn.bind(console);
 var consoleError = console.error.bind(console);
 function createLogger(logger = {}) {
   if (typeof logger.debug !== "function") {
-    logger.debug = noop;
+    logger.debug = noop3;
   }
   if (typeof logger.info !== "function") {
-    logger.info = noop;
+    logger.info = noop3;
   }
   if (typeof logger.warn !== "function") {
     logger.warn = consoleWarn;
@@ -39867,7 +39875,7 @@ var Octokit2 = Octokit.plugin(requestLog, legacyRestEndpointMethods, paginateRes
 // npm/node_modules/@octokit/plugin-throttling/dist-bundle/index.js
 var import_light = __toESM(require_light(), 1);
 var VERSION11 = "0.0.0-development";
-var noop2 = () => Promise.resolve();
+var noop4 = () => Promise.resolve();
 function wrapRequest(state, request3, options) {
   return state.retryLimiter.schedule(doRequest, state, request3, options);
 }
@@ -39883,13 +39891,13 @@ async function doRequest(state, request3, options) {
     jobOptions.expiration = 1e3 * 60;
   }
   if (isWrite || isGraphQL) {
-    await state.write.key(state.id).schedule(jobOptions, noop2);
+    await state.write.key(state.id).schedule(jobOptions, noop4);
   }
   if (isWrite && state.triggersNotification(pathname)) {
-    await state.notifications.key(state.id).schedule(jobOptions, noop2);
+    await state.notifications.key(state.id).schedule(jobOptions, noop4);
   }
   if (isSearch) {
-    await state.search.key(state.id).schedule(jobOptions, noop2);
+    await state.search.key(state.id).schedule(jobOptions, noop4);
   }
   const req = (isAuth ? state.auth : state.global).key(state.id).schedule(jobOptions, request3, options);
   if (isGraphQL) {
@@ -40099,7 +40107,7 @@ var RequestError3 = class extends Error {
    */
   response;
   constructor(message2, statusCode, options) {
-    super(message2);
+    super(message2, { cause: options.cause });
     this.name = "HttpError";
     this.status = Number.parseInt(statusCode);
     if (Number.isNaN(this.status)) {
@@ -41233,4 +41241,14 @@ undici/lib/fetch/body.js:
 
 undici/lib/websocket/frame.js:
   (*! ws. MIT License. Einar Otto Stangvik <einaros@gmail.com> *)
+
+@octokit/request-error/dist-src/index.js:
+@octokit/request-error/dist-src/index.js:
+@octokit/request-error/dist-src/index.js:
+  (* v8 ignore else -- @preserve -- Bug with vitest coverage where it sees an else branch that doesn't exist *)
+
+@octokit/request/dist-bundle/index.js:
+@octokit/request/dist-bundle/index.js:
+  (* v8 ignore next -- @preserve *)
+  (* v8 ignore else -- @preserve *)
 */
