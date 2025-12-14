@@ -68,7 +68,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   run_self:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: ${{ always() }}
     needs: [check, check-dist, test]
     steps:

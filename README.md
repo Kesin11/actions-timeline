@@ -14,7 +14,7 @@ and make adjustments as needed to improve performance and efficiency.
 ```yaml
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       # Register this action before your build step. It will then be executed at the end of the job post-processing.
       - uses: Kesin11/actions-timeline@v2
@@ -41,7 +41,7 @@ jobs:
 
   actions-timeline:
     needs: [build-1, build-2, build-3]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: Kesin11/actions-timeline@v2
 ```
@@ -80,7 +80,7 @@ jobs:
   build:
     permissions:
       actions: read
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: Kesin11/actions-timeline@v2
 ```
