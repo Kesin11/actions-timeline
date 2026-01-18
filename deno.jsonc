@@ -18,7 +18,7 @@
     "@deno/dnt": "jsr:@deno/dnt@0.42.3",
     "esbuild": "npm:esbuild@0.27.2",
     "@actions/core": "npm:@actions/core@2.0.2",
-    "@actions/github": "npm:@actions/github@6.0.1",
+    "@actions/github": "npm:@actions/github@7.0.0",
     "date-fns": "npm:date-fns@4.1.0"
   }
 }
