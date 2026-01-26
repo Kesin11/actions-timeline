@@ -38,7 +38,7 @@ This project is a GitHub Action that visualizes GitHub Actions workflow executio
 ### Directory Structure
 
 - `src/` - TypeScript source code
-- `dist/` - Bundled JavaScript for node20
+- `dist/` - Bundled JavaScript for node24
 - `npm/` - npm package build output
 - `tests/` - Test files and fixtures
 
