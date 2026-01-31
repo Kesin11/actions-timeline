@@ -122,7 +122,10 @@ Deno.test("createCompositeStepLookup", async (t) => {
     const lookup = createCompositeStepLookup(compositeStepsMap);
     assertEquals(lookup.size, 1);
     const composite = lookup.get("123-2");
-    assertEquals(composite?.parentStepName, "./.github/actions/setup-deno-with-cache");
+    assertEquals(
+      composite?.parentStepName,
+      "./.github/actions/setup-deno-with-cache",
+    );
     assertEquals(composite?.innerSteps.length, 1);
   });
 });

@@ -1,5 +1,5 @@
 import type { WorkflowJobs } from "@kesin11/gha-utils";
-import { parseLogBlocks, type LogBlock } from "./log_parser.ts";
+import { type LogBlock, parseLogBlocks } from "./log_parser.ts";
 import type { CompositeActionStep, JobLogs, ParsedLogStep } from "./types.ts";
 
 // Pattern to detect repo-local composite action usage in step name
@@ -109,7 +109,7 @@ export const parseCompositeActionsFromLogs = (
 const findInnerStepsFromLogs = (
   logBlocks: LogBlock[],
   parentStartedAt: string | null | undefined,
-  parentName: string,
+  _parentName: string,
   nextStepStartedAt: string | null | undefined,
 ): ParsedLogStep[] => {
   if (!parentStartedAt) return [];
@@ -126,12 +126,15 @@ const findInnerStepsFromLogs = (
   // This is more accurate than Jobs API timestamps
   let endTime: Date;
   if (nextStepStartedAt) {
-    // Find a log block that starts after composite and might be the next step
+    // Find a log block that starts after composite and might be the next step.
+    // We look for shell/script steps (no "/" in name) that indicate the composite has ended.
+    // Action blocks like "denoland/setup-deno@v1" contain "/" and are inner steps.
+    // ".github/actions" blocks are composite actions themselves.
     const nextStepLogBlock = logBlocks.find((block) => {
-      return block.startedAt > startTime &&
-        !block.name.includes(".github/actions") &&
-        !block.name.includes("/") && // Exclude action blocks like denoland/setup-deno@v1
-        !block.name.startsWith("actions/checkout@");
+      const isCompositeAction = block.name.includes(".github/actions");
+      const isExternalAction = block.name.includes("/"); // e.g., "owner/action@v1"
+      const isShellStep = !isCompositeAction && !isExternalAction;
+      return block.startedAt > startTime && isShellStep;
     });
     if (nextStepLogBlock) {
       endTime = nextStepLogBlock.startedAt;

@@ -14,9 +14,7 @@ export const hasRepoLocalCompositeStep = (
   job: WorkflowJobs[0],
 ): boolean => {
   if (!job.steps) return false;
-  return job.steps.some((step) =>
-    REPO_LOCAL_COMPOSITE_PATTERN.test(step.name)
-  );
+  return job.steps.some((step) => REPO_LOCAL_COMPOSITE_PATTERN.test(step.name));
 };
 
 /**

@@ -1,8 +1,8 @@
 import { assertEquals } from "@std/assert";
 import {
   findCompositeActionBlocks,
-  parseLogBlocks,
   parseJobLogsForCompositeSteps,
+  parseLogBlocks,
   parseTimestamp,
 } from "../src/log_parser.ts";
 
@@ -36,7 +36,10 @@ Deno.test("parseLogBlocks", async (t) => {
     assertEquals(blocks.length, 1);
     assertEquals(blocks[0].name, "actions/setup-node@v4");
     assertEquals(blocks[0].startedAt.toISOString(), "2024-01-15T10:30:00.000Z");
-    assertEquals(blocks[0].completedAt.toISOString(), "2024-01-15T10:30:05.000Z");
+    assertEquals(
+      blocks[0].completedAt.toISOString(),
+      "2024-01-15T10:30:05.000Z",
+    );
   });
 
   await t.step("should parse multiple group blocks", () => {
@@ -82,7 +85,10 @@ Deno.test("findCompositeActionBlocks", async (t) => {
 
     const composites = findCompositeActionBlocks(blocks);
     assertEquals(composites.length, 1);
-    assertEquals(composites[0].parentStepName, "./.github/actions/setup-deno-with-cache");
+    assertEquals(
+      composites[0].parentStepName,
+      "./.github/actions/setup-deno-with-cache",
+    );
     assertEquals(composites[0].innerSteps.length, 2);
     assertEquals(composites[0].innerSteps[0].name, "denoland/setup-deno@v1");
     assertEquals(composites[0].innerSteps[1].name, "actions/setup-node@v6");
@@ -138,7 +144,8 @@ Deno.test("findCompositeActionBlocks", async (t) => {
 
 Deno.test("parseJobLogsForCompositeSteps", async (t) => {
   await t.step("should parse complete log text with composite actions", () => {
-    const logText = `2024-01-15T10:30:00.000Z ##[group]Run ./.github/actions/setup-deno-with-cache
+    const logText =
+      `2024-01-15T10:30:00.000Z ##[group]Run ./.github/actions/setup-deno-with-cache
 2024-01-15T10:30:00.500Z Setting up environment
 2024-01-15T10:30:01.000Z ##[group]Run denoland/setup-deno@v1
 2024-01-15T10:30:01.500Z Installing Deno
@@ -150,15 +157,21 @@ Deno.test("parseJobLogsForCompositeSteps", async (t) => {
 
     const composites = parseJobLogsForCompositeSteps(logText);
     assertEquals(composites.length, 1);
-    assertEquals(composites[0].parentStepName, "./.github/actions/setup-deno-with-cache");
+    assertEquals(
+      composites[0].parentStepName,
+      "./.github/actions/setup-deno-with-cache",
+    );
     assertEquals(composites[0].innerSteps.length, 2);
   });
 
-  await t.step("should return empty array for logs without composite actions", () => {
-    const logText = `2024-01-15T10:30:00.000Z ##[group]Run actions/checkout@v4
+  await t.step(
+    "should return empty array for logs without composite actions",
+    () => {
+      const logText = `2024-01-15T10:30:00.000Z ##[group]Run actions/checkout@v4
 2024-01-15T10:30:05.000Z ##[endgroup]`;
 
-    const composites = parseJobLogsForCompositeSteps(logText);
-    assertEquals(composites.length, 0);
-  });
+      const composites = parseJobLogsForCompositeSteps(logText);
+      assertEquals(composites.length, 0);
+    },
+  );
 });

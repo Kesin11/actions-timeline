@@ -115,7 +115,9 @@ export const createGanttJobs = (
       for (let i = 0; i < filteredSteps.length; i++) {
         const step = filteredSteps[i];
         const stepElapsedSec = diffSec(step.started_at, step.completed_at);
-        const stepId: ganttStep["id"] = `job${jobIndex}-${currentStepIndex + 1}`;
+        const stepId: ganttStep["id"] = `job${jobIndex}-${
+          currentStepIndex + 1
+        }`;
 
         // Check if this step is a composite action with decomposed substeps
         if (compositeStepLookup) {
@@ -136,12 +138,13 @@ export const createGanttJobs = (
         }
 
         // Regular step (not a composite or no substeps found)
+        const roundedSec = Math.floor(stepElapsedSec);
         const baseStep: ganttStep = {
-          name: formatName(step.name, stepElapsedSec),
+          name: formatName(step.name, roundedSec),
           id: stepId,
           status: convertStepToStatus(step.conclusion as StepConclusion),
           position: `after job${jobIndex}-${currentStepIndex}`,
-          sec: stepElapsedSec,
+          sec: roundedSec,
         };
         steps.push(baseStep);
         currentStepIndex++;
@@ -155,6 +158,11 @@ export const createGanttJobs = (
 /**
  * Create regular steps from composite action's inner steps.
  * These replace the composite action step in the timeline.
+ *
+ * Note: Inner step status is always shown as success (empty string) because
+ * GitHub's job logs don't include failure status information for individual
+ * steps within composite actions. If the composite action failed, the parent
+ * step's failure would be visible in the original timeline.
  */
 const createCompositeInnerSteps = (
   composite: CompositeActionStep,
