@@ -9,11 +9,17 @@ import {
   formatSection,
 } from "./format_util.ts";
 import type {
+  CompositeActionStep,
   ganttJob,
   GanttOptions,
   ganttStep,
+  JobLogs,
   StepConclusion,
 } from "./types.ts";
+import {
+  createCompositeStepLookup,
+  parseCompositeActionsFromLogs,
+} from "./composite_mapper.ts";
 
 // ref: MAX_TEXTLENGTH https://github.com/mermaid-js/mermaid/blob/develop/packages/mermaid/src/mermaidAPI.ts
 const MERMAID_MAX_CHAR = 50_000;
@@ -63,6 +69,7 @@ export const createGanttJobs = (
   workflow: WorkflowRun,
   workflowJobs: WorkflowJobs,
   showWaitingRunner = true,
+  compositeStepLookup?: Map<string, CompositeActionStep>,
 ): ganttJob[] => {
   return filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs): ganttJob | undefined => {
@@ -101,22 +108,87 @@ export const createGanttJobs = (
         firstStep = waitingRunnerStep;
       }
 
-      const steps = filterSteps(job.steps).map(
-        (step, stepIndex, _steps): ganttStep => {
-          const stepElapsedSec = diffSec(step.started_at, step.completed_at);
-          return {
-            name: formatName(step.name, stepElapsedSec),
-            id: `job${jobIndex}-${stepIndex + 1}`,
-            status: convertStepToStatus(step.conclusion as StepConclusion),
-            position: `after job${jobIndex}-${stepIndex}`,
-            sec: stepElapsedSec,
-          };
-        },
-      );
+      const filteredSteps = filterSteps(job.steps);
+      const steps: ganttStep[] = [];
+      let currentStepIndex = 0; // Track position for "after" references
+
+      for (let i = 0; i < filteredSteps.length; i++) {
+        const step = filteredSteps[i];
+        const stepElapsedSec = diffSec(step.started_at, step.completed_at);
+        const stepId: ganttStep["id"] = `job${jobIndex}-${
+          currentStepIndex + 1
+        }`;
+
+        // Check if this step is a composite action with decomposed substeps
+        if (compositeStepLookup) {
+          const compositeKey = `${job.id}-${step.number}`;
+          const composite = compositeStepLookup.get(compositeKey);
+          if (composite && composite.innerSteps.length > 0) {
+            // Replace the composite step with its inner steps
+            const innerGanttSteps = createCompositeInnerSteps(
+              composite,
+              jobIndex,
+              currentStepIndex,
+              workflow.run_started_at,
+            );
+            steps.push(...innerGanttSteps);
+            currentStepIndex += innerGanttSteps.length;
+            continue; // Skip adding the parent composite step
+          }
+        }
+
+        // Regular step (not a composite or no substeps found)
+        const roundedSec = Math.floor(stepElapsedSec);
+        const baseStep: ganttStep = {
+          name: formatName(step.name, roundedSec),
+          id: stepId,
+          status: convertStepToStatus(step.conclusion as StepConclusion),
+          position: `after job${jobIndex}-${currentStepIndex}`,
+          sec: roundedSec,
+        };
+        steps.push(baseStep);
+        currentStepIndex++;
+      }
 
       return { section, steps: [firstStep, ...steps] };
     },
   ).filter((gantJobs): gantJobs is ganttJob => gantJobs !== undefined);
+};
+
+/**
+ * Create regular steps from composite action's inner steps.
+ * These replace the composite action step in the timeline.
+ *
+ * Note: Inner step status is always shown as success (empty string) because
+ * GitHub's job logs don't include failure status information for individual
+ * steps within composite actions. If the composite action failed, the parent
+ * step's failure would be visible in the original timeline.
+ */
+const createCompositeInnerSteps = (
+  composite: CompositeActionStep,
+  jobIndex: number,
+  previousStepIndex: number,
+  _workflowStartedAt: string | null | undefined,
+): ganttStep[] => {
+  return composite.innerSteps.map((innerStep, innerIndex): ganttStep => {
+    const stepElapsedSec = Math.floor(
+      diffSec(innerStep.startedAt, innerStep.completedAt),
+    );
+
+    // Calculate position
+    // First inner step: after the previous step in the job
+    // Subsequent inner steps: after the previous inner step
+    const stepIndex = previousStepIndex + 1 + innerIndex;
+    const position = `after job${jobIndex}-${stepIndex - 1}`;
+
+    return {
+      name: formatName(innerStep.name, stepElapsedSec),
+      id: `job${jobIndex}-${stepIndex}`,
+      status: "", // Success status for parsed steps
+      position: position,
+      sec: stepElapsedSec,
+    };
+  });
 };
 
 /**
@@ -178,12 +250,25 @@ export const createMermaid = (
   workflow: WorkflowRun,
   workflowJobs: WorkflowJobs,
   options: GanttOptions,
+  jobLogs?: JobLogs,
 ): string => {
   const title = workflow.name ?? "";
+
+  // Create composite step lookup if enabled and logs are provided
+  let compositeStepLookup: Map<string, CompositeActionStep> | undefined;
+  if (options.showCompositeActions && jobLogs && jobLogs.size > 0) {
+    const compositeStepsMap = parseCompositeActionsFromLogs(
+      workflowJobs,
+      jobLogs,
+    );
+    compositeStepLookup = createCompositeStepLookup(compositeStepsMap);
+  }
+
   const jobs = createGanttJobs(
     workflow,
     workflowJobs,
     options.showWaitingRunner,
+    compositeStepLookup,
   );
   return createGanttDiagrams(title, jobs).join("\n");
 };

@@ -4,10 +4,12 @@ import { debug, getBooleanInput, getInput, info, summary } from "@actions/core";
 import * as github from "@actions/github";
 import { createMermaid } from "./workflow_gantt.ts";
 import { Github } from "@kesin11/gha-utils";
+import { fetchJobLogs } from "./job_logs.ts";
 
 const main = async () => {
   const token = getInput("github-token", { required: true });
   const showWaitingRunner = getBooleanInput("show-waiting-runner");
+  const showCompositeActions = getBooleanInput("show-composite-actions");
   const client = new Github({ token });
 
   info("Wait for workflow API result stability...");
@@ -31,8 +33,24 @@ const main = async () => {
 
   debug(JSON.stringify(workflowJobs, null, 2));
 
+  // Fetch job logs if show-composite-actions is enabled
+  let jobLogs: Map<number, string> | undefined;
+  if (showCompositeActions) {
+    info("Fetch job logs for composite actions...");
+    jobLogs = await fetchJobLogs(
+      client,
+      github.context.repo.owner,
+      github.context.repo.repo,
+      workflowJobs,
+    );
+    debug(`Fetched logs for ${jobLogs.size} jobs`);
+  }
+
   info("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflowRun, workflowJobs, { showWaitingRunner });
+  const gantt = createMermaid(workflowRun, workflowJobs, {
+    showWaitingRunner,
+    showCompositeActions,
+  }, jobLogs);
   await summary.addRaw(gantt).write();
   debug(gantt);
 

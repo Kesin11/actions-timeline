@@ -24,4 +24,22 @@ export type StepConclusion =
 
 export type GanttOptions = {
   showWaitingRunner?: boolean;
+  showCompositeActions?: boolean;
 };
+
+// Represents a parsed step from job logs
+export type ParsedLogStep = {
+  name: string;
+  startedAt: Date;
+  completedAt: Date;
+};
+
+// Represents a composite action with its inner steps
+export type CompositeActionStep = {
+  parentStepName: string;
+  parentStepNumber: number;
+  innerSteps: ParsedLogStep[];
+};
+
+// Job logs keyed by job ID
+export type JobLogs = Map<number, string>;

@@ -24,7 +24,7 @@
     "jsr:@std/yaml@^1.0.5": "1.0.9",
     "jsr:@ts-morph/bootstrap@0.27": "0.27.0",
     "jsr:@ts-morph/common@0.27": "0.27.0",
-    "npm:@actions/core@2.0.2": "2.0.2",
+    "npm:@actions/core@2.0.3": "2.0.3",
     "npm:@actions/github@7.0.0": "7.0.0_@octokit+core@5.2.2",
     "npm:@octokit/plugin-retry@^8.0.1": "8.0.3_@octokit+core@7.0.6",
     "npm:@octokit/plugin-throttling@^11.0.1": "11.0.3_@octokit+core@7.0.6",
@@ -140,8 +140,8 @@
     }
   },
   "npm": {
-    "@actions/core@2.0.2": {
-      "integrity": "sha512-Ast1V7yHbGAhplAsuVlnb/5J8Mtr/Zl6byPPL+Qjq3lmfIgWF1ak1iYfF/079cRERiuTALTXkSuEUdZeDCfGtA==",
+    "@actions/core@2.0.3": {
+      "integrity": "sha512-Od9Thc3T1mQJYddvVPM4QGiLUewdh+3txmDYHHxoNdkqysR1MbCT+rFOtNUxYAz+7+6RIsqipVahY2GJqGPyxA==",
       "dependencies": [
         "@actions/exec",
         "@actions/http-client"
@@ -752,7 +752,7 @@
       "jsr:@kesin11/gha-utils@0.2.2",
       "jsr:@std/assert@^1.0.13",
       "jsr:@std/collections@^1.1.2",
-      "npm:@actions/core@2.0.2",
+      "npm:@actions/core@2.0.3",
       "npm:@actions/github@7.0.0",
       "npm:date-fns@4.1.0",
       "npm:esbuild@0.27.2"
