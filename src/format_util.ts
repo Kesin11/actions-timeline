@@ -55,10 +55,19 @@ export const escapeName = (name: string): string => {
 };
 
 export function formatSection(job: ganttJob): string {
-  return [
-    `section ${job.section}`,
-    ...job.steps.map((step) => formatStep(step)),
-  ].join("\n");
+  const lines: string[] = [`section ${job.section}`];
+
+  for (const step of job.steps) {
+    lines.push(formatStep(step));
+    // Add substeps if present
+    if (step.subSteps) {
+      for (const subStep of step.subSteps) {
+        lines.push(formatStep(subStep));
+      }
+    }
+  }
+
+  return lines.join("\n");
 }
 
 export const convertStepToStatus = (

@@ -9,11 +9,17 @@ import {
   formatSection,
 } from "./format_util.ts";
 import type {
+  CompositeActionStep,
   ganttJob,
   GanttOptions,
   ganttStep,
+  JobLogs,
   StepConclusion,
 } from "./types.ts";
+import {
+  createCompositeStepLookup,
+  parseCompositeActionsFromLogs,
+} from "./composite_mapper.ts";
 
 // ref: MAX_TEXTLENGTH https://github.com/mermaid-js/mermaid/blob/develop/packages/mermaid/src/mermaidAPI.ts
 const MERMAID_MAX_CHAR = 50_000;
@@ -63,6 +69,7 @@ export const createGanttJobs = (
   workflow: WorkflowRun,
   workflowJobs: WorkflowJobs,
   showWaitingRunner = true,
+  compositeStepLookup?: Map<string, CompositeActionStep>,
 ): ganttJob[] => {
   return filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs): ganttJob | undefined => {
@@ -104,19 +111,60 @@ export const createGanttJobs = (
       const steps = filterSteps(job.steps).map(
         (step, stepIndex, _steps): ganttStep => {
           const stepElapsedSec = diffSec(step.started_at, step.completed_at);
-          return {
+          const stepId: ganttStep["id"] = `job${jobIndex}-${stepIndex + 1}`;
+
+          const baseStep: ganttStep = {
             name: formatName(step.name, stepElapsedSec),
-            id: `job${jobIndex}-${stepIndex + 1}`,
+            id: stepId,
             status: convertStepToStatus(step.conclusion as StepConclusion),
             position: `after job${jobIndex}-${stepIndex}`,
             sec: stepElapsedSec,
           };
+
+          // Check if this step has composite action substeps
+          if (compositeStepLookup) {
+            const compositeKey = `${job.id}-${step.number}`;
+            const composite = compositeStepLookup.get(compositeKey);
+            if (composite && composite.innerSteps.length > 0) {
+              baseStep.subSteps = createCompositeSubSteps(
+                composite,
+                jobIndex,
+                stepIndex + 1,
+                workflow.run_started_at,
+              );
+            }
+          }
+
+          return baseStep;
         },
       );
 
       return { section, steps: [firstStep, ...steps] };
     },
   ).filter((gantJobs): gantJobs is ganttJob => gantJobs !== undefined);
+};
+
+/**
+ * Create substeps for a composite action from parsed log data.
+ */
+const createCompositeSubSteps = (
+  composite: CompositeActionStep,
+  jobIndex: number,
+  parentStepIndex: number,
+  workflowStartedAt: string | null | undefined,
+): ganttStep[] => {
+  return composite.innerSteps.map((innerStep, subIndex): ganttStep => {
+    const stepElapsedSec = diffSec(innerStep.startedAt, innerStep.completedAt);
+    const startPositionSec = diffSec(workflowStartedAt, innerStep.startedAt);
+
+    return {
+      name: formatName(`  ↳ ${innerStep.name}`, stepElapsedSec),
+      id: `job${jobIndex}-${parentStepIndex}-sub${subIndex}`,
+      status: "", // Success status for parsed steps
+      position: formatElapsedTime(startPositionSec),
+      sec: stepElapsedSec,
+    };
+  });
 };
 
 /**
@@ -178,12 +226,25 @@ export const createMermaid = (
   workflow: WorkflowRun,
   workflowJobs: WorkflowJobs,
   options: GanttOptions,
+  jobLogs?: JobLogs,
 ): string => {
   const title = workflow.name ?? "";
+
+  // Create composite step lookup if enabled and logs are provided
+  let compositeStepLookup: Map<string, CompositeActionStep> | undefined;
+  if (options.showCompositeActions && jobLogs && jobLogs.size > 0) {
+    const compositeStepsMap = parseCompositeActionsFromLogs(
+      workflowJobs,
+      jobLogs,
+    );
+    compositeStepLookup = createCompositeStepLookup(compositeStepsMap);
+  }
+
   const jobs = createGanttJobs(
     workflow,
     workflowJobs,
     options.showWaitingRunner,
+    compositeStepLookup,
   );
   return createGanttDiagrams(title, jobs).join("\n");
 };

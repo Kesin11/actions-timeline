@@ -13,6 +13,10 @@ inputs:
     description: Show waiting runner time in the timeline.
     default: true
     required: false
+  show-composite-actions:
+    description: Decompose repo-local Composite Actions into inner steps by parsing job logs.
+    default: "false"
+    required: false
 runs:
   using: "node24"
   main: "dist/main.js"
