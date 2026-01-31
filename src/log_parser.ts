@@ -76,45 +76,84 @@ export const parseLogBlocks = (logText: string): LogBlock[] => {
 /**
  * Find the composite action block and its inner steps from log blocks.
  * A composite action block is detected by "Run ./.github/actions/..." pattern.
- * Inner steps are blocks that fall within the composite's time window.
+ * Inner steps are blocks that start immediately after the composite block
+ * and are action-like (contain "/").
+ *
+ * Note: The completedAt of each inner step is recalculated to be the startedAt
+ * of the next step, because ##[endgroup] timestamp only marks the end of the
+ * group header, not the actual action execution.
  */
 export const findCompositeActionBlocks = (
   logBlocks: LogBlock[],
 ): CompositeActionStep[] => {
   const compositeSteps: CompositeActionStep[] = [];
 
-  // First, identify all composite action blocks
-  const compositeBlocks = logBlocks.filter((block) =>
-    REPO_LOCAL_COMPOSITE_LOG_PATTERN.test(`##[group]Run ${block.name}`)
+  // Sort blocks by start time
+  const sortedBlocks = [...logBlocks].sort(
+    (a, b) => a.startedAt.getTime() - b.startedAt.getTime(),
   );
 
-  for (const compositeBlock of compositeBlocks) {
-    const innerSteps: ParsedLogStep[] = [];
+  for (let i = 0; i < sortedBlocks.length; i++) {
+    const block = sortedBlocks[i];
 
-    // Find all blocks that fall within this composite's time window
-    // and are NOT themselves composite actions
-    for (const block of logBlocks) {
-      // Skip if this is a composite action itself
-      if (REPO_LOCAL_COMPOSITE_LOG_PATTERN.test(`##[group]Run ${block.name}`)) {
-        continue;
-      }
-
-      // Check if this block falls within the composite's time window
-      if (
-        block.startedAt >= compositeBlock.startedAt &&
-        block.completedAt <= compositeBlock.completedAt
-      ) {
-        innerSteps.push({
-          name: block.name,
-          startedAt: block.startedAt,
-          completedAt: block.completedAt,
-        });
-      }
+    // Check if this is a composite action
+    if (!REPO_LOCAL_COMPOSITE_LOG_PATTERN.test(`##[group]Run ${block.name}`)) {
+      continue;
     }
 
-    if (innerSteps.length > 0) {
-      // Sort inner steps by start time
-      innerSteps.sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+    const compositeBlock = block;
+    const candidateBlocks: LogBlock[] = [];
+
+    // Look at blocks after this composite
+    for (let j = i + 1; j < sortedBlocks.length; j++) {
+      const nextBlock = sortedBlocks[j];
+
+      // Stop if we hit another composite action
+      if (
+        REPO_LOCAL_COMPOSITE_LOG_PATTERN.test(`##[group]Run ${nextBlock.name}`)
+      ) {
+        break;
+      }
+
+      // Stop if we hit a non-action step (doesn't contain "/" or is a shell command)
+      const isActionLike = nextBlock.name.includes("/") &&
+        !nextBlock.name.includes(".github/actions");
+      if (!isActionLike) {
+        break;
+      }
+
+      candidateBlocks.push(nextBlock);
+    }
+
+    if (candidateBlocks.length > 0) {
+      // Recalculate completedAt: use next step's startedAt
+      const innerSteps: ParsedLogStep[] = [];
+      for (let k = 0; k < candidateBlocks.length; k++) {
+        const candidateBlock = candidateBlocks[k];
+
+        // Next inner step's start time
+        const nextInnerBlockStartedAt = k + 1 < candidateBlocks.length
+          ? candidateBlocks[k + 1].startedAt
+          : undefined;
+
+        // For last inner step, find the next block in overall sorted list
+        let realCompletedAt = candidateBlock.completedAt;
+        if (nextInnerBlockStartedAt) {
+          realCompletedAt = nextInnerBlockStartedAt;
+        } else {
+          // Find index of this candidate in sorted blocks
+          const candidateIdx = sortedBlocks.indexOf(candidateBlock);
+          if (candidateIdx >= 0 && candidateIdx + 1 < sortedBlocks.length) {
+            realCompletedAt = sortedBlocks[candidateIdx + 1].startedAt;
+          }
+        }
+
+        innerSteps.push({
+          name: candidateBlock.name,
+          startedAt: candidateBlock.startedAt,
+          completedAt: realCompletedAt,
+        });
+      }
 
       compositeSteps.push({
         parentStepName: compositeBlock.name,

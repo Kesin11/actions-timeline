@@ -101,6 +101,10 @@ export const parseCompositeActionsFromLogs = (
  * Find inner steps from log blocks that fall within the parent step's time window.
  * Excludes the composite action's own log block.
  * Uses the next step's start time as end boundary.
+ *
+ * Note: The completedAt of each inner step is recalculated to be the startedAt
+ * of the next inner step (or end of composite), because ##[endgroup] timestamp
+ * only marks the end of the group header, not the actual action execution.
  */
 const findInnerStepsFromLogs = (
   logBlocks: LogBlock[],
@@ -139,7 +143,7 @@ const findInnerStepsFromLogs = (
     endTime = new Date("2100-01-01T00:00:00Z");
   }
 
-  const innerSteps: ParsedLogStep[] = [];
+  const candidateBlocks: LogBlock[] = [];
 
   for (const block of logBlocks) {
     // Skip if this is the composite action's own block
@@ -154,16 +158,29 @@ const findInnerStepsFromLogs = (
 
     // Check if this block starts after composite log and before next step
     if (block.startedAt > startTime && block.startedAt < endTime) {
-      innerSteps.push({
-        name: block.name,
-        startedAt: block.startedAt,
-        completedAt: block.completedAt,
-      });
+      candidateBlocks.push(block);
     }
   }
 
   // Sort by start time
-  innerSteps.sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+  candidateBlocks.sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+
+  // Recalculate completedAt: use next inner step's startedAt or endTime
+  const innerSteps: ParsedLogStep[] = [];
+  for (let i = 0; i < candidateBlocks.length; i++) {
+    const block = candidateBlocks[i];
+
+    // Next inner step's start time, or end of composite
+    const realCompletedAt = i + 1 < candidateBlocks.length
+      ? candidateBlocks[i + 1].startedAt
+      : endTime;
+
+    innerSteps.push({
+      name: block.name,
+      startedAt: block.startedAt,
+      completedAt: realCompletedAt,
+    });
+  }
 
   return innerSteps;
 };

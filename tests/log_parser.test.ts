@@ -101,7 +101,10 @@ Deno.test("findCompositeActionBlocks", async (t) => {
     assertEquals(composites.length, 0);
   });
 
-  await t.step("should only include inner steps within time window", () => {
+  await t.step("should stop at non-action step", () => {
+    // This test verifies that blocks after a non-action step aren't included
+    // The composite is followed by inner-action, then a shell step, then outer-action
+    // Only inner-action should be included
     const blocks = [
       {
         name: "./.github/actions/my-action",
@@ -109,21 +112,27 @@ Deno.test("findCompositeActionBlocks", async (t) => {
         completedAt: new Date("2024-01-15T10:30:05.000Z"),
       },
       {
-        name: "inner-step",
+        name: "owner/inner-action@v1",
         startedAt: new Date("2024-01-15T10:30:01.000Z"),
         completedAt: new Date("2024-01-15T10:30:04.000Z"),
       },
       {
-        name: "outer-step",
-        startedAt: new Date("2024-01-15T10:30:06.000Z"),
+        name: "deno test --allow-env", // non-action step (no "/")
+        startedAt: new Date("2024-01-15T10:30:05.000Z"),
+        completedAt: new Date("2024-01-15T10:30:06.000Z"),
+      },
+      {
+        name: "owner/outer-action@v2",
+        startedAt: new Date("2024-01-15T10:30:07.000Z"),
         completedAt: new Date("2024-01-15T10:30:10.000Z"),
       },
     ];
 
     const composites = findCompositeActionBlocks(blocks);
     assertEquals(composites.length, 1);
+    // Only one inner step because we stop at the shell step
     assertEquals(composites[0].innerSteps.length, 1);
-    assertEquals(composites[0].innerSteps[0].name, "inner-step");
+    assertEquals(composites[0].innerSteps[0].name, "owner/inner-action@v1");
   });
 });
 

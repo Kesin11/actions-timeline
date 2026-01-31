@@ -108,36 +108,44 @@ export const createGanttJobs = (
         firstStep = waitingRunnerStep;
       }
 
-      const steps = filterSteps(job.steps).map(
-        (step, stepIndex, _steps): ganttStep => {
-          const stepElapsedSec = diffSec(step.started_at, step.completed_at);
-          const stepId: ganttStep["id"] = `job${jobIndex}-${stepIndex + 1}`;
+      const filteredSteps = filterSteps(job.steps);
+      const steps: ganttStep[] = [];
+      let currentStepIndex = 0; // Track position for "after" references
 
-          const baseStep: ganttStep = {
-            name: formatName(step.name, stepElapsedSec),
-            id: stepId,
-            status: convertStepToStatus(step.conclusion as StepConclusion),
-            position: `after job${jobIndex}-${stepIndex}`,
-            sec: stepElapsedSec,
-          };
+      for (let i = 0; i < filteredSteps.length; i++) {
+        const step = filteredSteps[i];
+        const stepElapsedSec = diffSec(step.started_at, step.completed_at);
+        const stepId: ganttStep["id"] = `job${jobIndex}-${currentStepIndex + 1}`;
 
-          // Check if this step has composite action substeps
-          if (compositeStepLookup) {
-            const compositeKey = `${job.id}-${step.number}`;
-            const composite = compositeStepLookup.get(compositeKey);
-            if (composite && composite.innerSteps.length > 0) {
-              baseStep.subSteps = createCompositeSubSteps(
-                composite,
-                jobIndex,
-                stepIndex + 1,
-                workflow.run_started_at,
-              );
-            }
+        // Check if this step is a composite action with decomposed substeps
+        if (compositeStepLookup) {
+          const compositeKey = `${job.id}-${step.number}`;
+          const composite = compositeStepLookup.get(compositeKey);
+          if (composite && composite.innerSteps.length > 0) {
+            // Replace the composite step with its inner steps
+            const innerGanttSteps = createCompositeInnerSteps(
+              composite,
+              jobIndex,
+              currentStepIndex,
+              workflow.run_started_at,
+            );
+            steps.push(...innerGanttSteps);
+            currentStepIndex += innerGanttSteps.length;
+            continue; // Skip adding the parent composite step
           }
+        }
 
-          return baseStep;
-        },
-      );
+        // Regular step (not a composite or no substeps found)
+        const baseStep: ganttStep = {
+          name: formatName(step.name, stepElapsedSec),
+          id: stepId,
+          status: convertStepToStatus(step.conclusion as StepConclusion),
+          position: `after job${jobIndex}-${currentStepIndex}`,
+          sec: stepElapsedSec,
+        };
+        steps.push(baseStep);
+        currentStepIndex++;
+      }
 
       return { section, steps: [firstStep, ...steps] };
     },
@@ -145,28 +153,29 @@ export const createGanttJobs = (
 };
 
 /**
- * Create substeps for a composite action from parsed log data.
+ * Create regular steps from composite action's inner steps.
+ * These replace the composite action step in the timeline.
  */
-const createCompositeSubSteps = (
+const createCompositeInnerSteps = (
   composite: CompositeActionStep,
   jobIndex: number,
-  parentStepIndex: number,
+  previousStepIndex: number,
   _workflowStartedAt: string | null | undefined,
 ): ganttStep[] => {
-  return composite.innerSteps.map((innerStep, subIndex): ganttStep => {
+  return composite.innerSteps.map((innerStep, innerIndex): ganttStep => {
     const stepElapsedSec = Math.floor(
       diffSec(innerStep.startedAt, innerStep.completedAt),
     );
 
-    // First substep: position after parent step
-    // Subsequent substeps: position after previous substep
-    const position = subIndex === 0
-      ? `after job${jobIndex}-${parentStepIndex}`
-      : `after job${jobIndex}-${parentStepIndex}-sub${subIndex - 1}`;
+    // Calculate position
+    // First inner step: after the previous step in the job
+    // Subsequent inner steps: after the previous inner step
+    const stepIndex = previousStepIndex + 1 + innerIndex;
+    const position = `after job${jobIndex}-${stepIndex - 1}`;
 
     return {
-      name: formatName(`  ↳ ${innerStep.name}`, stepElapsedSec),
-      id: `job${jobIndex}-${parentStepIndex}-sub${subIndex}`,
+      name: formatName(innerStep.name, stepElapsedSec),
+      id: `job${jobIndex}-${stepIndex}`,
       status: "", // Success status for parsed steps
       position: position,
       sec: stepElapsedSec,
