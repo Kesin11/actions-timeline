@@ -1,10 +1,11 @@
 import type { WorkflowJobs } from "@kesin11/gha-utils";
-import { parseJobLogsForCompositeSteps } from "./log_parser.ts";
-import type { CompositeActionStep, JobLogs } from "./types.ts";
+import { parseLogBlocks, type LogBlock } from "./log_parser.ts";
+import type { CompositeActionStep, JobLogs, ParsedLogStep } from "./types.ts";
 
 // Pattern to detect repo-local composite action usage in step name
 // e.g., "Run ./.github/actions/setup-deno-with-cache"
-const REPO_LOCAL_COMPOSITE_PATTERN = /^Run \.\/\.github\/actions\//;
+// Note: Jobs API may show "Run /./.github/actions/..." (with extra slash)
+const REPO_LOCAL_COMPOSITE_PATTERN = /^Run \/?\.\/.github\/actions\//;
 
 /**
  * Check if a step is a repo-local composite action.
@@ -42,6 +43,7 @@ export const findRepoLocalCompositeSteps = (
 
 /**
  * Parse job logs and map composite action inner steps to their parent steps.
+ * Uses Jobs API step times to find inner steps within log blocks.
  * Returns a map of job ID to array of CompositeActionStep.
  */
 export const parseCompositeActionsFromLogs = (
@@ -56,17 +58,39 @@ export const parseCompositeActionsFromLogs = (
     const logText = jobLogs.get(job.id);
     if (!logText) continue;
 
-    // Parse composite steps from logs
-    const compositeSteps = parseJobLogsForCompositeSteps(logText);
+    // Parse all log blocks
+    const logBlocks = parseLogBlocks(logText);
 
-    // Match parsed steps to job steps
-    const matchedSteps = matchCompositeStepsToJobSteps(
-      job.steps,
-      compositeSteps,
-    );
+    // Find composite steps in this job
+    const compositeSteps: CompositeActionStep[] = [];
 
-    if (matchedSteps.length > 0) {
-      result.set(job.id, matchedSteps);
+    for (let stepIdx = 0; stepIdx < job.steps.length; stepIdx++) {
+      const step = job.steps[stepIdx];
+      if (!isRepoLocalCompositeStep(step.name)) continue;
+
+      // Find the next step's started_at time to use as end boundary
+      const nextStep = job.steps[stepIdx + 1];
+      const nextStepStartedAt = nextStep?.started_at;
+
+      // Find inner steps from log blocks that fall within this step's time window
+      const innerSteps = findInnerStepsFromLogs(
+        logBlocks,
+        step.started_at,
+        step.name,
+        nextStepStartedAt,
+      );
+
+      if (innerSteps.length > 0) {
+        compositeSteps.push({
+          parentStepName: step.name,
+          parentStepNumber: step.number,
+          innerSteps,
+        });
+      }
+    }
+
+    if (compositeSteps.length > 0) {
+      result.set(job.id, compositeSteps);
     }
   }
 
@@ -74,40 +98,74 @@ export const parseCompositeActionsFromLogs = (
 };
 
 /**
- * Match parsed composite steps from logs to actual job steps.
- * This assigns the correct step number to each composite action.
+ * Find inner steps from log blocks that fall within the parent step's time window.
+ * Excludes the composite action's own log block.
+ * Uses the next step's start time as end boundary.
  */
-const matchCompositeStepsToJobSteps = (
-  jobSteps: NonNullable<WorkflowJobs[0]["steps"]>,
-  parsedCompositeSteps: CompositeActionStep[],
-): CompositeActionStep[] => {
-  const matched: CompositeActionStep[] = [];
+const findInnerStepsFromLogs = (
+  logBlocks: LogBlock[],
+  parentStartedAt: string | null | undefined,
+  parentName: string,
+  nextStepStartedAt: string | null | undefined,
+): ParsedLogStep[] => {
+  if (!parentStartedAt) return [];
 
-  for (const composite of parsedCompositeSteps) {
-    // Find the matching job step by comparing names
-    // The log shows "Run ./.github/actions/..." which should match step.name
-    const matchingStep = jobSteps.find((step) => {
-      // Step name in Jobs API is like "./.github/actions/setup-deno-with-cache"
-      // Log shows "Run ./.github/actions/setup-deno-with-cache"
-      // So we need to match "Run " + step name or just compare the path part
-      const stepPath = step.name;
-      const logPath = composite.parentStepName;
+  // Find the composite action's log block to get precise start time
+  const compositeLogBlock = logBlocks.find((block) =>
+    block.name.includes(".github/actions")
+  );
+  if (!compositeLogBlock) return [];
 
-      // Direct comparison - log name should be exactly step.name
-      // or log name could be step.name with "Run " prefix
-      return stepPath === logPath || `Run ${stepPath}` === `Run ${logPath}`;
+  const startTime = compositeLogBlock.startedAt;
+
+  // Use next step's log block start time as end boundary if available
+  // This is more accurate than Jobs API timestamps
+  let endTime: Date;
+  if (nextStepStartedAt) {
+    // Find a log block that starts after composite and might be the next step
+    const nextStepLogBlock = logBlocks.find((block) => {
+      return block.startedAt > startTime &&
+        !block.name.includes(".github/actions") &&
+        !block.name.includes("/") && // Exclude action blocks like denoland/setup-deno@v1
+        !block.name.startsWith("actions/checkout@");
     });
+    if (nextStepLogBlock) {
+      endTime = nextStepLogBlock.startedAt;
+    } else {
+      endTime = new Date(nextStepStartedAt);
+    }
+  } else {
+    // Last step - use a large future time
+    endTime = new Date("2100-01-01T00:00:00Z");
+  }
 
-    if (matchingStep) {
-      matched.push({
-        ...composite,
-        parentStepNumber: matchingStep.number,
-        parentStepName: matchingStep.name,
+  const innerSteps: ParsedLogStep[] = [];
+
+  for (const block of logBlocks) {
+    // Skip if this is the composite action's own block
+    if (block.name.includes(".github/actions")) {
+      continue;
+    }
+
+    // Skip if this is a checkout action (not part of composite)
+    if (block.name.startsWith("actions/checkout@")) {
+      continue;
+    }
+
+    // Check if this block starts after composite log and before next step
+    if (block.startedAt > startTime && block.startedAt < endTime) {
+      innerSteps.push({
+        name: block.name,
+        startedAt: block.startedAt,
+        completedAt: block.completedAt,
       });
     }
   }
 
-  return matched;
+  // Sort by start time
+  innerSteps.sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+
+  return innerSteps;
 };
 
 /**

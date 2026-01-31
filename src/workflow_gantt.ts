@@ -151,17 +151,24 @@ const createCompositeSubSteps = (
   composite: CompositeActionStep,
   jobIndex: number,
   parentStepIndex: number,
-  workflowStartedAt: string | null | undefined,
+  _workflowStartedAt: string | null | undefined,
 ): ganttStep[] => {
   return composite.innerSteps.map((innerStep, subIndex): ganttStep => {
-    const stepElapsedSec = diffSec(innerStep.startedAt, innerStep.completedAt);
-    const startPositionSec = diffSec(workflowStartedAt, innerStep.startedAt);
+    const stepElapsedSec = Math.floor(
+      diffSec(innerStep.startedAt, innerStep.completedAt),
+    );
+
+    // First substep: position after parent step
+    // Subsequent substeps: position after previous substep
+    const position = subIndex === 0
+      ? `after job${jobIndex}-${parentStepIndex}`
+      : `after job${jobIndex}-${parentStepIndex}-sub${subIndex - 1}`;
 
     return {
       name: formatName(`  ↳ ${innerStep.name}`, stepElapsedSec),
       id: `job${jobIndex}-${parentStepIndex}-sub${subIndex}`,
       status: "", // Success status for parsed steps
-      position: formatElapsedTime(startPositionSec),
+      position: position,
       sec: stepElapsedSec,
     };
   });

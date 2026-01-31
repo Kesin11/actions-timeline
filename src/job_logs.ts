@@ -2,8 +2,9 @@ import type { Github, WorkflowJobs } from "@kesin11/gha-utils";
 import type { JobLogs } from "./types.ts";
 
 // Pattern to detect repo-local composite action usage in step name
-// e.g., "Run ./.github/actions/setup-deno-with-cache"
-const REPO_LOCAL_COMPOSITE_PATTERN = /^Run \.\/\.github\/actions\//;
+// GitHub API returns step names like "Run /./.github/actions/setup-deno-with-cache"
+// Note: The path may start with "/" or without
+const REPO_LOCAL_COMPOSITE_PATTERN = /^Run \/?\.\/.github\/actions\//;
 
 /**
  * Check if a job likely contains a repo-local composite action step.
