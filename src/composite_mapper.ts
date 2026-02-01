@@ -53,6 +53,39 @@ const isCompositeLogBlock = (blockName: string): boolean => {
 };
 
 /**
+ * Filter out nested composite action log blocks.
+ * A nested composite action is one that starts within the time range of another
+ * composite action. Only top-level (directly called from workflow) composite
+ * actions should be matched with Jobs API steps.
+ *
+ * @param compositeBlocks - Array of composite action log blocks, sorted by start time
+ * @returns Array of top-level composite action log blocks only
+ */
+export const filterNestedCompositeBlocks = (
+  compositeBlocks: LogBlock[],
+): LogBlock[] => {
+  if (compositeBlocks.length <= 1) return compositeBlocks;
+
+  const topLevelBlocks: LogBlock[] = [];
+  let currentParentEnd: Date | null = null;
+
+  for (const block of compositeBlocks) {
+    // If we're within a parent composite's time range, this is a nested composite
+    if (currentParentEnd !== null && block.startedAt < currentParentEnd) {
+      // Skip this nested composite action
+      continue;
+    }
+
+    // This is a top-level composite action
+    topLevelBlocks.push(block);
+    // Update the parent end time
+    currentParentEnd = block.completedAt;
+  }
+
+  return topLevelBlocks;
+};
+
+/**
  * Parse job logs and map composite action inner steps to their parent steps.
  * Uses log blocks to detect composite actions (by ./.github/actions/ pattern)
  * and maps them to Jobs API steps using timestamps.
@@ -79,8 +112,14 @@ export const parseCompositeActionsFromLogs = (
     );
 
     // Find composite action log blocks and collect them
-    const compositeLogBlocks = sortedBlocks.filter((block) =>
+    const allCompositeLogBlocks = sortedBlocks.filter((block) =>
       isCompositeLogBlock(block.name)
+    );
+
+    // Filter out nested composite actions
+    // Only keep top-level composites that directly correspond to Jobs API steps
+    const compositeLogBlocks = filterNestedCompositeBlocks(
+      allCompositeLogBlocks,
     );
 
     // Match composite log blocks with Jobs API steps
@@ -146,9 +185,15 @@ const findMatchingStepExcluding = (
   excludeStepNumbers: Set<number>,
   logBlockIndex: number,
   totalCompositeLogBlocks: number,
-): { step: NonNullable<WorkflowJobs[0]["steps"]>[0]; index: number } | undefined => {
+):
+  | { step: NonNullable<WorkflowJobs[0]["steps"]>[0]; index: number }
+  | undefined => {
   // Find all candidate steps within the time tolerance
-  const candidates: { step: NonNullable<WorkflowJobs[0]["steps"]>[0]; index: number; diff: number }[] = [];
+  const candidates: {
+    step: NonNullable<WorkflowJobs[0]["steps"]>[0];
+    index: number;
+    diff: number;
+  }[] = [];
 
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
@@ -182,7 +227,10 @@ const findMatchingStepExcluding = (
     // Try to pick the candidate at the relative position
     // This helps when multiple composite actions start in the same second
     const relativeIndex = Math.min(logBlockIndex, candidates.length - 1);
-    return { step: candidates[relativeIndex].step, index: candidates[relativeIndex].index };
+    return {
+      step: candidates[relativeIndex].step,
+      index: candidates[relativeIndex].index,
+    };
   }
 
   return { step: candidates[0].step, index: candidates[0].index };
