@@ -41,9 +41,21 @@ export const findRepoLocalCompositeSteps = (
   return result;
 };
 
+// Pattern to detect repo-local composite action in log block name
+// e.g., "./.github/actions/prepare"
+const REPO_LOCAL_COMPOSITE_LOG_NAME_PATTERN = /^\.\/\.github\/actions\//;
+
+/**
+ * Check if a log block name is a repo-local composite action.
+ */
+const isCompositeLogBlock = (blockName: string): boolean => {
+  return REPO_LOCAL_COMPOSITE_LOG_NAME_PATTERN.test(blockName);
+};
+
 /**
  * Parse job logs and map composite action inner steps to their parent steps.
- * Uses Jobs API step times to find inner steps within log blocks.
+ * Uses log blocks to detect composite actions (by ./.github/actions/ pattern)
+ * and maps them to Jobs API steps using timestamps.
  * Returns a map of job ID to array of CompositeActionStep.
  */
 export const parseCompositeActionsFromLogs = (
@@ -61,12 +73,37 @@ export const parseCompositeActionsFromLogs = (
     // Parse all log blocks
     const logBlocks = parseLogBlocks(logText);
 
-    // Find composite steps in this job
-    const compositeSteps: CompositeActionStep[] = [];
+    // Sort log blocks by start time
+    const sortedBlocks = [...logBlocks].sort(
+      (a, b) => a.startedAt.getTime() - b.startedAt.getTime(),
+    );
 
-    for (let stepIdx = 0; stepIdx < job.steps.length; stepIdx++) {
-      const step = job.steps[stepIdx];
-      if (!isRepoLocalCompositeStep(step.name)) continue;
+    // Find composite action log blocks and collect them
+    const compositeLogBlocks = sortedBlocks.filter((block) =>
+      isCompositeLogBlock(block.name)
+    );
+
+    // Match composite log blocks with Jobs API steps
+    // Strategy: For each composite log block, find the best matching step
+    // considering timestamp proximity and avoiding already-matched steps
+    const compositeSteps: CompositeActionStep[] = [];
+    const matchedStepNumbers = new Set<number>();
+
+    for (let blockIdx = 0; blockIdx < compositeLogBlocks.length; blockIdx++) {
+      const block = compositeLogBlocks[blockIdx];
+      // Find the matching Jobs API step by timestamp
+      // Exclude already matched steps
+      const match = findMatchingStepExcluding(
+        job.steps,
+        block.startedAt,
+        matchedStepNumbers,
+        blockIdx,
+        compositeLogBlocks.length,
+      );
+      if (!match) continue;
+
+      const { step: parentStep, index: stepIdx } = match;
+      matchedStepNumbers.add(parentStep.number);
 
       // Find the next step's started_at time to use as end boundary
       const nextStep = job.steps[stepIdx + 1];
@@ -75,15 +112,15 @@ export const parseCompositeActionsFromLogs = (
       // Find inner steps from log blocks that fall within this step's time window
       const innerSteps = findInnerStepsFromLogs(
         logBlocks,
-        step.started_at,
-        step.name,
+        parentStep.started_at,
+        block.name, // Use log block name (contains ./.github/actions/...)
         nextStepStartedAt,
       );
 
       if (innerSteps.length > 0) {
         compositeSteps.push({
-          parentStepName: step.name,
-          parentStepNumber: step.number,
+          parentStepName: parentStep.name,
+          parentStepNumber: parentStep.number,
           innerSteps,
         });
       }
@@ -98,6 +135,60 @@ export const parseCompositeActionsFromLogs = (
 };
 
 /**
+ * Find the Jobs API step that corresponds to a log block by matching timestamps.
+ * When multiple steps have the same second, uses the step order to match
+ * with the log block order.
+ * Excludes steps that are already matched.
+ */
+const findMatchingStepExcluding = (
+  steps: NonNullable<WorkflowJobs[0]["steps"]>,
+  logBlockStartTime: Date,
+  excludeStepNumbers: Set<number>,
+  logBlockIndex: number,
+  totalCompositeLogBlocks: number,
+): { step: NonNullable<WorkflowJobs[0]["steps"]>[0]; index: number } | undefined => {
+  // Find all candidate steps within the time tolerance
+  const candidates: { step: NonNullable<WorkflowJobs[0]["steps"]>[0]; index: number; diff: number }[] = [];
+
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    if (!step.started_at) continue;
+    if (excludeStepNumbers.has(step.number)) continue;
+
+    const stepStart = new Date(step.started_at);
+    const diff = Math.abs(logBlockStartTime.getTime() - stepStart.getTime());
+
+    // Allow up to 2 seconds tolerance (log timestamps have millisecond precision,
+    // Jobs API timestamps are truncated to seconds)
+    if (diff <= 2000) {
+      candidates.push({ step, index: i, diff });
+    }
+  }
+
+  if (candidates.length === 0) return undefined;
+
+  // Sort candidates by:
+  // 1. Time difference (closest first)
+  // 2. Step index (lower first, to preserve order)
+  candidates.sort((a, b) => {
+    if (a.diff !== b.diff) return a.diff - b.diff;
+    return a.index - b.index;
+  });
+
+  // If all candidates have the same time difference (same second),
+  // and there are multiple composite log blocks, use the relative position
+  const allSameDiff = candidates.every((c) => c.diff === candidates[0].diff);
+  if (allSameDiff && candidates.length > 1 && totalCompositeLogBlocks > 1) {
+    // Try to pick the candidate at the relative position
+    // This helps when multiple composite actions start in the same second
+    const relativeIndex = Math.min(logBlockIndex, candidates.length - 1);
+    return { step: candidates[relativeIndex].step, index: candidates[relativeIndex].index };
+  }
+
+  return { step: candidates[0].step, index: candidates[0].index };
+};
+
+/**
  * Find inner steps from log blocks that fall within the parent step's time window.
  * Excludes the composite action's own log block.
  * Uses the next step's start time as end boundary.
@@ -105,57 +196,39 @@ export const parseCompositeActionsFromLogs = (
  * Note: The completedAt of each inner step is recalculated to be the startedAt
  * of the next inner step (or end of composite), because ##[endgroup] timestamp
  * only marks the end of the group header, not the actual action execution.
+ *
+ * @param logBlocks - All parsed log blocks
+ * @param parentStartedAt - Jobs API step's started_at timestamp
+ * @param compositeBlockName - The composite action's log block name (e.g., "./.github/actions/prepare")
+ * @param nextStepStartedAt - Jobs API next step's started_at timestamp (for end boundary)
  */
 const findInnerStepsFromLogs = (
   logBlocks: LogBlock[],
   parentStartedAt: string | null | undefined,
-  _parentName: string,
+  compositeBlockName: string,
   nextStepStartedAt: string | null | undefined,
 ): ParsedLogStep[] => {
   if (!parentStartedAt) return [];
 
-  // Find the composite action's log block to get precise start time
+  // Find this specific composite action's log block
   const compositeLogBlock = logBlocks.find((block) =>
-    block.name.includes(".github/actions")
+    block.name === compositeBlockName
   );
   if (!compositeLogBlock) return [];
 
   const startTime = compositeLogBlock.startedAt;
 
-  // Use next step's log block start time as end boundary if available
-  // This is more accurate than Jobs API timestamps
-  let endTime: Date;
-  if (nextStepStartedAt) {
-    // Find a log block that starts after composite and might be the next step.
-    // We look for shell/script steps (no "/" in name) that indicate the composite has ended.
-    // Action blocks like "denoland/setup-deno@v1" contain "/" and are inner steps.
-    // ".github/actions" blocks are composite actions themselves.
-    const nextStepLogBlock = logBlocks.find((block) => {
-      const isCompositeAction = block.name.includes(".github/actions");
-      const isExternalAction = block.name.includes("/"); // e.g., "owner/action@v1"
-      const isShellStep = !isCompositeAction && !isExternalAction;
-      return block.startedAt > startTime && isShellStep;
-    });
-    if (nextStepLogBlock) {
-      endTime = nextStepLogBlock.startedAt;
-    } else {
-      endTime = new Date(nextStepStartedAt);
-    }
-  } else {
-    // Last step - use a large future time
-    endTime = new Date("2100-01-01T00:00:00Z");
-  }
+  // End boundary: use the next Jobs API step's started_at
+  // This is the most reliable way to determine when the composite action ends
+  const endTime = nextStepStartedAt
+    ? new Date(nextStepStartedAt)
+    : new Date("2100-01-01T00:00:00Z");
 
   const candidateBlocks: LogBlock[] = [];
 
   for (const block of logBlocks) {
-    // Skip if this is the composite action's own block
+    // Skip if this is any composite action's block (including this one)
     if (block.name.includes(".github/actions")) {
-      continue;
-    }
-
-    // Skip if this is a checkout action (not part of composite)
-    if (block.name.startsWith("actions/checkout@")) {
       continue;
     }
 

@@ -1,24 +1,10 @@
 import type { Github, WorkflowJobs } from "@kesin11/gha-utils";
 import type { JobLogs } from "./types.ts";
 
-// Pattern to detect repo-local composite action usage in step name
-// GitHub API returns step names like "Run /./.github/actions/setup-deno-with-cache"
-// Note: The path may start with "/" or without
-const REPO_LOCAL_COMPOSITE_PATTERN = /^Run \/?\.\/.github\/actions\//;
-
 /**
- * Check if a job likely contains a repo-local composite action step.
- * This is used to minimize API calls by only fetching logs for relevant jobs.
- */
-export const hasRepoLocalCompositeStep = (
-  job: WorkflowJobs[0],
-): boolean => {
-  if (!job.steps) return false;
-  return job.steps.some((step) => REPO_LOCAL_COMPOSITE_PATTERN.test(step.name));
-};
-
-/**
- * Fetch job logs for jobs that contain repo-local composite actions.
+ * Fetch job logs for all jobs in the workflow.
+ * Composite actions can have custom names in the workflow, so we need to
+ * fetch logs and parse them to detect composite actions.
  * Returns a Map keyed by job ID.
  */
 export const fetchJobLogs = async (
@@ -29,11 +15,12 @@ export const fetchJobLogs = async (
 ): Promise<JobLogs> => {
   const jobLogs: JobLogs = new Map();
 
-  // Filter jobs that likely contain repo-local composite actions
-  const relevantJobs = workflowJobs.filter(hasRepoLocalCompositeStep);
+  // Fetch logs for all jobs (composite actions may have custom names,
+  // so we can't filter by step name pattern alone)
+  for (const job of workflowJobs) {
+    // Skip jobs without steps
+    if (!job.steps || job.steps.length === 0) continue;
 
-  // Fetch logs for each relevant job
-  for (const job of relevantJobs) {
     try {
       const logs = await fetchSingleJobLogs(client, owner, repo, job.id);
       if (logs) {
