@@ -53,6 +53,29 @@ const isCompositeLogBlock = (blockName: string): boolean => {
 };
 
 /**
+ * Check if a log block name represents an action invocation.
+ * Action invocations have a "/" in the name (e.g., "actions/checkout@v4", "owner/action@version").
+ * This filters out:
+ * - Shell commands (e.g., "Run npm install", "Run echo ...")
+ * - User-defined groups (e.g., "Build", "Unit Tests")
+ * - Variable expansion commands (e.g., "${GITHUB_ACTION_PATH}/scripts/...")
+ */
+const isActionInvocationBlock = (blockName: string): boolean => {
+  // Action names follow the pattern: owner/repo@version or owner/repo@sha
+  // Examples: "actions/checkout@v4", "denoland/setup-deno@v1"
+  // Exclude blocks starting with "Run " as these are shell commands
+  if (blockName.startsWith("Run ")) {
+    return false;
+  }
+  // Exclude variable expansion patterns
+  if (blockName.includes("${")) {
+    return false;
+  }
+  // Must contain "/" to be an action reference
+  return blockName.includes("/");
+};
+
+/**
  * Filter out nested composite action log blocks.
  * A nested composite action is one that starts within the time range of another
  * composite action. Only top-level (directly called from workflow) composite
@@ -86,6 +109,37 @@ export const filterNestedCompositeBlocks = (
 };
 
 /**
+ * Filter composite log blocks to only those that correspond to Jobs API steps.
+ * A composite log block is considered top-level (not nested) if its start time
+ * is within 2 seconds of any Jobs API step's start time.
+ *
+ * This approach works because:
+ * - Top-level composite actions correspond to Jobs API steps
+ * - Nested composite actions (called from within another composite) don't have
+ *   their own Jobs API step entry
+ *
+ * @param compositeBlocks - Array of composite action log blocks
+ * @param steps - Jobs API steps for the job
+ * @returns Array of composite log blocks that match Jobs API steps
+ */
+const filterCompositeBlocksByJobsApiSteps = (
+  compositeBlocks: LogBlock[],
+  steps: NonNullable<WorkflowJobs[0]["steps"]>,
+): LogBlock[] => {
+  const stepStartTimes = steps
+    .filter((s) => s.started_at)
+    .map((s) => new Date(s.started_at!).getTime());
+
+  return compositeBlocks.filter((block) => {
+    const blockTime = block.startedAt.getTime();
+    // Check if any Jobs API step started within 2 seconds of this block
+    return stepStartTimes.some((stepTime) =>
+      Math.abs(blockTime - stepTime) <= 2000
+    );
+  });
+};
+
+/**
  * Parse job logs and map composite action inner steps to their parent steps.
  * Uses log blocks to detect composite actions (by ./.github/actions/ pattern)
  * and maps them to Jobs API steps using timestamps.
@@ -116,10 +170,12 @@ export const parseCompositeActionsFromLogs = (
       isCompositeLogBlock(block.name)
     );
 
-    // Filter out nested composite actions
-    // Only keep top-level composites that directly correspond to Jobs API steps
-    const compositeLogBlocks = filterNestedCompositeBlocks(
+    // Filter to only top-level composites that match Jobs API steps
+    // A composite log block is top-level if its start time is within 2 seconds
+    // of a Jobs API step's start time
+    const compositeLogBlocks = filterCompositeBlocksByJobsApiSteps(
       allCompositeLogBlocks,
+      job.steps,
     );
 
     // Match composite log blocks with Jobs API steps
@@ -135,6 +191,7 @@ export const parseCompositeActionsFromLogs = (
       const match = findMatchingStepExcluding(
         job.steps,
         block.startedAt,
+        block.name,
         matchedStepNumbers,
         blockIdx,
         compositeLogBlocks.length,
@@ -146,7 +203,19 @@ export const parseCompositeActionsFromLogs = (
 
       // Find the next step's started_at time to use as end boundary
       const nextStep = job.steps[stepIdx + 1];
-      const nextStepStartedAt = nextStep?.started_at;
+      let nextStepStartedAt = nextStep?.started_at;
+
+      // If next step starts at the same second (or earlier due to timestamp truncation),
+      // use the next composite log block's start time as end boundary instead
+      if (nextStepStartedAt) {
+        const compositeBlockTime = block.startedAt.getTime();
+        const nextStepTime = new Date(nextStepStartedAt).getTime();
+        if (nextStepTime <= compositeBlockTime) {
+          // Use next composite log block's start time, or undefined if this is the last one
+          const nextCompositeBlock = compositeLogBlocks[blockIdx + 1];
+          nextStepStartedAt = nextCompositeBlock?.startedAt.toISOString();
+        }
+      }
 
       // Find inner steps from log blocks that fall within this step's time window
       const innerSteps = findInnerStepsFromLogs(
@@ -175,13 +244,15 @@ export const parseCompositeActionsFromLogs = (
 
 /**
  * Find the Jobs API step that corresponds to a log block by matching timestamps.
- * When multiple steps have the same second, uses the step order to match
- * with the log block order.
+ * When multiple steps have the same second, uses additional heuristics:
+ * 1. Prefer steps whose name matches the composite action pattern
+ * 2. Use step order to match with log block order
  * Excludes steps that are already matched.
  */
 const findMatchingStepExcluding = (
   steps: NonNullable<WorkflowJobs[0]["steps"]>,
   logBlockStartTime: Date,
+  logBlockName: string,
   excludeStepNumbers: Set<number>,
   logBlockIndex: number,
   totalCompositeLogBlocks: number,
@@ -193,6 +264,7 @@ const findMatchingStepExcluding = (
     step: NonNullable<WorkflowJobs[0]["steps"]>[0];
     index: number;
     diff: number;
+    isCompositeByName: boolean;
   }[] = [];
 
   for (let i = 0; i < steps.length; i++) {
@@ -206,26 +278,56 @@ const findMatchingStepExcluding = (
     // Allow up to 2 seconds tolerance (log timestamps have millisecond precision,
     // Jobs API timestamps are truncated to seconds)
     if (diff <= 2000) {
-      candidates.push({ step, index: i, diff });
+      candidates.push({
+        step,
+        index: i,
+        diff,
+        isCompositeByName: isRepoLocalCompositeStep(step.name),
+      });
     }
   }
 
   if (candidates.length === 0) return undefined;
 
   // Sort candidates by:
-  // 1. Time difference (closest first)
-  // 2. Step index (lower first, to preserve order)
+  // 1. Steps with composite action name pattern first (isCompositeByName)
+  // 2. Time difference (closest first)
+  // 3. Step index (lower first, to preserve order)
   candidates.sort((a, b) => {
+    // Prefer steps that match the composite action name pattern
+    if (a.isCompositeByName !== b.isCompositeByName) {
+      return a.isCompositeByName ? -1 : 1;
+    }
     if (a.diff !== b.diff) return a.diff - b.diff;
     return a.index - b.index;
   });
+
+  // If the best candidate has a composite name pattern, use it directly
+  if (candidates[0].isCompositeByName) {
+    return { step: candidates[0].step, index: candidates[0].index };
+  }
+
+  // No candidate has composite name pattern - this means the step has a custom name
+  // (e.g., "Run Tests" instead of "Run ./.github/actions/run-tests")
+  // Use heuristics to find the best match
 
   // If all candidates have the same time difference (same second),
   // and there are multiple composite log blocks, use the relative position
   const allSameDiff = candidates.every((c) => c.diff === candidates[0].diff);
   if (allSameDiff && candidates.length > 1 && totalCompositeLogBlocks > 1) {
-    // Try to pick the candidate at the relative position
-    // This helps when multiple composite actions start in the same second
+    // Extract action name from log block for better matching
+    // e.g., "./.github/actions/run-tests" -> "run-tests"
+    const actionName = extractActionNameFromLogBlock(logBlockName);
+
+    // Try to find a candidate whose name resembles the action name
+    const matchingCandidate = candidates.find((c) =>
+      stepNameMatchesActionName(c.step.name, actionName)
+    );
+    if (matchingCandidate) {
+      return { step: matchingCandidate.step, index: matchingCandidate.index };
+    }
+
+    // Fallback: use relative position
     const relativeIndex = Math.min(logBlockIndex, candidates.length - 1);
     return {
       step: candidates[relativeIndex].step,
@@ -234,6 +336,57 @@ const findMatchingStepExcluding = (
   }
 
   return { step: candidates[0].step, index: candidates[0].index };
+};
+
+/**
+ * Extract the action name from a log block name.
+ * e.g., "./.github/actions/run-tests" -> "run-tests"
+ */
+const extractActionNameFromLogBlock = (logBlockName: string): string => {
+  const match = logBlockName.match(/^\.\/\.github\/actions\/(.+)$/);
+  return match ? match[1] : logBlockName;
+};
+
+/**
+ * Check if a step name resembles an action name.
+ * Handles transformations like "run-tests" -> "Run Tests"
+ * or "calculate-vars" -> "Calculate Release Variables"
+ */
+const stepNameMatchesActionName = (
+  stepName: string,
+  actionName: string,
+): boolean => {
+  // Normalize for comparison: lowercase, remove hyphens/spaces/underscores
+  const normalizeForComparison = (s: string) =>
+    s.toLowerCase().replace(/[-_\s]/g, "");
+
+  const normalizedStep = normalizeForComparison(stepName);
+  const normalizedAction = normalizeForComparison(actionName);
+
+  // Check if step contains the full action name (simple case)
+  if (normalizedStep.includes(normalizedAction)) {
+    return true;
+  }
+
+  // Split both names into words and compare using prefix matching
+  // e.g., "calculate-vars" -> ["calculate", "vars"]
+  // "Calculate Release Variables" -> ["calculate", "release", "variables"]
+  // Compare first 3 chars: "cal" == "cal", "var" == "var" -> matches
+  const actionWords = actionName.toLowerCase().split(/[-_]/);
+  const stepWords = stepName.toLowerCase().split(/[-_\s]+/);
+
+  // Prefix length for fuzzy matching (handles abbreviations like "vars" -> "variables")
+  const prefixLen = 3;
+
+  // Each action word's prefix must match some step word's prefix
+  const allWordsMatch = actionWords.every((actionWord) => {
+    const actionPrefix = actionWord.slice(0, prefixLen);
+    return stepWords.some((stepWord) =>
+      stepWord.slice(0, prefixLen) === actionPrefix
+    );
+  });
+
+  return allWordsMatch;
 };
 
 /**
@@ -277,6 +430,18 @@ const findInnerStepsFromLogs = (
   for (const block of logBlocks) {
     // Skip if this is any composite action's block (including this one)
     if (block.name.includes(".github/actions")) {
+      continue;
+    }
+
+    // Only include action invocations (blocks with "/" in the name)
+    // This filters out:
+    // - Shell commands like "Run echo ..." or "npm run ..."
+    // - User-defined groups like "Build", "Unit Tests"
+    // Examples of valid action names:
+    // - "actions/checkout@v4"
+    // - "denoland/setup-deno@v1"
+    // - "nick-fields/retry@..."
+    if (!isActionInvocationBlock(block.name)) {
       continue;
     }
 
