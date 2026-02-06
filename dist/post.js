@@ -44323,14 +44323,14 @@ var require_cwd = __commonJS({
   }
 });
 
-// npm/node_modules/isexe/dist/cjs/posix.js
+// npm/node_modules/isexe/dist/commonjs/posix.js
 var require_posix = __commonJS({
-  "npm/node_modules/isexe/dist/cjs/posix.js"(exports2) {
+  "npm/node_modules/isexe/dist/commonjs/posix.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.sync = exports2.isexe = void 0;
-    var fs_1 = require("fs");
-    var promises_1 = require("fs/promises");
+    var node_fs_1 = require("node:fs");
+    var promises_1 = require("node:fs/promises");
     var isexe = async (path, options = {}) => {
       const { ignoreErrors = false } = options;
       try {
@@ -44346,7 +44346,7 @@ var require_posix = __commonJS({
     var sync = (path, options = {}) => {
       const { ignoreErrors = false } = options;
       try {
-        return checkStat((0, fs_1.statSync)(path), options);
+        return checkStat((0, node_fs_1.statSync)(path), options);
       } catch (e) {
         const er = e;
         if (ignoreErrors || er.code === "EACCES")
@@ -44376,14 +44376,14 @@ var require_posix = __commonJS({
   }
 });
 
-// npm/node_modules/isexe/dist/cjs/win32.js
+// npm/node_modules/isexe/dist/commonjs/win32.js
 var require_win32 = __commonJS({
-  "npm/node_modules/isexe/dist/cjs/win32.js"(exports2) {
+  "npm/node_modules/isexe/dist/commonjs/win32.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.sync = exports2.isexe = void 0;
-    var fs_1 = require("fs");
-    var promises_1 = require("fs/promises");
+    var node_fs_1 = require("node:fs");
+    var promises_1 = require("node:fs/promises");
     var isexe = async (path, options = {}) => {
       const { ignoreErrors = false } = options;
       try {
@@ -44399,7 +44399,7 @@ var require_win32 = __commonJS({
     var sync = (path, options = {}) => {
       const { ignoreErrors = false } = options;
       try {
-        return checkStat((0, fs_1.statSync)(path), path, options);
+        return checkStat((0, node_fs_1.statSync)(path), path, options);
       } catch (e) {
         const er = e;
         if (ignoreErrors || er.code === "EACCES")
@@ -44414,8 +44414,8 @@ var require_win32 = __commonJS({
       if (peSplit.indexOf("") !== -1) {
         return true;
       }
-      for (let i = 0; i < peSplit.length; i++) {
-        const p = peSplit[i].toLowerCase();
+      for (const pes of peSplit) {
+        const p = pes.toLowerCase();
         const ext = path.substring(path.length - p.length).toLowerCase();
         if (p && ext === p) {
           return true;
@@ -44427,17 +44427,17 @@ var require_win32 = __commonJS({
   }
 });
 
-// npm/node_modules/isexe/dist/cjs/options.js
+// npm/node_modules/isexe/dist/commonjs/options.js
 var require_options = __commonJS({
-  "npm/node_modules/isexe/dist/cjs/options.js"(exports2) {
+  "npm/node_modules/isexe/dist/commonjs/options.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
   }
 });
 
-// npm/node_modules/isexe/dist/cjs/index.js
-var require_cjs = __commonJS({
-  "npm/node_modules/isexe/dist/cjs/index.js"(exports2) {
+// npm/node_modules/isexe/dist/commonjs/index.js
+var require_commonjs = __commonJS({
+  "npm/node_modules/isexe/dist/commonjs/index.js"(exports2) {
     "use strict";
     var __createBinding = exports2 && exports2.__createBinding || (Object.create ? (function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
@@ -44457,15 +44457,25 @@ var require_cjs = __commonJS({
     }) : function(o, v) {
       o["default"] = v;
     });
-    var __importStar = exports2 && exports2.__importStar || function(mod) {
-      if (mod && mod.__esModule) return mod;
-      var result = {};
-      if (mod != null) {
-        for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-      }
-      __setModuleDefault(result, mod);
-      return result;
-    };
+    var __importStar = exports2 && exports2.__importStar || /* @__PURE__ */ (function() {
+      var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function(o2) {
+          var ar = [];
+          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
+          return ar;
+        };
+        return ownKeys(o);
+      };
+      return function(mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) {
+          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        }
+        __setModuleDefault(result, mod);
+        return result;
+      };
+    })();
     var __exportStar = exports2 && exports2.__exportStar || function(m, exports3) {
       for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports3, p)) __createBinding(exports3, m, p);
     };
@@ -44486,7 +44496,7 @@ var require_cjs = __commonJS({
 // npm/node_modules/which/lib/index.js
 var require_lib2 = __commonJS({
   "npm/node_modules/which/lib/index.js"(exports2, module2) {
-    var { isexe, sync: isexeSync } = require_cjs();
+    var { isexe, sync: isexeSync } = require_commonjs();
     var { join, delimiter, sep: sep2, posix } = require("path");
     var isWindows = process.platform === "win32";
     var rSlash = new RegExp(`[${posix.sep}${sep2 === posix.sep ? "" : sep2}]`.replace(/(\\)/g, "\\$1"));
