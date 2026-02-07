@@ -38,7 +38,6 @@ const workflowRun = await client.fetchWorkflowRun(
   runUrl.runId,
   runUrl.runAttempt,
 );
-// const workflowJobs = await client.fetchWorkflowJobs([workflowRun]);
 const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
 
 let jobs = workflowJobs;

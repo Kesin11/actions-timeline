@@ -24,5 +24,4 @@ export type StepConclusion =
 
 export type GanttOptions = {
   showWaitingRunner?: boolean;
-  showCompositeActions?: boolean;
 };

@@ -31,8 +31,8 @@ type SubStep = {
   conclusion: string | null;
 };
 
-// Fetch file content via Octokit, decoding base64 with newline removal
-// Workaround for gha-utils FileContent constructor failing on base64 with newlines
+// Fetch file content via Octokit, decoding base64 with newline removal.
+// Workaround: gha-utils FileContent constructor fails on base64 with newlines.
 async function fetchFileContent(
   client: Github,
   owner: string,
@@ -61,17 +61,16 @@ async function fetchFileContent(
   return undefined;
 }
 
-// Fetch workflow YAML and parse it into WorkflowModel
+// Fetch workflow YAML and parse it into a WorkflowModel.
 async function fetchWorkflowModel(
   client: Github,
   workflowRun: WorkflowRun,
 ): Promise<WorkflowModel | undefined> {
-  // Use fetchWorkflowFiles which handles path/ref extraction from WorkflowRun
   const fileContents = await client.fetchWorkflowFiles([workflowRun]);
   const fileContent = fileContents[0];
   if (fileContent) return new WorkflowModel(fileContent);
 
-  // Fallback: fetch directly with newline-safe base64 decoding
+  // Fallback: fetch directly with newline-safe base64 decoding.
   const owner = workflowRun.repository.owner.login;
   const repo = workflowRun.repository.name;
   const content = await fetchFileContent(
@@ -83,30 +82,27 @@ async function fetchWorkflowModel(
   );
   if (!content) return undefined;
 
-  // Create a minimal FileContent-like object for WorkflowModel
-  // WorkflowModel constructor needs fileContent.content (string) and fileContent.raw.html_url
+  // Build a minimal FileContent to avoid the base64 decoding issue in the constructor.
   const { FileContent } = await import("@kesin11/gha-utils");
-  // Build a fake FileContentResponse to construct FileContent without the base64 issue
   const fakeResponse = {
     type: "file" as const,
     size: content.length,
     name: workflowRun.path.split("/").pop() ?? "",
     path: workflowRun.path,
-    content: "", // Not used after construction - we override below
+    content: "",
     sha: "",
     url: "",
     git_url: null,
     html_url: null,
     download_url: null,
   };
-  // Create FileContent but override the content with our properly decoded string
   const fc = Object.create(FileContent.prototype);
   fc.raw = fakeResponse;
   fc.content = content;
   return new WorkflowModel(fc);
 }
 
-// Identify composite steps in each job by matching API steps against YAML model
+// Identify composite steps in each job by matching API steps against the YAML model.
 function identifyCompositeSteps(
   workflowJobs: WorkflowJobs,
   workflowModel: WorkflowModel,
@@ -125,7 +121,7 @@ function identifyCompositeSteps(
       // Skip Pre/Post steps - only expand the main "Run" execution step
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       let stepModel = StepModel.match(jobModel.steps, apiStep.name);
-      // GitHub API sometimes returns local action paths with extra "/" prefix
+      // GitHub API sometimes prefixes local action paths with an extra "/".
       // e.g. "Run /./.github/actions/foo" instead of "Run ./.github/actions/foo"
       if (!stepModel) {
         const normalized = apiStep.name.replace(
@@ -155,8 +151,8 @@ function identifyCompositeSteps(
   return result;
 }
 
-// Fetch composite action's action.yml, parse it and return the step count.
-// Returns undefined if the file can't be fetched or parsed.
+// Fetch a composite action's action.yml and return the number of steps.
+// Returns undefined if the file cannot be fetched, parsed, or contains nested local composites.
 async function fetchCompositeActionStepCount(
   client: Github,
   owner: string,
@@ -190,9 +186,7 @@ async function fetchCompositeActionStepCount(
     if (
       parsed?.runs?.using === "composite" && Array.isArray(parsed.runs.steps)
     ) {
-      // If any step uses a nested local composite (uses: ./...), step count
-      // can't predict the actual number of log blocks. Return undefined to
-      // fall back to time-based extraction.
+      // Nested local composites make step count unpredictable; skip expansion.
       const hasNestedLocal = parsed.runs.steps.some(
         (step) => typeof step.uses === "string" && step.uses.startsWith("./"),
       );
@@ -205,7 +199,7 @@ async function fetchCompositeActionStepCount(
   return undefined;
 }
 
-// Fetch job logs via GitHub API (using redirect to download URL)
+// Fetch job logs via GitHub API.
 async function fetchJobLog(
   token: string,
   baseUrl: string,
@@ -238,10 +232,10 @@ async function fetchJobLog(
   }
 }
 
-// Parse ##[group] blocks from job log text to extract step boundaries
+// Parse ##[group] blocks from job log text to extract step boundaries.
+// Log line format: "2024-01-01T00:00:00.0000000Z ##[group]Step name"
 export function parseLogBlocks(logText: string): LogBlock[] {
   const blocks: LogBlock[] = [];
-  // Log lines format: "2024-01-01T00:00:00.0000000Z ##[group]Step name"
   const groupRegex =
     /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+##\[group\](.+)$/;
 
@@ -259,11 +253,7 @@ export function parseLogBlocks(logText: string): LogBlock[] {
 }
 
 // Extract sub-steps from log blocks for a composite action step.
-// Uses position-based extraction: finds the composite header by path match,
-// then takes blocks using expectedStepCount from the action.yml.
-//
-// Limitation: Composite actions containing nested local composites (uses: ./...)
-// are not supported — expectedStepCount will be undefined and expansion is skipped.
+// Finds the composite header by path match, then takes blocks using expectedStepCount.
 export function extractSubSteps(
   logBlocks: LogBlock[],
   compositeStartedAt: string,
@@ -278,11 +268,9 @@ export function extractSubSteps(
   }
 
   const compositeStart = new Date(compositeStartedAt).getTime();
-  // GitHub API timestamps have second precision (truncated), while log timestamps
-  // have millisecond precision. Use generous buffer for header search.
+  // Add 1s buffer: API timestamps have second precision, logs have millisecond precision.
   const compositeEnd = new Date(compositeCompletedAt).getTime() + 1000;
 
-  // Find the composite header block by matching the uses path in the full log
   let headerGlobalIndex = -1;
   if (compositeUsesPath) {
     const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
@@ -299,11 +287,8 @@ export function extractSubSteps(
     return [];
   }
 
-  // Collect sub-step blocks after the header.
-  // Each YAML step in the composite emits a primary ##[group] block starting
-  // with "Run ", but some actions (e.g. setup-node) also emit auxiliary blocks
-  // (e.g. "Environment details"). We count primary blocks up to expectedStepCount,
-  // including any auxiliary blocks in between and after.
+  // Collect sub-step blocks after the header. Primary blocks start with "Run ";
+  // auxiliary blocks (e.g. "Environment details") are included between primaries.
   const subStepBlocks: LogBlock[] = [];
   let primaryCount = 0;
   for (let i = headerGlobalIndex + 1; i < logBlocks.length; i++) {
@@ -321,20 +306,19 @@ export function extractSubSteps(
 
   return subStepBlocks.map((block, i): SubStep => {
     const startedAt = block.startedAt.toISOString();
-    // For the last sub-step, use max(compositeCompletedAt, startedAt) to avoid
-    // negative duration when API's truncated second-precision time < log's ms time.
+    const isLast = i === subStepBlocks.length - 1;
+
     let completedAt: string;
-    if (i < subStepBlocks.length - 1) {
+    if (!isLast) {
       completedAt = subStepBlocks[i + 1].startedAt.toISOString();
     } else {
+      // Clamp to avoid negative duration when API's truncated timestamp < log's ms timestamp.
       const compositeEndTime = new Date(compositeCompletedAt).getTime();
-      const blockStartTime = block.startedAt.getTime();
-      completedAt = blockStartTime > compositeEndTime
+      completedAt = block.startedAt.getTime() > compositeEndTime
         ? startedAt
         : compositeCompletedAt;
     }
 
-    // Remove "Run " prefix from sub-step names for cleaner display
     const name = block.name.replace(/^Run /, "");
 
     return {
@@ -361,14 +345,12 @@ export async function expandCompositeSteps(
   workflowRun: WorkflowRun,
   workflowJobs: WorkflowJobs,
 ): Promise<WorkflowJobs> {
-  // Step 1: Fetch and parse workflow YAML
   const workflowModel = await fetchWorkflowModel(client, workflowRun);
   if (!workflowModel) {
     console.warn("Could not fetch workflow YAML, skipping composite expansion");
     return workflowJobs;
   }
 
-  // Step 2: Identify composite steps in each job
   const compositeMap = identifyCompositeSteps(workflowJobs, workflowModel);
   if (compositeMap.size === 0) {
     return workflowJobs;
@@ -378,13 +360,10 @@ export async function expandCompositeSteps(
   const repo = workflowRun.repository.name;
   const ref = workflowRun.head_sha;
 
-  // Step 3: Fetch composite action YAMLs (to validate they are actually composite)
-  // and job logs (only for jobs with composite steps)
   const jobsWithComposites = workflowJobs.filter((job) =>
     compositeMap.has(job.id)
   );
 
-  // Collect unique composite action paths
   const uniqueUsesPathSet = new Set<string>();
   for (const infos of compositeMap.values()) {
     for (const info of infos) {
@@ -393,25 +372,25 @@ export async function expandCompositeSteps(
   }
 
   // Fetch and parse composite action YAMLs to get step counts
-  const compositeYamlPromises = [...uniqueUsesPathSet].map(async (usesPath) => {
-    const stepCount = await fetchCompositeActionStepCount(
-      client,
-      owner,
-      repo,
-      ref,
-      usesPath,
-    );
-    return [usesPath, stepCount] as const;
-  });
-  const compositeYamlResults = await Promise.all(compositeYamlPromises);
-  // Map from usesPath to step count (undefined means fetch/parse failed)
-  const compositeStepCounts = new Map(
-    compositeYamlResults
-      .filter(([_, count]) => count !== undefined)
-      .map(([path, count]) => [path, count!]),
+  const compositeYamlResults = await Promise.all(
+    [...uniqueUsesPathSet].map(async (usesPath) => {
+      const stepCount = await fetchCompositeActionStepCount(
+        client,
+        owner,
+        repo,
+        ref,
+        usesPath,
+      );
+      return [usesPath, stepCount] as const;
+    }),
   );
+  const compositeStepCounts = new Map<string, number>();
+  for (const [path, count] of compositeYamlResults) {
+    if (count !== undefined) {
+      compositeStepCounts.set(path, count);
+    }
+  }
 
-  // Fetch job logs in parallel (only for jobs with composite steps)
   const token = client.token ?? "";
   const baseUrl = client.baseUrl;
   const logPromises = jobsWithComposites.map(async (job) => {
@@ -421,7 +400,6 @@ export async function expandCompositeSteps(
   const logResults = await Promise.all(logPromises);
   const logMap = new Map(logResults);
 
-  // Step 4: Parse logs and expand composite steps
   const expandedJobs: WorkflowJobs = workflowJobs.map((job) => {
     const compositeInfos = compositeMap.get(job.id);
     if (!compositeInfos || !job.steps) return job;
@@ -432,7 +410,6 @@ export async function expandCompositeSteps(
     const logBlocks = parseLogBlocks(logText);
     if (logBlocks.length === 0) return job;
 
-    // Build new steps array, replacing composite steps with sub-steps
     const newSteps: NonNullable<typeof job.steps> = [];
 
     for (let i = 0; i < job.steps.length; i++) {
@@ -470,7 +447,6 @@ export async function expandCompositeSteps(
         continue;
       }
 
-      // Replace composite step with its sub-steps
       for (const subStep of subSteps) {
         newSteps.push({
           ...apiStep,
