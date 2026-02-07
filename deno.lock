@@ -22,7 +22,8 @@
     "jsr:@std/path@1": "1.1.2",
     "jsr:@std/path@^1.1.1": "1.1.2",
     "jsr:@std/text@~1.0.7": "1.0.15",
-    "jsr:@std/yaml@^1.0.5": "1.0.9",
+    "jsr:@std/yaml@^1.0.11": "1.0.11",
+    "jsr:@std/yaml@^1.0.5": "1.0.11",
     "jsr:@ts-morph/bootstrap@0.27": "0.27.0",
     "jsr:@ts-morph/common@0.27": "0.27.0",
     "npm:@actions/core@2.0.3": "2.0.3",
@@ -81,7 +82,7 @@
       "dependencies": [
         "jsr:@std/collections@^1.0.10",
         "jsr:@std/encoding@^1.0.6",
-        "jsr:@std/yaml",
+        "jsr:@std/yaml@^1.0.5",
         "npm:@octokit/plugin-retry",
         "npm:@octokit/plugin-throttling",
         "npm:@octokit/rest",
@@ -125,6 +126,9 @@
     },
     "@std/yaml@1.0.9": {
       "integrity": "6bad3dc766dd85b4b37eabcba81b6aa4eac7a392792ae29abcfb0f90602d55bb"
+    },
+    "@std/yaml@1.0.11": {
+      "integrity": "bd139ce77f2d06cbed3713c8b26d301d2a2e12ecc7986130a268107e212143ee"
     },
     "@ts-morph/bootstrap@0.27.0": {
       "integrity": "b8d7bc8f7942ce853dde4161b28f9aa96769cef3d8eebafb379a81800b9e2448",
@@ -754,6 +758,7 @@
       "jsr:@std/assert@^1.0.13",
       "jsr:@std/collections@^1.1.2",
       "jsr:@std/encoding@^1.0.10",
+      "jsr:@std/yaml@^1.0.11",
       "npm:@actions/core@2.0.3",
       "npm:@actions/github@7.0.0",
       "npm:date-fns@4.1.0",

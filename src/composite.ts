@@ -1,5 +1,7 @@
 import { decodeBase64 } from "@std/encoding";
+import { parse as parseYaml } from "@std/yaml";
 import {
+  type CompositeAction,
   Github,
   JobModel,
   StepModel,
@@ -120,6 +122,8 @@ function identifyCompositeSteps(
     const compositeSteps: CompositeStepInfo[] = [];
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
+      // Skip Pre/Post steps - only expand the main "Run" execution step
+      if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       let stepModel = StepModel.match(jobModel.steps, apiStep.name);
       // GitHub API sometimes returns local action paths with extra "/" prefix
       // e.g. "Run /./.github/actions/foo" instead of "Run ./.github/actions/foo"
@@ -151,34 +155,54 @@ function identifyCompositeSteps(
   return result;
 }
 
-// Fetch composite action's action.yml (with action.yaml fallback)
-async function fetchCompositeActionYaml(
+// Fetch composite action's action.yml, parse it and return the step count.
+// Returns undefined if the file can't be fetched or parsed.
+async function fetchCompositeActionStepCount(
   client: Github,
   owner: string,
   repo: string,
   ref: string,
   usesPath: string,
-): Promise<boolean> {
+): Promise<number | undefined> {
   // usesPath is like "./.github/actions/foo", strip leading "./"
   const basePath = usesPath.replace(/^\.\//, "");
 
-  const yml = await fetchFileContent(
+  let content = await fetchFileContent(
     client,
     owner,
     repo,
     `${basePath}/action.yml`,
     ref,
   );
-  if (yml) return true;
+  if (!content) {
+    content = await fetchFileContent(
+      client,
+      owner,
+      repo,
+      `${basePath}/action.yaml`,
+      ref,
+    );
+  }
+  if (!content) return undefined;
 
-  const yaml = await fetchFileContent(
-    client,
-    owner,
-    repo,
-    `${basePath}/action.yaml`,
-    ref,
-  );
-  return !!yaml;
+  try {
+    const parsed = parseYaml(content) as CompositeAction;
+    if (
+      parsed?.runs?.using === "composite" && Array.isArray(parsed.runs.steps)
+    ) {
+      // If any step uses a nested local composite (uses: ./...), step count
+      // can't predict the actual number of log blocks. Return undefined to
+      // fall back to time-based extraction.
+      const hasNestedLocal = parsed.runs.steps.some(
+        (step) => typeof step.uses === "string" && step.uses.startsWith("./"),
+      );
+      if (hasNestedLocal) return undefined;
+      return parsed.runs.steps.length;
+    }
+  } catch {
+    console.warn(`Failed to parse action.yml for ${usesPath}`);
+  }
+  return undefined;
 }
 
 // Fetch job logs via GitHub API (using redirect to download URL)
@@ -234,7 +258,12 @@ export function parseLogBlocks(logText: string): LogBlock[] {
   return blocks;
 }
 
-// Extract sub-steps from log blocks within the composite step's time range
+// Extract sub-steps from log blocks for a composite action step.
+// Uses position-based extraction: finds the composite header by path match,
+// then takes blocks using expectedStepCount from the action.yml.
+//
+// Limitation: Composite actions containing nested local composites (uses: ./...)
+// are not supported — expectedStepCount will be undefined and expansion is skipped.
 export function extractSubSteps(
   logBlocks: LogBlock[],
   compositeStartedAt: string,
@@ -242,43 +271,68 @@ export function extractSubSteps(
   compositeStatus: string,
   compositeConclusion: string | null,
   compositeUsesPath?: string,
+  expectedStepCount?: number,
 ): SubStep[] {
-  const compositeStart = new Date(compositeStartedAt).getTime();
-  const compositeEnd = new Date(compositeCompletedAt).getTime();
-
-  // Filter log blocks within the composite step's time range
-  const blocksInRange = logBlocks.filter((block) => {
-    const t = block.startedAt.getTime();
-    return t >= compositeStart && t <= compositeEnd;
-  });
-
-  if (blocksInRange.length <= 1) {
+  if (expectedStepCount === undefined || expectedStepCount <= 0) {
     return [];
   }
 
-  // Find the composite header block by matching the uses path
-  // The header is typically "Run ./.github/actions/foo" matching the composite path
-  let headerIndex = 0;
+  const compositeStart = new Date(compositeStartedAt).getTime();
+  // GitHub API timestamps have second precision (truncated), while log timestamps
+  // have millisecond precision. Use generous buffer for header search.
+  const compositeEnd = new Date(compositeCompletedAt).getTime() + 1000;
+
+  // Find the composite header block by matching the uses path in the full log
+  let headerGlobalIndex = -1;
   if (compositeUsesPath) {
     const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
-    const idx = blocksInRange.findIndex(
+    headerGlobalIndex = logBlocks.findIndex(
       (block) =>
-        block.name.includes(compositeUsesPath) ||
-        block.name.includes(pathWithoutPrefix),
+        block.startedAt.getTime() >= compositeStart &&
+        block.startedAt.getTime() <= compositeEnd &&
+        (block.name.includes(compositeUsesPath) ||
+          block.name.includes(pathWithoutPrefix)),
     );
-    if (idx >= 0) {
-      headerIndex = idx;
-    }
   }
 
-  // Take only blocks after the header
-  const subStepBlocks = blocksInRange.slice(headerIndex + 1);
+  if (headerGlobalIndex < 0) {
+    return [];
+  }
+
+  // Collect sub-step blocks after the header.
+  // Each YAML step in the composite emits a primary ##[group] block starting
+  // with "Run ", but some actions (e.g. setup-node) also emit auxiliary blocks
+  // (e.g. "Environment details"). We count primary blocks up to expectedStepCount,
+  // including any auxiliary blocks in between and after.
+  const subStepBlocks: LogBlock[] = [];
+  let primaryCount = 0;
+  for (let i = headerGlobalIndex + 1; i < logBlocks.length; i++) {
+    const block = logBlocks[i];
+    const isPrimary = block.name.startsWith("Run ");
+    // Stop when we encounter a new primary block beyond the expected count
+    if (isPrimary && primaryCount >= expectedStepCount) break;
+    subStepBlocks.push(block);
+    if (isPrimary) primaryCount++;
+  }
+
+  if (subStepBlocks.length === 0) {
+    return [];
+  }
 
   return subStepBlocks.map((block, i): SubStep => {
     const startedAt = block.startedAt.toISOString();
-    const completedAt = i < subStepBlocks.length - 1
-      ? subStepBlocks[i + 1].startedAt.toISOString()
-      : compositeCompletedAt;
+    // For the last sub-step, use max(compositeCompletedAt, startedAt) to avoid
+    // negative duration when API's truncated second-precision time < log's ms time.
+    let completedAt: string;
+    if (i < subStepBlocks.length - 1) {
+      completedAt = subStepBlocks[i + 1].startedAt.toISOString();
+    } else {
+      const compositeEndTime = new Date(compositeCompletedAt).getTime();
+      const blockStartTime = block.startedAt.getTime();
+      completedAt = blockStartTime > compositeEndTime
+        ? startedAt
+        : compositeCompletedAt;
+    }
 
     // Remove "Run " prefix from sub-step names for cleaner display
     const name = block.name.replace(/^Run /, "");
@@ -296,6 +350,11 @@ export function extractSubSteps(
 /**
  * Expand composite action steps in workflowJobs.
  * Returns a new WorkflowJobs with composite steps replaced by their sub-steps.
+ *
+ * Limitation: Composite actions that contain nested local composite actions
+ * (uses: ./.github/actions/...) are not expanded because the step count from
+ * the top-level action.yml cannot predict the actual number of log blocks
+ * produced by nested composites.
  */
 export async function expandCompositeSteps(
   client: Github,
@@ -333,22 +392,23 @@ export async function expandCompositeSteps(
     }
   }
 
-  // Fetch composite action YAMLs in parallel to validate
+  // Fetch and parse composite action YAMLs to get step counts
   const compositeYamlPromises = [...uniqueUsesPathSet].map(async (usesPath) => {
-    const exists = await fetchCompositeActionYaml(
+    const stepCount = await fetchCompositeActionStepCount(
       client,
       owner,
       repo,
       ref,
       usesPath,
     );
-    return [usesPath, exists] as const;
+    return [usesPath, stepCount] as const;
   });
   const compositeYamlResults = await Promise.all(compositeYamlPromises);
-  const validCompositePaths = new Set(
+  // Map from usesPath to step count (undefined means fetch/parse failed)
+  const compositeStepCounts = new Map(
     compositeYamlResults
-      .filter(([_, exists]) => exists)
-      .map(([path]) => path),
+      .filter(([_, count]) => count !== undefined)
+      .map(([path, count]) => [path, count!]),
   );
 
   // Fetch job logs in parallel (only for jobs with composite steps)
@@ -379,7 +439,7 @@ export async function expandCompositeSteps(
       const compositeInfo = compositeInfos.find((c) => c.apiStepIndex === i);
 
       if (
-        !compositeInfo || !validCompositePaths.has(compositeInfo.usesPath)
+        !compositeInfo || !compositeStepCounts.has(compositeInfo.usesPath)
       ) {
         newSteps.push(job.steps[i]);
         continue;
@@ -391,6 +451,10 @@ export async function expandCompositeSteps(
         continue;
       }
 
+      const expectedStepCount = compositeStepCounts.get(
+        compositeInfo.usesPath,
+      );
+
       const subSteps = extractSubSteps(
         logBlocks,
         apiStep.started_at,
@@ -398,6 +462,7 @@ export async function expandCompositeSteps(
         apiStep.status,
         apiStep.conclusion,
         compositeInfo.usesPath,
+        expectedStepCount,
       );
 
       if (subSteps.length === 0) {

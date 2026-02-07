@@ -28,6 +28,8 @@ jobs:
           # Expand repo-local composite action steps in the timeline.
           # Note: This option requires additional API calls to fetch job logs
           # and workflow files, which may increase execution time.
+          # Limitation: Composite actions that contain nested local composite
+          # actions (uses: ./.github/actions/...) are not expanded.
           # Default: false
           show-composite-actions: false
 

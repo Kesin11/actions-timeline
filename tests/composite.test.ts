@@ -48,7 +48,7 @@ Deno.test("extractSubSteps", async (t) => {
       name: "Run ./.github/actions/setup",
       startedAt: new Date("2024-01-15T10:00:05Z"),
     },
-    // Sub-steps inside composite
+    // Sub-steps inside composite (3 primary "Run " blocks)
     { name: "Run echo step1", startedAt: new Date("2024-01-15T10:00:06Z") },
     { name: "Run npm install", startedAt: new Date("2024-01-15T10:00:07Z") },
     { name: "Run npm run build", startedAt: new Date("2024-01-15T10:00:10Z") },
@@ -56,13 +56,15 @@ Deno.test("extractSubSteps", async (t) => {
     { name: "Run echo done", startedAt: new Date("2024-01-15T10:00:20Z") },
   ];
 
-  await t.step("extracts sub-steps within composite time range", () => {
+  await t.step("extracts sub-steps using expectedStepCount", () => {
     const subSteps = extractSubSteps(
       logBlocks,
       "2024-01-15T10:00:05Z",
       "2024-01-15T10:00:15Z",
       "completed",
       "success",
+      "./.github/actions/setup",
+      3, // expectedStepCount
     );
 
     assertEquals(subSteps.length, 3);
@@ -80,6 +82,23 @@ Deno.test("extractSubSteps", async (t) => {
     assertEquals(subSteps[2].completed_at, "2024-01-15T10:00:15Z");
   });
 
+  await t.step("does not include blocks beyond expectedStepCount", () => {
+    // Only request 2 of the 3 available sub-steps
+    const subSteps = extractSubSteps(
+      logBlocks,
+      "2024-01-15T10:00:05Z",
+      "2024-01-15T10:00:15Z",
+      "completed",
+      "success",
+      "./.github/actions/setup",
+      2, // Only 2 steps
+    );
+
+    assertEquals(subSteps.length, 2);
+    assertEquals(subSteps[0].name, "echo step1");
+    assertEquals(subSteps[1].name, "npm install");
+  });
+
   await t.step("inherits status and conclusion from composite step", () => {
     const subSteps = extractSubSteps(
       logBlocks,
@@ -87,6 +106,8 @@ Deno.test("extractSubSteps", async (t) => {
       "2024-01-15T10:00:15Z",
       "completed",
       "failure",
+      "./.github/actions/setup",
+      3,
     );
 
     for (const subStep of subSteps) {
@@ -95,31 +116,82 @@ Deno.test("extractSubSteps", async (t) => {
     }
   });
 
-  await t.step("returns empty for single block (header only)", () => {
-    const singleBlock = [
-      {
-        name: "Run ./.github/actions/setup",
-        startedAt: new Date("2024-01-15T10:00:05Z"),
-      },
-    ];
+  await t.step("returns empty when expectedStepCount is undefined", () => {
     const subSteps = extractSubSteps(
-      singleBlock,
+      logBlocks,
       "2024-01-15T10:00:05Z",
       "2024-01-15T10:00:15Z",
       "completed",
       "success",
+      "./.github/actions/setup",
+      undefined,
     );
     assertEquals(subSteps.length, 0);
   });
 
-  await t.step("returns empty for no blocks in range", () => {
+  await t.step("returns empty for no header match in range", () => {
     const subSteps = extractSubSteps(
       logBlocks,
       "2024-01-15T11:00:00Z",
       "2024-01-15T11:00:10Z",
       "completed",
       "success",
+      "./.github/actions/setup",
+      3,
     );
     assertEquals(subSteps.length, 0);
   });
+
+  await t.step(
+    "includes auxiliary blocks from uses actions (e.g. Environment details)",
+    () => {
+      // Simulates: composite has 2 steps (setup-deno, setup-node),
+      // but setup-node emits an extra "Environment details" block
+      const msBlocks = [
+        {
+          name: "Run ./.github/actions/setup",
+          startedAt: new Date("2024-01-15T10:00:05.100Z"),
+        },
+        {
+          name: "Run denoland/setup-deno@v1",
+          startedAt: new Date("2024-01-15T10:00:05.200Z"),
+        },
+        {
+          name: "Run actions/setup-node@v6",
+          startedAt: new Date("2024-01-15T10:00:10.500Z"),
+        },
+        {
+          name: "Environment details",
+          startedAt: new Date("2024-01-15T10:00:10.700Z"),
+        },
+        // Block from next API step (should NOT be included)
+        {
+          name: "Run deno fmt",
+          startedAt: new Date("2024-01-15T10:00:12.000Z"),
+        },
+      ];
+
+      const subSteps = extractSubSteps(
+        msBlocks,
+        "2024-01-15T10:00:05Z",
+        "2024-01-15T10:00:10Z", // API completed_at (truncated, before actual end)
+        "completed",
+        "success",
+        "./.github/actions/setup",
+        2, // 2 YAML steps, but 3 log blocks (Environment details is auxiliary)
+      );
+
+      // Should include all 3 blocks: 2 primary + 1 auxiliary
+      assertEquals(subSteps.length, 3);
+      assertEquals(subSteps[0].name, "denoland/setup-deno@v1");
+      assertEquals(subSteps[1].name, "actions/setup-node@v6");
+      assertEquals(subSteps[2].name, "Environment details");
+      // Last sub-step's completed_at should not be negative
+      // (startedAt 10.700 > compositeCompletedAt 10.000, so use startedAt)
+      assertEquals(
+        subSteps[2].completed_at,
+        "2024-01-15T10:00:10.700Z",
+      );
+    },
+  );
 });
