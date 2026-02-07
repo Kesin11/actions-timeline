@@ -474,7 +474,7 @@ export async function expandCompositeSteps(
       for (const subStep of subSteps) {
         newSteps.push({
           ...apiStep,
-          name: subStep.name,
+          name: `(sub) ${subStep.name}`,
           started_at: subStep.started_at,
           completed_at: subStep.completed_at,
           number: apiStep.number,
