@@ -3,11 +3,13 @@ import process from "node:process";
 import { debug, getBooleanInput, getInput, info, summary } from "@actions/core";
 import * as github from "@actions/github";
 import { createMermaid } from "./workflow_gantt.ts";
+import { expandCompositeSteps } from "./composite.ts";
 import { Github } from "@kesin11/gha-utils";
 
 const main = async () => {
   const token = getInput("github-token", { required: true });
   const showWaitingRunner = getBooleanInput("show-waiting-runner");
+  const showCompositeActions = getBooleanInput("show-composite-actions");
   const client = new Github({ token });
 
   info("Wait for workflow API result stability...");
@@ -31,8 +33,14 @@ const main = async () => {
 
   debug(JSON.stringify(workflowJobs, null, 2));
 
+  let jobs = workflowJobs;
+  if (showCompositeActions) {
+    info("Expanding composite action steps...");
+    jobs = await expandCompositeSteps(client, workflowRun, workflowJobs);
+  }
+
   info("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflowRun, workflowJobs, { showWaitingRunner });
+  const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });
   await summary.addRaw(gantt).write();
   debug(gantt);
 
