@@ -43,8 +43,15 @@ export const formatStep = (step: ganttStep): string => {
   }
 };
 
+const MAX_NAME_LENGTH = 80;
+
+export const truncateName = (name: string, maxLength: number = MAX_NAME_LENGTH): string => {
+  if (name.length <= maxLength) return name;
+  return name.substring(0, maxLength) + "...";
+};
+
 export const formatName = (name: string, sec: number): string => {
-  return `${escapeName(name)} (${formatShortElapsedTime(sec)})`;
+  return `${truncateName(escapeName(name))} (${formatShortElapsedTime(sec)})`;
 };
 
 export const escapeName = (name: string): string => {

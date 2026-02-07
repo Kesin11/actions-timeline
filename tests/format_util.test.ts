@@ -4,6 +4,7 @@ import {
   escapeName,
   formatShortElapsedTime,
   formatStep,
+  truncateName,
 } from "../src/format_util.ts";
 
 Deno.test(formatStep.name, async (t) => {
@@ -71,6 +72,23 @@ Deno.test(formatShortElapsedTime.name, async (t) => {
   await t.step("3661sec => 1h1m1s", () => {
     const elapsedSec = 60 * 60 + 60 + 1; // 1hour 1min 1sec
     assertEquals(formatShortElapsedTime(elapsedSec), `1h1m1s`);
+  });
+});
+
+Deno.test(truncateName.name, async (t) => {
+  await t.step("short name unchanged", () => {
+    assertEquals(truncateName("short name"), "short name");
+  });
+  await t.step("exactly max length unchanged", () => {
+    const name = "a".repeat(80);
+    assertEquals(truncateName(name), name);
+  });
+  await t.step("long name truncated with ellipsis", () => {
+    const name = "a".repeat(100);
+    assertEquals(truncateName(name), "a".repeat(80) + "...");
+  });
+  await t.step("custom max length", () => {
+    assertEquals(truncateName("abcdefghij", 5), "abcde...");
   });
 });
 
