@@ -45,7 +45,10 @@ export const formatStep = (step: ganttStep): string => {
 
 const MAX_NAME_LENGTH = 80;
 
-export const truncateName = (name: string, maxLength: number = MAX_NAME_LENGTH): string => {
+export const truncateName = (
+  name: string,
+  maxLength: number = MAX_NAME_LENGTH,
+): string => {
   if (name.length <= maxLength) return name;
   return name.substring(0, maxLength) + "...";
 };
