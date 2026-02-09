@@ -31,7 +31,7 @@ echo "--- [1/5] Generating mermaid WITH composite expansion ---"
 deno run --allow-net --allow-env --allow-write \
   "${REPO_DIR}/cli.ts" \
   --token "$(gh auth token)" \
-  --show-composite-actions=true \
+  --expand-composite-actions=true \
   "${RUN_URL}" \
   -o "${COMPOSITE_OUT}"
 echo "  -> ${COMPOSITE_OUT}"

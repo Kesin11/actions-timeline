@@ -17,7 +17,7 @@ const { options, args } = await new Command()
     { default: true },
   )
   .option(
-    "--show-composite-actions <showCompositeActions:boolean>",
+    "--expand-composite-actions <expandCompositeActions:boolean>",
     "Expand composite action steps in the timeline. Default: false",
     { default: false },
   )
@@ -40,10 +40,9 @@ const workflowRun = await client.fetchWorkflowRun(
 );
 const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
 
-let jobs = workflowJobs;
-if (options.showCompositeActions) {
-  jobs = await expandCompositeSteps(client, workflowRun, workflowJobs);
-}
+const jobs = options.expandCompositeActions
+  ? await expandCompositeSteps(client, workflowRun, workflowJobs)
+  : workflowJobs;
 
 const gantt = createMermaid(workflowRun, jobs, {
   showWaitingRunner: options.showWaitingRunner,

@@ -31,7 +31,7 @@ jobs:
           # Limitation: Composite actions that contain nested local composite
           # actions (uses: ./.github/actions/...) are not expanded.
           # Default: false
-          show-composite-actions: false
+          expand-composite-actions: false
 
       # Your build steps...
 ```
@@ -141,7 +141,7 @@ deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
   https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
   https://github.com/OWNER/REPO/actions/runs/RUN_ID \
   -t $(gh auth token) \
-  --show-composite-actions true \
+  --expand-composite-actions true \
   -o output.md
 ```
 

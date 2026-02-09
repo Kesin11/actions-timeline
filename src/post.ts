@@ -9,7 +9,7 @@ import { Github } from "@kesin11/gha-utils";
 const main = async () => {
   const token = getInput("github-token", { required: true });
   const showWaitingRunner = getBooleanInput("show-waiting-runner");
-  const showCompositeActions = getBooleanInput("show-composite-actions");
+  const expandCompositeActions = getBooleanInput("expand-composite-actions");
   const client = new Github({ token });
 
   info("Wait for workflow API result stability...");
@@ -34,7 +34,7 @@ const main = async () => {
   debug(JSON.stringify(workflowJobs, null, 2));
 
   let jobs = workflowJobs;
-  if (showCompositeActions) {
+  if (expandCompositeActions) {
     info("Expanding composite action steps...");
     jobs = await expandCompositeSteps(client, workflowRun, workflowJobs);
   }
