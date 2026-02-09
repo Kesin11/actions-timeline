@@ -66,9 +66,10 @@ async function fetchWorkflowModel(
   client: Github,
   workflowRun: WorkflowRun,
 ): Promise<WorkflowModel | undefined> {
-  const fileContents = await client.fetchWorkflowFiles([workflowRun]);
-  const fileContent = fileContents[0];
-  if (fileContent) return new WorkflowModel(fileContent);
+  // TODO: Use gha-utils fetchWorkflowFiles when the base64 decoding issue is fixed in gha-utils.
+  // const fileContents = await client.fetchWorkflowFiles([workflowRun]);
+  // const fileContent = fileContents[0];
+  // if (fileContent) return new WorkflowModel(fileContent);
 
   // Fallback: fetch directly with newline-safe base64 decoding.
   const owner = workflowRun.repository.owner.login;
