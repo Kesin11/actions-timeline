@@ -76,19 +76,20 @@ Deno.test(formatShortElapsedTime.name, async (t) => {
 });
 
 Deno.test(truncateName.name, async (t) => {
+  const maxLength = 80;
   await t.step("short name unchanged", () => {
-    assertEquals(truncateName("short name"), "short name");
+    assertEquals(truncateName("short name", maxLength), "short name");
   });
   await t.step("exactly max length unchanged", () => {
-    const name = "a".repeat(80);
-    assertEquals(truncateName(name), name);
+    const name = "a".repeat(maxLength);
+    assertEquals(truncateName(name, maxLength), name);
   });
   await t.step("long name truncated with ellipsis", () => {
     const name = "a".repeat(100);
-    assertEquals(truncateName(name), "a".repeat(80) + "...");
+    assertEquals(truncateName(name, maxLength), "a".repeat(77) + "...");
   });
   await t.step("custom max length", () => {
-    assertEquals(truncateName("abcdefghij", 5), "abcde...");
+    assertEquals(truncateName("abcdefghij", 5), "ab...");
   });
 });
 
