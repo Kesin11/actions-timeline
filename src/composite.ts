@@ -1,4 +1,4 @@
-import { decodeBase64 } from "@std/encoding";
+import { decodeBase64, encodeBase64 } from "@std/encoding";
 import { parse as parseYaml } from "@std/yaml";
 import {
   type CompositeAction,
@@ -53,9 +53,20 @@ async function fetchFileContent(
       const textDecoder = new TextDecoder();
       return textDecoder.decode(decodeBase64(base64));
     }
-  } catch (_error) {
+  } catch (error: unknown) {
+    let errorInfo = "";
+    if (error && typeof error === "object") {
+      const anyError = error as { status?: unknown; message?: unknown };
+      const status = typeof anyError.status === "number"
+        ? ` status: ${anyError.status}`
+        : "";
+      const message = typeof anyError.message === "string"
+        ? ` message: ${anyError.message}`
+        : "";
+      errorInfo = `${status}${message}`;
+    }
     console.warn(
-      `fetchFileContent not found: ref: ${ref}, path: ${owner}/${repo}/${path}`,
+      `fetchFileContent failed: ref: ${ref}, path: ${owner}/${repo}/${path}${errorInfo}`,
     );
   }
   return undefined;
@@ -83,23 +94,21 @@ async function fetchWorkflowModel(
   );
   if (!content) return undefined;
 
-  // Build a minimal FileContent to avoid the base64 decoding issue in the constructor.
+  // Re-encode content as clean base64 to construct FileContent properly.
   const { FileContent } = await import("@kesin11/gha-utils");
-  const fakeResponse = {
-    type: "file" as const,
+  const cleanBase64 = encodeBase64(new TextEncoder().encode(content));
+  const fc = new FileContent({
+    type: "file",
     size: content.length,
     name: workflowRun.path.split("/").pop() ?? "",
     path: workflowRun.path,
-    content: "",
+    content: cleanBase64,
     sha: "",
     url: "",
     git_url: null,
     html_url: null,
     download_url: null,
-  };
-  const fc = Object.create(FileContent.prototype);
-  fc.raw = fakeResponse;
-  fc.content = content;
+  });
   return new WorkflowModel(fc);
 }
 
@@ -125,10 +134,7 @@ function identifyCompositeSteps(
       // GitHub API sometimes prefixes local action paths with an extra "/".
       // e.g. "Run /./.github/actions/foo" instead of "Run ./.github/actions/foo"
       if (!stepModel) {
-        const normalized = apiStep.name.replace(
-          /^((?:Pre Run |Post Run |Pre |Run |Post )?)\/\.\//,
-          "$1./",
-        );
+        const normalized = apiStep.name.replace(/^(Run )\/\.\//, "$1./");
         if (normalized !== apiStep.name) {
           stepModel = StepModel.match(jobModel.steps, normalized);
         }
@@ -200,33 +206,20 @@ async function fetchCompositeActionStepCount(
   return undefined;
 }
 
-// Fetch job logs via GitHub API.
+// Fetch job logs via Octokit REST API.
 async function fetchJobLog(
-  token: string,
-  baseUrl: string,
+  client: Github,
   owner: string,
   repo: string,
   jobId: number,
 ): Promise<string | undefined> {
-  const apiUrl = `${baseUrl}/repos/${owner}/${repo}/actions/jobs/${jobId}/logs`;
-
   try {
-    const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `token ${token}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-      redirect: "follow",
+    const res = await client.octokit.actions.downloadJobLogsForWorkflowRun({
+      owner,
+      repo,
+      job_id: jobId,
     });
-
-    if (!response.ok) {
-      console.warn(
-        `Failed to fetch job log for job ${jobId}: ${response.status}`,
-      );
-      return undefined;
-    }
-
-    return await response.text();
+    return res.data as unknown as string;
   } catch (error) {
     console.warn(`Error fetching job log for job ${jobId}:`, error);
     return undefined;
@@ -240,11 +233,11 @@ export function parseLogBlocks(logText: string): LogBlock[] {
   const groupRegex =
     /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+##\[group\](.+)$/;
 
-  for (const line of logText.split("\n")) {
+  for (const line of logText.split(/\r?\n/)) {
     const match = line.match(groupRegex);
     if (match) {
       blocks.push({
-        name: match[2],
+        name: match[2].trim(),
         startedAt: new Date(match[1]),
       });
     }
@@ -261,10 +254,10 @@ export function extractSubSteps(
   compositeCompletedAt: string,
   compositeStatus: string,
   compositeConclusion: string | null,
-  compositeUsesPath?: string,
-  expectedStepCount?: number,
+  compositeUsesPath: string,
+  expectedStepCount: number,
 ): SubStep[] {
-  if (expectedStepCount === undefined || expectedStepCount <= 0) {
+  if (expectedStepCount <= 0) {
     return [];
   }
 
@@ -272,17 +265,14 @@ export function extractSubSteps(
   // Add 1s buffer: API timestamps have second precision, logs have millisecond precision.
   const compositeEnd = new Date(compositeCompletedAt).getTime() + 1000;
 
-  let headerGlobalIndex = -1;
-  if (compositeUsesPath) {
-    const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
-    headerGlobalIndex = logBlocks.findIndex(
-      (block) =>
-        block.startedAt.getTime() >= compositeStart &&
-        block.startedAt.getTime() <= compositeEnd &&
-        (block.name.includes(compositeUsesPath) ||
-          block.name.includes(pathWithoutPrefix)),
-    );
-  }
+  const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
+  const headerGlobalIndex = logBlocks.findIndex(
+    (block) =>
+      block.startedAt.getTime() >= compositeStart &&
+      block.startedAt.getTime() <= compositeEnd &&
+      (block.name.includes(compositeUsesPath) ||
+        block.name.includes(pathWithoutPrefix)),
+  );
 
   if (headerGlobalIndex < 0) {
     return [];
@@ -365,16 +355,16 @@ export async function expandCompositeSteps(
     compositeMap.has(job.id)
   );
 
-  const uniqueUsesPathSet = new Set<string>();
-  for (const infos of compositeMap.values()) {
-    for (const info of infos) {
-      uniqueUsesPathSet.add(info.usesPath);
-    }
-  }
+  // Collect unique uses paths across all jobs
+  const uniqueUsesPaths = new Set(
+    [...compositeMap.values()].flatMap((infos) =>
+      infos.map((info) => info.usesPath)
+    ),
+  );
 
   // Fetch and parse composite action YAMLs to get step counts
   const compositeYamlResults = await Promise.all(
-    [...uniqueUsesPathSet].map(async (usesPath) => {
+    [...uniqueUsesPaths].map(async (usesPath) => {
       const stepCount = await fetchCompositeActionStepCount(
         client,
         owner,
@@ -385,20 +375,19 @@ export async function expandCompositeSteps(
       return [usesPath, stepCount] as const;
     }),
   );
-  const compositeStepCounts = new Map<string, number>();
-  for (const [path, count] of compositeYamlResults) {
-    if (count !== undefined) {
-      compositeStepCounts.set(path, count);
-    }
-  }
+  const compositeStepCounts = new Map(
+    compositeYamlResults.filter(
+      (entry): entry is [string, number] => entry[1] !== undefined,
+    ),
+  );
 
-  const token = client.token ?? "";
-  const baseUrl = client.baseUrl;
-  const logPromises = jobsWithComposites.map(async (job) => {
-    const log = await fetchJobLog(token, baseUrl, owner, repo, job.id);
-    return [job.id, log] as const;
-  });
-  const logResults = await Promise.all(logPromises);
+  // Fetch job logs in parallel
+  const logResults = await Promise.all(
+    jobsWithComposites.map(async (job) => {
+      const log = await fetchJobLog(client, owner, repo, job.id);
+      return [job.id, log] as const;
+    }),
+  );
   const logMap = new Map(logResults);
 
   const expandedJobs: WorkflowJobs = workflowJobs.map((job) => {
@@ -411,11 +400,17 @@ export async function expandCompositeSteps(
     const logBlocks = parseLogBlocks(logText);
     if (logBlocks.length === 0) return job;
 
+    // Precompute a lookup map from apiStepIndex to CompositeStepInfo
+    const compositeInfoByIndex = new Map(
+      compositeInfos.map((info) => [info.apiStepIndex, info]),
+    );
+
     const newSteps: NonNullable<typeof job.steps> = [];
 
     for (let i = 0; i < job.steps.length; i++) {
-      const compositeInfo = compositeInfos.find((c) => c.apiStepIndex === i);
+      const compositeInfo = compositeInfoByIndex.get(i);
 
+      // Non-composite step or composite without known step count: keep as-is
       if (
         !compositeInfo || !compositeStepCounts.has(compositeInfo.usesPath)
       ) {
@@ -423,6 +418,7 @@ export async function expandCompositeSteps(
         continue;
       }
 
+      // Composite step without timing data: keep as-is
       const apiStep = job.steps[i];
       if (!apiStep.started_at || !apiStep.completed_at) {
         newSteps.push(apiStep);
@@ -431,7 +427,7 @@ export async function expandCompositeSteps(
 
       const expectedStepCount = compositeStepCounts.get(
         compositeInfo.usesPath,
-      );
+      )!;
 
       const subSteps = extractSubSteps(
         logBlocks,
@@ -443,11 +439,13 @@ export async function expandCompositeSteps(
         expectedStepCount,
       );
 
+      // Expansion failed: keep original step
       if (subSteps.length === 0) {
         newSteps.push(apiStep);
         continue;
       }
 
+      // Replace composite step with expanded sub-steps
       for (const subStep of subSteps) {
         newSteps.push({
           ...apiStep,

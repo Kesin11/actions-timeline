@@ -165,19 +165,6 @@ Deno.test(extractSubSteps.name, async (t) => {
     ]);
   });
 
-  await t.step("returns empty when expectedStepCount is undefined", () => {
-    const subSteps = extractSubSteps(
-      logBlocks,
-      "2024-01-15T10:00:05Z",
-      "2024-01-15T10:00:15Z",
-      "completed",
-      "success",
-      "./.github/actions/setup",
-      undefined,
-    );
-    assertEquals(subSteps, []);
-  });
-
   await t.step("returns empty for no header match in range", () => {
     const subSteps = extractSubSteps(
       logBlocks,
