@@ -53,20 +53,10 @@ async function fetchFileContent(
       const textDecoder = new TextDecoder();
       return textDecoder.decode(decodeBase64(base64));
     }
-  } catch (error: unknown) {
-    let errorInfo = "";
-    if (error && typeof error === "object") {
-      const anyError = error as { status?: unknown; message?: unknown };
-      const status = typeof anyError.status === "number"
-        ? ` status: ${anyError.status}`
-        : "";
-      const message = typeof anyError.message === "string"
-        ? ` message: ${anyError.message}`
-        : "";
-      errorInfo = `${status}${message}`;
-    }
+  } catch (error) {
     console.warn(
-      `fetchFileContent failed: ref: ${ref}, path: ${owner}/${repo}/${path}${errorInfo}`,
+      `fetchFileContent failed: ref: ${ref}, path: ${owner}/${repo}/${path}`,
+      error,
     );
   }
   return undefined;
