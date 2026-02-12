@@ -13581,7 +13581,7 @@ var require_fetch = __commonJS({
     function handleFetchDone(response) {
       finalizeAndReportTiming(response, "fetch");
     }
-    function fetch2(input, init = void 0) {
+    function fetch(input, init = void 0) {
       webidl.argumentLengthCheck(arguments, 1, "globalThis.fetch");
       let p = createDeferredPromise();
       let requestObject;
@@ -14538,7 +14538,7 @@ var require_fetch = __commonJS({
       }
     }
     module2.exports = {
-      fetch: fetch2,
+      fetch,
       Fetch,
       fetching,
       finalizeAndReportTiming
@@ -18750,7 +18750,7 @@ var require_undici = __commonJS({
     module2.exports.setGlobalDispatcher = setGlobalDispatcher;
     module2.exports.getGlobalDispatcher = getGlobalDispatcher;
     var fetchImpl = require_fetch().fetch;
-    module2.exports.fetch = async function fetch2(init, options = void 0) {
+    module2.exports.fetch = async function fetch(init, options = void 0) {
       try {
         return await fetchImpl(init, options);
       } catch (err) {
@@ -34066,7 +34066,7 @@ var require_fetch2 = __commonJS({
         this.emit("terminated", error);
       }
     };
-    function fetch2(input, init = {}) {
+    function fetch(input, init = {}) {
       webidl.argumentLengthCheck(arguments, 1, { header: "globalThis.fetch" });
       const p = createDeferredPromise();
       let requestObject;
@@ -34996,7 +34996,7 @@ var require_fetch2 = __commonJS({
       }
     }
     module2.exports = {
-      fetch: fetch2,
+      fetch,
       Fetch,
       fetching,
       finalizeAndReportTiming
@@ -38252,7 +38252,7 @@ var require_undici2 = __commonJS({
     module2.exports.getGlobalDispatcher = getGlobalDispatcher;
     if (util.nodeMajor > 16 || util.nodeMajor === 16 && util.nodeMinor >= 8) {
       let fetchImpl = null;
-      module2.exports.fetch = async function fetch2(resource) {
+      module2.exports.fetch = async function fetch(resource) {
         if (!fetchImpl) {
           fetchImpl = require_fetch2().fetch;
         }
@@ -39190,16 +39190,16 @@ var require_dist_node7 = __commonJS({
       let headers = {};
       let status;
       let url;
-      let { fetch: fetch2 } = globalThis;
+      let { fetch } = globalThis;
       if ((_b = requestOptions.request) == null ? void 0 : _b.fetch) {
-        fetch2 = requestOptions.request.fetch;
+        fetch = requestOptions.request.fetch;
       }
-      if (!fetch2) {
+      if (!fetch) {
         throw new Error(
           "fetch is not set. Please pass a fetch implementation as new Octokit({ request: { fetch }}). Learn more at https://github.com/octokit/octokit.js/#fetch-missing"
         );
       }
-      return fetch2(requestOptions.url, {
+      return fetch(requestOptions.url, {
         method: requestOptions.method,
         body: requestOptions.body,
         redirect: (_c = requestOptions.request) == null ? void 0 : _c.redirect,
@@ -42813,6 +42813,17 @@ var init_common32 = __esm({
 });
 
 // npm/src/deps/jsr.io/@std/encoding/1.0.10/_common_detach.ts
+function detach(buffer, maxSize) {
+  const originalSize = buffer.length;
+  if (buffer.byteOffset) {
+    const b = new Uint8Array(buffer.buffer);
+    b.set(buffer);
+    buffer = b.subarray(0, originalSize);
+  }
+  buffer = new Uint8Array(buffer.buffer.transfer(maxSize));
+  buffer.set(buffer.subarray(0, originalSize), maxSize - originalSize);
+  return [buffer, maxSize - originalSize];
+}
 var init_common_detach = __esm({
   "npm/src/deps/jsr.io/@std/encoding/1.0.10/_common_detach.ts"() {
   }
@@ -42841,6 +42852,38 @@ var init_base58 = __esm({
 });
 
 // npm/src/deps/jsr.io/@std/encoding/1.0.10/_common64.ts
+function calcSizeBase64(originalSize) {
+  return ((originalSize + 2) / 3 | 0) * 4;
+}
+function encode2(buffer, i, o, alphabet8, padding6) {
+  i += 2;
+  for (; i < buffer.length; i += 3) {
+    const x = buffer[i - 2] << 16 | buffer[i - 1] << 8 | buffer[i];
+    buffer[o++] = alphabet8[x >> 18];
+    buffer[o++] = alphabet8[x >> 12 & 63];
+    buffer[o++] = alphabet8[x >> 6 & 63];
+    buffer[o++] = alphabet8[x & 63];
+  }
+  switch (i) {
+    case buffer.length + 1: {
+      const x = buffer[i - 2] << 16;
+      buffer[o++] = alphabet8[x >> 18];
+      buffer[o++] = alphabet8[x >> 12 & 63];
+      buffer[o++] = padding6;
+      buffer[o++] = padding6;
+      break;
+    }
+    case buffer.length: {
+      const x = buffer[i - 2] << 16 | buffer[i - 1] << 8;
+      buffer[o++] = alphabet8[x >> 18];
+      buffer[o++] = alphabet8[x >> 12 & 63];
+      buffer[o++] = alphabet8[x >> 6 & 63];
+      buffer[o++] = padding6;
+      break;
+    }
+  }
+  return o;
+}
 function decode2(buffer, i, o, alphabet8, padding6) {
   for (let x = buffer.length - 2; x < buffer.length; ++x) {
     if (buffer[x] === padding6) {
@@ -42910,6 +42953,18 @@ var init_common64 = __esm({
 });
 
 // npm/src/deps/jsr.io/@std/encoding/1.0.10/base64.ts
+function encodeBase64(data) {
+  if (typeof data === "string") {
+    data = new TextEncoder().encode(data);
+  } else if (data instanceof ArrayBuffer) data = new Uint8Array(data).slice();
+  else data = data.slice();
+  const [output, i] = detach(
+    data,
+    calcSizeBase64(data.length)
+  );
+  encode2(output, i, 0, alphabet4, padding4);
+  return new TextDecoder().decode(output);
+}
 function decodeBase64(b64) {
   const output = new TextEncoder().encode(b64);
   return new Uint8Array(output.buffer.transfer(decode2(output, 0, 0, rAlphabet4, padding4)));
@@ -47073,180 +47128,134 @@ var require_cwd = __commonJS({
   }
 });
 
-// npm/node_modules/isexe/dist/commonjs/posix.js
-var require_posix = __commonJS({
-  "npm/node_modules/isexe/dist/commonjs/posix.js"(exports2) {
+// npm/node_modules/isexe/dist/commonjs/index.min.js
+var require_index_min = __commonJS({
+  "npm/node_modules/isexe/dist/commonjs/index.min.js"(exports2) {
     "use strict";
-    Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.sync = exports2.isexe = void 0;
-    var node_fs_1 = require("node:fs");
-    var promises_1 = require("node:fs/promises");
-    var isexe = async (path, options = {}) => {
-      const { ignoreErrors = false } = options;
-      try {
-        return checkStat(await (0, promises_1.stat)(path), options);
-      } catch (e) {
-        const er = e;
-        if (ignoreErrors || er.code === "EACCES")
-          return false;
-        throw er;
-      }
-    };
-    exports2.isexe = isexe;
-    var sync = (path, options = {}) => {
-      const { ignoreErrors = false } = options;
-      try {
-        return checkStat((0, node_fs_1.statSync)(path), options);
-      } catch (e) {
-        const er = e;
-        if (ignoreErrors || er.code === "EACCES")
-          return false;
-        throw er;
-      }
-    };
-    exports2.sync = sync;
-    var checkStat = (stat, options) => stat.isFile() && checkMode(stat, options);
-    var checkMode = (stat, options) => {
-      const myUid = options.uid ?? process.getuid?.();
-      const myGroups = options.groups ?? process.getgroups?.() ?? [];
-      const myGid = options.gid ?? process.getgid?.() ?? myGroups[0];
-      if (myUid === void 0 || myGid === void 0) {
-        throw new Error("cannot get uid or gid");
-      }
-      const groups2 = /* @__PURE__ */ new Set([myGid, ...myGroups]);
-      const mod = stat.mode;
-      const uid = stat.uid;
-      const gid = stat.gid;
-      const u = parseInt("100", 8);
-      const g = parseInt("010", 8);
-      const o = parseInt("001", 8);
-      const ug = u | g;
-      return !!(mod & o || mod & g && groups2.has(gid) || mod & u && uid === myUid || mod & ug && myUid === 0);
-    };
-  }
-});
-
-// npm/node_modules/isexe/dist/commonjs/win32.js
-var require_win32 = __commonJS({
-  "npm/node_modules/isexe/dist/commonjs/win32.js"(exports2) {
-    "use strict";
-    Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.sync = exports2.isexe = void 0;
-    var node_fs_1 = require("node:fs");
-    var promises_1 = require("node:fs/promises");
-    var isexe = async (path, options = {}) => {
-      const { ignoreErrors = false } = options;
-      try {
-        return checkStat(await (0, promises_1.stat)(path), path, options);
-      } catch (e) {
-        const er = e;
-        if (ignoreErrors || er.code === "EACCES")
-          return false;
-        throw er;
-      }
-    };
-    exports2.isexe = isexe;
-    var sync = (path, options = {}) => {
-      const { ignoreErrors = false } = options;
-      try {
-        return checkStat((0, node_fs_1.statSync)(path), path, options);
-      } catch (e) {
-        const er = e;
-        if (ignoreErrors || er.code === "EACCES")
-          return false;
-        throw er;
-      }
-    };
-    exports2.sync = sync;
-    var checkPathExt = (path, options) => {
-      const { pathExt = process.env.PATHEXT || "" } = options;
-      const peSplit = pathExt.split(";");
-      if (peSplit.indexOf("") !== -1) {
-        return true;
-      }
-      for (const pes of peSplit) {
-        const p = pes.toLowerCase();
-        const ext = path.substring(path.length - p.length).toLowerCase();
-        if (p && ext === p) {
-          return true;
+    var a = (t, e) => () => (e || t((e = { exports: {} }).exports, e), e.exports);
+    var _ = a((i) => {
+      "use strict";
+      Object.defineProperty(i, "__esModule", { value: true });
+      i.sync = i.isexe = void 0;
+      var M = require("node:fs"), x = require("node:fs/promises"), q = async (t, e = {}) => {
+        let { ignoreErrors: r = false } = e;
+        try {
+          return d(await (0, x.stat)(t), e);
+        } catch (s) {
+          let n = s;
+          if (r || n.code === "EACCES") return false;
+          throw n;
         }
-      }
-      return false;
-    };
-    var checkStat = (stat, path, options) => stat.isFile() && checkPathExt(path, options);
-  }
-});
-
-// npm/node_modules/isexe/dist/commonjs/options.js
-var require_options = __commonJS({
-  "npm/node_modules/isexe/dist/commonjs/options.js"(exports2) {
-    "use strict";
-    Object.defineProperty(exports2, "__esModule", { value: true });
-  }
-});
-
-// npm/node_modules/isexe/dist/commonjs/index.js
-var require_commonjs = __commonJS({
-  "npm/node_modules/isexe/dist/commonjs/index.js"(exports2) {
-    "use strict";
-    var __createBinding = exports2 && exports2.__createBinding || (Object.create ? (function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m, k);
-      if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m[k];
-        } };
-      }
-      Object.defineProperty(o, k2, desc);
-    }) : (function(o, m, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o[k2] = m[k];
-    }));
-    var __setModuleDefault = exports2 && exports2.__setModuleDefault || (Object.create ? (function(o, v) {
-      Object.defineProperty(o, "default", { enumerable: true, value: v });
-    }) : function(o, v) {
-      o["default"] = v;
-    });
-    var __importStar = exports2 && exports2.__importStar || /* @__PURE__ */ (function() {
-      var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function(o2) {
-          var ar = [];
-          for (var k in o2) if (Object.prototype.hasOwnProperty.call(o2, k)) ar[ar.length] = k;
-          return ar;
-        };
-        return ownKeys(o);
       };
-      return function(mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) {
-          for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+      i.isexe = q;
+      var m = (t, e = {}) => {
+        let { ignoreErrors: r = false } = e;
+        try {
+          return d((0, M.statSync)(t), e);
+        } catch (s) {
+          let n = s;
+          if (r || n.code === "EACCES") return false;
+          throw n;
         }
-        __setModuleDefault(result, mod);
-        return result;
+      };
+      i.sync = m;
+      var d = (t, e) => t.isFile() && A(t, e), A = (t, e) => {
+        let r = e.uid ?? process.getuid?.(), s = e.groups ?? process.getgroups?.() ?? [], n = e.gid ?? process.getgid?.() ?? s[0];
+        if (r === void 0 || n === void 0) throw new Error("cannot get uid or gid");
+        let u = /* @__PURE__ */ new Set([n, ...s]), c = t.mode, S = t.uid, P = t.gid, f = parseInt("100", 8), l = parseInt("010", 8), j = parseInt("001", 8), C = f | l;
+        return !!(c & j || c & l && u.has(P) || c & f && S === r || c & C && r === 0);
+      };
+    });
+    var g = a((o) => {
+      "use strict";
+      Object.defineProperty(o, "__esModule", { value: true });
+      o.sync = o.isexe = void 0;
+      var T = require("node:fs"), I = require("node:fs/promises"), D = require("node:path"), F = async (t, e = {}) => {
+        let { ignoreErrors: r = false } = e;
+        try {
+          return y(await (0, I.stat)(t), t, e);
+        } catch (s) {
+          let n = s;
+          if (r || n.code === "EACCES") return false;
+          throw n;
+        }
+      };
+      o.isexe = F;
+      var L = (t, e = {}) => {
+        let { ignoreErrors: r = false } = e;
+        try {
+          return y((0, T.statSync)(t), t, e);
+        } catch (s) {
+          let n = s;
+          if (r || n.code === "EACCES") return false;
+          throw n;
+        }
+      };
+      o.sync = L;
+      var B = (t, e) => {
+        let { pathExt: r = process.env.PATHEXT || "" } = e, s = r.split(D.delimiter);
+        if (s.indexOf("") !== -1) return true;
+        for (let n of s) {
+          let u = n.toLowerCase(), c = t.substring(t.length - u.length).toLowerCase();
+          if (u && c === u) return true;
+        }
+        return false;
+      }, y = (t, e, r) => t.isFile() && B(e, r);
+    });
+    var p = a((h) => {
+      "use strict";
+      Object.defineProperty(h, "__esModule", { value: true });
+    });
+    var v = exports2 && exports2.__createBinding || (Object.create ? (function(t, e, r, s) {
+      s === void 0 && (s = r);
+      var n = Object.getOwnPropertyDescriptor(e, r);
+      (!n || ("get" in n ? !e.__esModule : n.writable || n.configurable)) && (n = { enumerable: true, get: function() {
+        return e[r];
+      } }), Object.defineProperty(t, s, n);
+    }) : (function(t, e, r, s) {
+      s === void 0 && (s = r), t[s] = e[r];
+    }));
+    var G = exports2 && exports2.__setModuleDefault || (Object.create ? (function(t, e) {
+      Object.defineProperty(t, "default", { enumerable: true, value: e });
+    }) : function(t, e) {
+      t.default = e;
+    });
+    var w = exports2 && exports2.__importStar || /* @__PURE__ */ (function() {
+      var t = function(e) {
+        return t = Object.getOwnPropertyNames || function(r) {
+          var s = [];
+          for (var n in r) Object.prototype.hasOwnProperty.call(r, n) && (s[s.length] = n);
+          return s;
+        }, t(e);
+      };
+      return function(e) {
+        if (e && e.__esModule) return e;
+        var r = {};
+        if (e != null) for (var s = t(e), n = 0; n < s.length; n++) s[n] !== "default" && v(r, e, s[n]);
+        return G(r, e), r;
       };
     })();
-    var __exportStar = exports2 && exports2.__exportStar || function(m, exports3) {
-      for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports3, p)) __createBinding(exports3, m, p);
+    var X = exports2 && exports2.__exportStar || function(t, e) {
+      for (var r in t) r !== "default" && !Object.prototype.hasOwnProperty.call(e, r) && v(e, t, r);
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.sync = exports2.isexe = exports2.posix = exports2.win32 = void 0;
-    var posix = __importStar(require_posix());
-    exports2.posix = posix;
-    var win32 = __importStar(require_win32());
-    exports2.win32 = win32;
-    __exportStar(require_options(), exports2);
-    var platform = process.env._ISEXE_TEST_PLATFORM_ || process.platform;
-    var impl = platform === "win32" ? win32 : posix;
-    exports2.isexe = impl.isexe;
-    exports2.sync = impl.sync;
+    var E = w(_());
+    exports2.posix = E;
+    var O = w(g());
+    exports2.win32 = O;
+    X(p(), exports2);
+    var H = process.env._ISEXE_TEST_PLATFORM_ || process.platform;
+    var b = H === "win32" ? O : E;
+    exports2.isexe = b.isexe;
+    exports2.sync = b.sync;
   }
 });
 
 // npm/node_modules/which/lib/index.js
 var require_lib2 = __commonJS({
   "npm/node_modules/which/lib/index.js"(exports2, module2) {
-    var { isexe, sync: isexeSync } = require_commonjs();
+    var { isexe, sync: isexeSync } = require_index_min();
     var { join, delimiter, sep: sep2, posix } = require("path");
     var isWindows = process.platform === "win32";
     var rSlash = new RegExp(`[${posix.sep}${sep2 === posix.sep ? "" : sep2}]`.replace(/(\\)/g, "\\$1"));
@@ -50896,8 +50905,8 @@ function isPlainObject3(value) {
   return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
 }
 async function fetchWrapper(requestOptions) {
-  const fetch2 = requestOptions.request?.fetch || globalThis.fetch;
-  if (!fetch2) {
+  const fetch = requestOptions.request?.fetch || globalThis.fetch;
+  if (!fetch) {
     throw new Error(
       "fetch is not set. Please pass a fetch implementation as new Octokit({ request: { fetch }}). Learn more at https://github.com/octokit/octokit.js/#fetch-missing"
     );
@@ -50913,7 +50922,7 @@ async function fetchWrapper(requestOptions) {
   );
   let fetchResponse;
   try {
-    fetchResponse = await fetch2(requestOptions.url, {
+    fetchResponse = await fetch(requestOptions.url, {
       method: requestOptions.method,
       body,
       redirect: requestOptions.request?.redirect,
@@ -51446,8 +51455,8 @@ function isPlainObject5(value) {
   return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
 }
 async function fetchWrapper2(requestOptions) {
-  const fetch2 = requestOptions.request?.fetch || globalThis.fetch;
-  if (!fetch2) {
+  const fetch = requestOptions.request?.fetch || globalThis.fetch;
+  if (!fetch) {
     throw new Error(
       "fetch is not set. Please pass a fetch implementation as new Octokit({ request: { fetch }}). Learn more at https://github.com/octokit/octokit.js/#fetch-missing"
     );
@@ -51463,7 +51472,7 @@ async function fetchWrapper2(requestOptions) {
   );
   let fetchResponse;
   try {
-    fetchResponse = await fetch2(requestOptions.url, {
+    fetchResponse = await fetch(requestOptions.url, {
       method: requestOptions.method,
       body,
       redirect: requestOptions.request?.redirect,
@@ -62219,12 +62228,12 @@ var formatStep = (step) => {
   }
 };
 var MAX_NAME_LENGTH = 80;
-var truncateName = (name, maxLength = MAX_NAME_LENGTH) => {
+var truncateName = (name, maxLength) => {
   if (name.length <= maxLength) return name;
-  return name.substring(0, maxLength) + "...";
+  return name.substring(0, maxLength - 3) + "...";
 };
 var formatName = (name, sec) => {
-  return `${truncateName(escapeName(name))} (${formatShortElapsedTime(sec)})`;
+  return `${truncateName(escapeName(name), MAX_NAME_LENGTH)} (${formatShortElapsedTime(sec)})`;
 };
 var escapeName = (name) => {
   let escapedName = name;
@@ -62386,17 +62395,15 @@ async function fetchFileContent(client, owner, repo, path, ref) {
       const textDecoder = new TextDecoder();
       return textDecoder.decode(decodeBase64(base64));
     }
-  } catch (_error) {
+  } catch (error) {
     console.warn(
-      `fetchFileContent not found: ref: ${ref}, path: ${owner}/${repo}/${path}`
+      `fetchFileContent failed: ref: ${ref}, path: ${owner}/${repo}/${path}`,
+      error
     );
   }
   return void 0;
 }
 async function fetchWorkflowModel(client, workflowRun) {
-  const fileContents = await client.fetchWorkflowFiles([workflowRun]);
-  const fileContent = fileContents[0];
-  if (fileContent) return new WorkflowModel(fileContent);
   const owner = workflowRun.repository.owner.login;
   const repo = workflowRun.repository.name;
   const content = await fetchFileContent(
@@ -62408,21 +62415,19 @@ async function fetchWorkflowModel(client, workflowRun) {
   );
   if (!content) return void 0;
   const { FileContent: FileContent2 } = await Promise.resolve().then(() => (init_mod4(), mod_exports));
-  const fakeResponse = {
+  const cleanBase64 = encodeBase64(new TextEncoder().encode(content));
+  const fc = new FileContent2({
     type: "file",
     size: content.length,
     name: workflowRun.path.split("/").pop() ?? "",
     path: workflowRun.path,
-    content: "",
+    content: cleanBase64,
     sha: "",
     url: "",
     git_url: null,
     html_url: null,
     download_url: null
-  };
-  const fc = Object.create(FileContent2.prototype);
-  fc.raw = fakeResponse;
-  fc.content = content;
+  });
   return new WorkflowModel(fc);
 }
 function identifyCompositeSteps(workflowJobs, workflowModel) {
@@ -62437,10 +62442,7 @@ function identifyCompositeSteps(workflowJobs, workflowModel) {
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       let stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (!stepModel) {
-        const normalized = apiStep.name.replace(
-          /^((?:Pre Run |Post Run |Pre |Run |Post )?)\/\.\//,
-          "$1./"
-        );
+        const normalized = apiStep.name.replace(/^(Run )\/\.\//, "$1./");
         if (normalized !== apiStep.name) {
           stepModel = StepModel.match(jobModel.steps, normalized);
         }
@@ -62494,23 +62496,14 @@ async function fetchCompositeActionStepCount(client, owner, repo, ref, usesPath)
   }
   return void 0;
 }
-async function fetchJobLog(token, baseUrl, owner, repo, jobId) {
-  const apiUrl = `${baseUrl}/repos/${owner}/${repo}/actions/jobs/${jobId}/logs`;
+async function fetchJobLog(client, owner, repo, jobId) {
   try {
-    const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `token ${token}`,
-        Accept: "application/vnd.github.v3+json"
-      },
-      redirect: "follow"
+    const res = await client.octokit.actions.downloadJobLogsForWorkflowRun({
+      owner,
+      repo,
+      job_id: jobId
     });
-    if (!response.ok) {
-      console.warn(
-        `Failed to fetch job log for job ${jobId}: ${response.status}`
-      );
-      return void 0;
-    }
-    return await response.text();
+    return res.data;
   } catch (error) {
     console.warn(`Error fetching job log for job ${jobId}:`, error);
     return void 0;
@@ -62519,11 +62512,11 @@ async function fetchJobLog(token, baseUrl, owner, repo, jobId) {
 function parseLogBlocks(logText) {
   const blocks = [];
   const groupRegex = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)\s+##\[group\](.+)$/;
-  for (const line of logText.split("\n")) {
+  for (const line of logText.split(/\r?\n/)) {
     const match2 = line.match(groupRegex);
     if (match2) {
       blocks.push({
-        name: match2[2],
+        name: match2[2].trim(),
         startedAt: new Date(match2[1])
       });
     }
@@ -62531,18 +62524,15 @@ function parseLogBlocks(logText) {
   return blocks;
 }
 function extractSubSteps(logBlocks, compositeStartedAt, compositeCompletedAt, compositeStatus, compositeConclusion, compositeUsesPath, expectedStepCount) {
-  if (expectedStepCount === void 0 || expectedStepCount <= 0) {
+  if (expectedStepCount <= 0) {
     return [];
   }
   const compositeStart = new Date(compositeStartedAt).getTime();
   const compositeEnd = new Date(compositeCompletedAt).getTime() + 1e3;
-  let headerGlobalIndex = -1;
-  if (compositeUsesPath) {
-    const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
-    headerGlobalIndex = logBlocks.findIndex(
-      (block) => block.startedAt.getTime() >= compositeStart && block.startedAt.getTime() <= compositeEnd && (block.name.includes(compositeUsesPath) || block.name.includes(pathWithoutPrefix))
-    );
-  }
+  const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
+  const headerGlobalIndex = logBlocks.findIndex(
+    (block) => block.startedAt.getTime() >= compositeStart && block.startedAt.getTime() <= compositeEnd && (block.name.includes(compositeUsesPath) || block.name.includes(pathWithoutPrefix))
+  );
   if (headerGlobalIndex < 0) {
     return [];
   }
@@ -62594,14 +62584,13 @@ async function expandCompositeSteps(client, workflowRun, workflowJobs) {
   const jobsWithComposites = workflowJobs.filter(
     (job) => compositeMap.has(job.id)
   );
-  const uniqueUsesPathSet = /* @__PURE__ */ new Set();
-  for (const infos of compositeMap.values()) {
-    for (const info2 of infos) {
-      uniqueUsesPathSet.add(info2.usesPath);
-    }
-  }
+  const uniqueUsesPaths = new Set(
+    [...compositeMap.values()].flatMap(
+      (infos) => infos.map((info2) => info2.usesPath)
+    )
+  );
   const compositeYamlResults = await Promise.all(
-    [...uniqueUsesPathSet].map(async (usesPath) => {
+    [...uniqueUsesPaths].map(async (usesPath) => {
       const stepCount = await fetchCompositeActionStepCount(
         client,
         owner,
@@ -62612,19 +62601,17 @@ async function expandCompositeSteps(client, workflowRun, workflowJobs) {
       return [usesPath, stepCount];
     })
   );
-  const compositeStepCounts = /* @__PURE__ */ new Map();
-  for (const [path, count] of compositeYamlResults) {
-    if (count !== void 0) {
-      compositeStepCounts.set(path, count);
-    }
-  }
-  const token = client.token ?? "";
-  const baseUrl = client.baseUrl;
-  const logPromises = jobsWithComposites.map(async (job) => {
-    const log = await fetchJobLog(token, baseUrl, owner, repo, job.id);
-    return [job.id, log];
-  });
-  const logResults = await Promise.all(logPromises);
+  const compositeStepCounts = new Map(
+    compositeYamlResults.filter(
+      (entry) => entry[1] !== void 0
+    )
+  );
+  const logResults = await Promise.all(
+    jobsWithComposites.map(async (job) => {
+      const log = await fetchJobLog(client, owner, repo, job.id);
+      return [job.id, log];
+    })
+  );
   const logMap = new Map(logResults);
   const expandedJobs = workflowJobs.map((job) => {
     const compositeInfos = compositeMap.get(job.id);
@@ -62633,9 +62620,12 @@ async function expandCompositeSteps(client, workflowRun, workflowJobs) {
     if (!logText) return job;
     const logBlocks = parseLogBlocks(logText);
     if (logBlocks.length === 0) return job;
+    const compositeInfoByIndex = new Map(
+      compositeInfos.map((info2) => [info2.apiStepIndex, info2])
+    );
     const newSteps = [];
     for (let i = 0; i < job.steps.length; i++) {
-      const compositeInfo = compositeInfos.find((c) => c.apiStepIndex === i);
+      const compositeInfo = compositeInfoByIndex.get(i);
       if (!compositeInfo || !compositeStepCounts.has(compositeInfo.usesPath)) {
         newSteps.push(job.steps[i]);
         continue;
@@ -62681,7 +62671,7 @@ init_mod4();
 var main = async () => {
   const token = (0, import_core2.getInput)("github-token", { required: true });
   const showWaitingRunner = (0, import_core2.getBooleanInput)("show-waiting-runner");
-  const showCompositeActions = (0, import_core2.getBooleanInput)("show-composite-actions");
+  const expandCompositeActions = (0, import_core2.getBooleanInput)("expand-composite-actions");
   const client = new Github({ token });
   (0, import_core2.info)("Wait for workflow API result stability...");
   await (0, import_promises.setTimeout)(1e3);
@@ -62698,7 +62688,7 @@ var main = async () => {
   const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
   (0, import_core2.debug)(JSON.stringify(workflowJobs, null, 2));
   let jobs = workflowJobs;
-  if (showCompositeActions) {
+  if (expandCompositeActions) {
     (0, import_core2.info)("Expanding composite action steps...");
     jobs = await expandCompositeSteps(client, workflowRun, workflowJobs);
   }
