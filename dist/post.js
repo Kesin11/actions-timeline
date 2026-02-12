@@ -42379,32 +42379,32 @@ var require_github = __commonJS({
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/map_entries.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/map_entries.ts
 var init_map_entries = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/map_entries.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/map_entries.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/aggregate_groups.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/aggregate_groups.ts
 var init_aggregate_groups = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/aggregate_groups.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/aggregate_groups.ts"() {
     init_map_entries();
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/associate_by.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/associate_by.ts
 var init_associate_by = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/associate_by.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/associate_by.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/associate_with.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/associate_with.ts
 var init_associate_with = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/associate_with.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/associate_with.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/chunk.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/chunk.ts
 function chunk(iterable, size) {
   if (size <= 0 || !Number.isInteger(size)) {
     throw new RangeError(
@@ -42434,237 +42434,216 @@ function chunk(iterable, size) {
   return result;
 }
 var init_chunk = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/chunk.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/chunk.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/_utils.ts
-var init_utils = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/_utils.ts"() {
-  }
-});
-
-// npm/src/deps/jsr.io/@std/collections/1.1.3/deep_merge.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/deep_merge.ts
 var init_deep_merge = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/deep_merge.ts"() {
-    init_utils();
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/deep_merge.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/distinct.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/distinct.ts
 var init_distinct = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/distinct.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/distinct.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/distinct_by.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/distinct_by.ts
 var init_distinct_by = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/distinct_by.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/distinct_by.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/drop_last_while.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/drop_last_while.ts
 var init_drop_last_while = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/drop_last_while.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/drop_last_while.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/drop_while.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/drop_while.ts
 var init_drop_while = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/drop_while.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/drop_while.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/filter_entries.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/filter_entries.ts
 var init_filter_entries = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/filter_entries.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/filter_entries.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/filter_keys.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/filter_keys.ts
 var init_filter_keys = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/filter_keys.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/filter_keys.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/filter_values.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/filter_values.ts
 var init_filter_values = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/filter_values.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/filter_values.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/find_single.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/find_single.ts
 var init_find_single = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/find_single.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/find_single.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/first_not_nullish_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/first_not_nullish_of.ts
 var init_first_not_nullish_of = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/first_not_nullish_of.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/first_not_nullish_of.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/includes_value.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/includes_value.ts
 var init_includes_value = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/includes_value.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/includes_value.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/intersect.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/intersect.ts
 var init_intersect = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/intersect.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/intersect.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/invert_by.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/invert_by.ts
 var init_invert_by = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/invert_by.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/invert_by.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/invert.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/invert.ts
 var init_invert = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/invert.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/invert.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/join_to_string.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/join_to_string.ts
 var init_join_to_string = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/join_to_string.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/join_to_string.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/map_keys.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/map_keys.ts
 var init_map_keys = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/map_keys.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/map_keys.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/map_not_nullish.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/map_not_nullish.ts
 var init_map_not_nullish = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/map_not_nullish.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/map_not_nullish.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/map_values.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/map_values.ts
 var init_map_values = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/map_values.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/map_values.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/max_by.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/max_by.ts
 var init_max_by = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/max_by.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/max_by.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/max_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/max_of.ts
 var init_max_of = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/max_of.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/max_of.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/max_with.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/max_with.ts
 var init_max_with = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/max_with.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/max_with.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/min_by.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/min_by.ts
 var init_min_by = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/min_by.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/min_by.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/min_of.ts
-function minOf(array, selector) {
-  let minimumValue;
-  for (const element of array) {
-    const currentValue = selector(element);
-    if (minimumValue === void 0 || currentValue < minimumValue) {
-      minimumValue = currentValue;
-      continue;
-    }
-    if (Number.isNaN(currentValue)) {
-      return currentValue;
-    }
-  }
-  return minimumValue;
-}
+// npm/src/deps/jsr.io/@std/collections/1.1.5/min_of.ts
 var init_min_of = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/min_of.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/min_of.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/min_with.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/min_with.ts
 var init_min_with = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/min_with.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/min_with.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/omit.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/omit.ts
 var init_omit = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/omit.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/omit.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/partition.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/partition.ts
 var init_partition = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/partition.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/partition.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/partition_entries.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/partition_entries.ts
 var init_partition_entries = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/partition_entries.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/partition_entries.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/permutations.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/permutations.ts
 var init_permutations = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/permutations.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/permutations.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/pick.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/pick.ts
 var init_pick = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/pick.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/pick.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/reduce_groups.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/reduce_groups.ts
 var init_reduce_groups = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/reduce_groups.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/reduce_groups.ts"() {
     init_map_values();
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/running_reduce.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/running_reduce.ts
 var init_running_reduce = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/running_reduce.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/running_reduce.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/sample.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/sample.ts
 var init_sample = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/sample.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/sample.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/sliding_windows.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/sliding_windows.ts
 var init_sliding_windows = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/sliding_windows.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/sliding_windows.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/sort_by.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/sort_by.ts
 var init_sort_by = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/sort_by.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/sort_by.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
@@ -42673,59 +42652,68 @@ function sumOf(array, selector) {
   return sum;
 }
 var init_sum_of = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/sum_of.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/sum_of.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/take_last_while.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/take_last_while.ts
 var init_take_last_while = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/take_last_while.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/take_last_while.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/take_while.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/take_while.ts
 var init_take_while = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/take_while.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/take_while.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/union.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/union.ts
 var init_union = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/union.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/union.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/unzip.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/unzip.ts
 var init_unzip = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/unzip.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/unzip.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/without_all.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/without_all.ts
 var init_without_all = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/without_all.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/without_all.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/zip.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/zip.ts
 function zip(...arrays) {
-  const minLength = minOf(arrays, (element) => element.length) ?? 0;
+  const { length } = arrays;
+  if (length === 0) return [];
+  let minLength = arrays[0].length;
+  for (let i = 1; i < length; ++i) {
+    if (arrays[i].length < minLength) {
+      minLength = arrays[i].length;
+    }
+  }
   const result = new Array(minLength);
-  for (let i = 0; i < minLength; i += 1) {
-    const arr = arrays.map((it) => it[i]);
-    result[i] = arr;
+  for (let i = 0; i < minLength; ++i) {
+    const tuple = new Array(length);
+    for (let j = 0; j < length; ++j) {
+      tuple[j] = arrays[j][i];
+    }
+    result[i] = tuple;
   }
   return result;
 }
 var init_zip = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/zip.ts"() {
-    init_min_of();
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/zip.ts"() {
   }
 });
 
-// npm/src/deps/jsr.io/@std/collections/1.1.3/mod.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.5/mod.ts
 var init_mod = __esm({
-  "npm/src/deps/jsr.io/@std/collections/1.1.3/mod.ts"() {
+  "npm/src/deps/jsr.io/@std/collections/1.1.5/mod.ts"() {
     init_aggregate_groups();
     init_associate_by();
     init_associate_with();
@@ -43225,7 +43213,7 @@ function isNegativeZero(i) {
 function isPlainObject(object) {
   return Object.prototype.toString.call(object) === "[object Object]";
 }
-var init_utils2 = __esm({
+var init_utils = __esm({
   "npm/src/deps/jsr.io/@std/yaml/1.0.11/_utils.ts"() {
   }
 });
@@ -43295,7 +43283,7 @@ function isFloat(object) {
 var YAML_FLOAT_PATTERN, SCIENTIFIC_WITHOUT_DOT, float;
 var init_float = __esm({
   "npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/float.ts"() {
-    init_utils2();
+    init_utils();
     YAML_FLOAT_PATTERN = new RegExp(
       // 2.5e4, 2.5 and integers
       "^(?:[-+]?(?:0|[1-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"
@@ -43407,7 +43395,7 @@ function isInteger(object) {
 var int;
 var init_int = __esm({
   "npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/int.ts"() {
-    init_utils2();
+    init_utils();
     int = {
       tag: "tag:yaml.org,2002:int",
       construct: constructYamlInteger,
@@ -43510,7 +43498,7 @@ function resolveYamlOmap(data) {
 var omap;
 var init_omap = __esm({
   "npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/omap.ts"() {
-    init_utils2();
+    init_utils();
     omap = {
       tag: "tag:yaml.org,2002:omap",
       kind: "sequence",
@@ -43530,7 +43518,7 @@ function resolveYamlPairs(data) {
 var pairs;
 var init_pairs = __esm({
   "npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/pairs.ts"() {
-    init_utils2();
+    init_utils();
     pairs = {
       tag: "tag:yaml.org,2002:pairs",
       construct(data) {
@@ -43846,7 +43834,7 @@ var init_loader_state = __esm({
   "npm/src/deps/jsr.io/@std/yaml/1.0.11/_loader_state.ts"() {
     init_chars();
     init_schema();
-    init_utils2();
+    init_utils();
     CONTEXT_FLOW_IN = 1;
     CONTEXT_FLOW_OUT = 2;
     CONTEXT_BLOCK_IN = 3;
@@ -45157,7 +45145,7 @@ var init_dumper_state = __esm({
   "npm/src/deps/jsr.io/@std/yaml/1.0.11/_dumper_state.ts"() {
     init_chars();
     init_schema();
-    init_utils2();
+    init_utils();
   }
 });
 
