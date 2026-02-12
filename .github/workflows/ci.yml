@@ -82,3 +82,7 @@ jobs:
         uses: ./
         with:
           show-waiting-runner: false
+      - name: Run self action with 'expand-composite-actions=true'
+        uses: ./
+        with:
+          expand-composite-actions: true
