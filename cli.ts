@@ -1,5 +1,6 @@
 import { Command } from "@cliffy/command";
 import { createMermaid } from "./src/workflow_gantt.ts";
+import { expandCompositeSteps } from "./src/composite.ts";
 import { Github, parseWorkflowRunUrl } from "@kesin11/gha-utils";
 
 const { options, args } = await new Command()
@@ -14,6 +15,11 @@ const { options, args } = await new Command()
     "--show-waiting-runner <showWaitingRunner:boolean>",
     "Show waiting runner time in the timeline. Default: true",
     { default: true },
+  )
+  .option(
+    "--expand-composite-actions <expandCompositeActions:boolean>",
+    "Expand composite action steps in the timeline. Default: false",
+    { default: false },
   )
   .arguments("<url:string>")
   .parse(Deno.args);
@@ -32,10 +38,13 @@ const workflowRun = await client.fetchWorkflowRun(
   runUrl.runId,
   runUrl.runAttempt,
 );
-// const workflowJobs = await client.fetchWorkflowJobs([workflowRun]);
 const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
 
-const gantt = createMermaid(workflowRun, workflowJobs, {
+const jobs = options.expandCompositeActions
+  ? await expandCompositeSteps(client, workflowRun, workflowJobs)
+  : workflowJobs;
+
+const gantt = createMermaid(workflowRun, jobs, {
   showWaitingRunner: options.showWaitingRunner,
 });
 

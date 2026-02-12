@@ -25,6 +25,13 @@ jobs:
           # Show waiting runner time in the timeline.
           # Default: true
           show-waiting-runner: true
+          # Expand repo-local composite action steps in the timeline.
+          # Note: This option requires additional API calls to fetch job logs
+          # and workflow files, which may increase execution time.
+          # Limitation: Composite actions that contain nested local composite
+          # actions (uses: ./.github/actions/...) are not expanded.
+          # Default: false
+          expand-composite-actions: false
 
       # Your build steps...
 ```
@@ -125,6 +132,16 @@ deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
   https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
   https://YOUR_ENTERPRISE_HOST/OWNER/REPO/actions/runs/RUN_ID/attempts/1 \
   -t $(gh auth token -h YOUR_ENTERPRISE_HOST) \
+  -o output.md
+```
+
+```bash
+# Expand composite action steps
+deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
+  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+  https://github.com/OWNER/REPO/actions/runs/RUN_ID \
+  -t $(gh auth token) \
+  --expand-composite-actions true \
   -o output.md
 ```
 

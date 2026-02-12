@@ -42,6 +42,26 @@ This project is a GitHub Action that visualizes GitHub Actions workflow executio
 - `npm/` - npm package build output
 - `tests/` - Test files and fixtures
 
+## Code Conventions
+
+### General
+
+- Prefer `const` over `let`. Use ternary operator or other expressions to avoid `let` where possible
+- Do not make function parameters optional if they are never called with `undefined` in practice
+- Use Octokit REST API client instead of raw `fetch` for GitHub API calls
+
+### Tests
+
+- Use `functionName.name` instead of string literals in `Deno.test()` (e.g., `Deno.test(parseLogBlocks.name, ...)`)
+- Compare objects directly with `assertEquals` instead of asserting individual fields
+- Do not use `for` loops for asserting. Compare the entire expected object directly
+- Extract magic numbers into named variables
+
+### Functional Style
+
+- Prefer `map`, `flatMap`, `filter` over imperative `for` loops where readability allows
+- Use `new Map(array)` with `Array.filter` instead of manually building Maps in loops
+
 ## Important Notes
 
 - This Action runs in the **post-processing** phase, so main.ts does nothing
