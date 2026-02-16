@@ -1,4 +1,4 @@
-import { decodeBase64, encodeBase64 } from "@std/encoding";
+import { decodeBase64 } from "@std/encoding";
 import { parse as parseYaml } from "@std/yaml";
 import {
   type CompositeAction,
@@ -31,8 +31,8 @@ type SubStep = {
   conclusion: string | null;
 };
 
-// Fetch file content via Octokit, decoding base64 with newline removal.
-// Workaround: gha-utils FileContent constructor fails on base64 with newlines.
+// Fetch file content via Octokit, decoding base64 manually.
+// Used by fetchCompositeActionStepCount to get action.yml for local composite actions.
 async function fetchFileContent(
   client: Github,
   owner: string,
@@ -67,39 +67,10 @@ async function fetchWorkflowModel(
   client: Github,
   workflowRun: WorkflowRun,
 ): Promise<WorkflowModel | undefined> {
-  // TODO: Use gha-utils fetchWorkflowFiles when the base64 decoding issue is fixed in gha-utils.
-  // const fileContents = await client.fetchWorkflowFiles([workflowRun]);
-  // const fileContent = fileContents[0];
-  // if (fileContent) return new WorkflowModel(fileContent);
-
-  // Fallback: fetch directly with newline-safe base64 decoding.
-  const owner = workflowRun.repository.owner.login;
-  const repo = workflowRun.repository.name;
-  const content = await fetchFileContent(
-    client,
-    owner,
-    repo,
-    workflowRun.path,
-    workflowRun.head_sha,
-  );
-  if (!content) return undefined;
-
-  // Re-encode content as clean base64 to construct FileContent properly.
-  const { FileContent } = await import("@kesin11/gha-utils");
-  const cleanBase64 = encodeBase64(new TextEncoder().encode(content));
-  const fc = new FileContent({
-    type: "file",
-    size: content.length,
-    name: workflowRun.path.split("/").pop() ?? "",
-    path: workflowRun.path,
-    content: cleanBase64,
-    sha: "",
-    url: "",
-    git_url: null,
-    html_url: null,
-    download_url: null,
-  });
-  return new WorkflowModel(fc);
+  const fileContents = await client.fetchWorkflowFiles([workflowRun]);
+  const fileContent = fileContents[0];
+  if (fileContent) return new WorkflowModel(fileContent);
+  return undefined;
 }
 
 // Identify composite steps in each job by matching API steps against the YAML model.
@@ -120,15 +91,7 @@ function identifyCompositeSteps(
       const apiStep = job.steps[i];
       // Skip Pre/Post steps - only expand the main "Run" execution step
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
-      let stepModel = StepModel.match(jobModel.steps, apiStep.name);
-      // GitHub API sometimes prefixes local action paths with an extra "/".
-      // e.g. "Run /./.github/actions/foo" instead of "Run ./.github/actions/foo"
-      if (!stepModel) {
-        const normalized = apiStep.name.replace(/^(Run )\/\.\//, "$1./");
-        if (normalized !== apiStep.name) {
-          stepModel = StepModel.match(jobModel.steps, normalized);
-        }
-      }
+      const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
         compositeSteps.push({
           apiStepIndex: i,

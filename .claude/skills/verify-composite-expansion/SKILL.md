@@ -14,13 +14,13 @@ Verify the correctness of composite action expansion by comparing CLI output wit
 Use `scripts/verify_composite.sh` to collect all data at once.
 
 ```bash
-bash .claude/skills/verify-composite-expansion/scripts/verify_composite.sh <org/repo> <run_id> [output_dir]
+.claude/skills/verify-composite-expansion/scripts/verify_composite.sh <org/repo> <run_id> [output_dir]
 ```
 
 Example:
 
 ```bash
-bash .claude/skills/verify-composite-expansion/scripts/verify_composite.sh directus/directus 21767232907 .
+.claude/skills/verify-composite-expansion/scripts/verify_composite.sh directus/directus 21767232907 .
 ```
 
 The script performs:
