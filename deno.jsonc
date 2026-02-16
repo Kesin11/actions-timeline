@@ -12,7 +12,7 @@
   },
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@^1.0.0-rc.8",
-    "@kesin11/gha-utils": "jsr:@kesin11/gha-utils@0.2.2",
+    "@kesin11/gha-utils": "jsr:@kesin11/gha-utils@0.2.3",
     "@std/assert": "jsr:@std/assert@^1.0.13",
     "@std/collections": "jsr:@std/collections@^1.1.2",
     "@deno/dnt": "jsr:@deno/dnt@0.42.3",
