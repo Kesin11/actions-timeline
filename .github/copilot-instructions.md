@@ -62,6 +62,14 @@ This project is a GitHub Action that visualizes GitHub Actions workflow executio
 - Prefer `map`, `flatMap`, `filter` over imperative `for` loops where readability allows
 - Use `new Map(array)` with `Array.filter` instead of manually building Maps in loops
 
+## Pre-push Checklist
+
+Before pushing commits, always run:
+
+1. `deno fmt` - Format code
+2. `deno lint` - Lint code
+3. `deno test` - Run tests
+
 ## Important Notes
 
 - This Action runs in the **post-processing** phase, so main.ts does nothing
