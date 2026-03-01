@@ -20,7 +20,7 @@
     "@std/yaml": "jsr:@std/yaml@^1.0.11",
     "esbuild": "npm:esbuild@0.27.3",
     "@actions/core": "npm:@actions/core@2.0.3",
-    "@actions/github": "npm:@actions/github@7.0.0",
+    "@actions/github": "npm:@actions/github@9.0.0",
     "date-fns": "npm:date-fns@4.1.0"
   }
 }
