@@ -1,5 +1,127 @@
+import { encodeBase64 } from "@std/encoding";
 import { assertEquals } from "@std/assert";
-import { extractSubSteps, parseLogBlocks } from "../src/composite.ts";
+import {
+  FileContent,
+  type FileContentResponse,
+  type WorkflowJobs,
+  WorkflowModel,
+} from "@kesin11/gha-utils";
+import {
+  extractSubSteps,
+  identifyCompositeSteps,
+  parseLogBlocks,
+} from "../src/composite.ts";
+
+function makeWorkflowModel(yamlContent: string): WorkflowModel {
+  const fileContentResponse: FileContentResponse = {
+    type: "file",
+    size: yamlContent.length,
+    name: "workflow.yml",
+    path: ".github/workflows/workflow.yml",
+    content: encodeBase64(yamlContent),
+    sha: "abc123",
+    url:
+      "https://api.github.com/repos/owner/repo/contents/.github/workflows/workflow.yml",
+    git_url: null,
+    html_url: null,
+    download_url: null,
+  };
+  return new WorkflowModel(new FileContent(fileContentResponse));
+}
+
+const COMPOSITE_WORKFLOW_YAML = `
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/setup
+      - run: echo hello
+`;
+
+function makeWorkflowJobs(
+  startedAt: string | null,
+  completedAt: string | null,
+): WorkflowJobs {
+  return [{
+    id: 1,
+    name: "test",
+    steps: [{
+      name: "Run ./.github/actions/setup",
+      status: "completed",
+      conclusion: "success",
+      number: 1,
+      started_at: startedAt,
+      completed_at: completedAt,
+    }],
+  }] as unknown as WorkflowJobs;
+}
+
+Deno.test(identifyCompositeSteps.name, async (t) => {
+  const workflowModel = makeWorkflowModel(COMPOSITE_WORKFLOW_YAML);
+  const minDurationSec = 20;
+
+  await t.step("includes step with duration at threshold", () => {
+    const durationMs = minDurationSec * 1000;
+    const startedAt = "2024-01-15T10:00:00.000Z";
+    const completedAt = new Date(
+      new Date(startedAt).getTime() + durationMs,
+    ).toISOString();
+    const workflowJobs = makeWorkflowJobs(startedAt, completedAt);
+
+    const result = identifyCompositeSteps(
+      workflowJobs,
+      workflowModel,
+      minDurationSec,
+    );
+    assertEquals(result.size, 1);
+    assertEquals(result.get(1)?.length, 1);
+    assertEquals(result.get(1)?.[0].usesPath, "./.github/actions/setup");
+  });
+
+  await t.step("includes step with duration above threshold", () => {
+    const startedAt = "2024-01-15T10:00:00.000Z";
+    const completedAt = "2024-01-15T10:01:00.000Z"; // 60 seconds
+    const workflowJobs = makeWorkflowJobs(startedAt, completedAt);
+
+    const result = identifyCompositeSteps(
+      workflowJobs,
+      workflowModel,
+      minDurationSec,
+    );
+    assertEquals(result.size, 1);
+  });
+
+  await t.step("excludes step with duration below threshold", () => {
+    const durationMs = (minDurationSec - 1) * 1000; // 19 seconds
+    const startedAt = "2024-01-15T10:00:00.000Z";
+    const completedAt = new Date(
+      new Date(startedAt).getTime() + durationMs,
+    ).toISOString();
+    const workflowJobs = makeWorkflowJobs(startedAt, completedAt);
+
+    const result = identifyCompositeSteps(
+      workflowJobs,
+      workflowModel,
+      minDurationSec,
+    );
+    assertEquals(result.size, 0);
+  });
+
+  await t.step(
+    "excludes step with missing timestamps (defaults to 0 duration)",
+    () => {
+      const workflowJobs = makeWorkflowJobs(null, null);
+
+      const result = identifyCompositeSteps(
+        workflowJobs,
+        workflowModel,
+        minDurationSec,
+      );
+      assertEquals(result.size, 0);
+    },
+  );
+});
 
 Deno.test(parseLogBlocks.name, async (t) => {
   await t.step("extracts ##[group] blocks with timestamps", () => {

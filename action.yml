@@ -17,6 +17,12 @@ inputs:
     description: Expand composite action steps in the timeline.
     default: false
     required: false
+  composite-action-min-duration:
+    description: >
+      Minimum duration in seconds for a composite action step to be expanded
+      when expand-composite-actions is enabled. Default: 20
+    default: "20"
+    required: false
 runs:
   using: "node24"
   main: "dist/main.js"
