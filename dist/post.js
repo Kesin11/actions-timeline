@@ -52262,7 +52262,7 @@ var import_node_process = __toESM(require("node:process"));
 var import_core2 = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/jsr.io/@std/collections/1.1.6/chunk.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.3/chunk.ts
 function chunk(iterable, size) {
   if (size <= 0 || !Number.isInteger(size)) {
     throw new RangeError(
@@ -52292,7 +52292,23 @@ function chunk(iterable, size) {
   return result;
 }
 
-// npm/src/deps/jsr.io/@std/collections/1.1.6/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.3/min_of.ts
+function minOf(array, selector) {
+  let minimumValue;
+  for (const element of array) {
+    const currentValue = selector(element);
+    if (minimumValue === void 0 || currentValue < minimumValue) {
+      minimumValue = currentValue;
+      continue;
+    }
+    if (Number.isNaN(currentValue)) {
+      return currentValue;
+    }
+  }
+  return minimumValue;
+}
+
+// npm/src/deps/jsr.io/@std/collections/1.1.3/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
@@ -52301,23 +52317,13 @@ function sumOf(array, selector) {
   return sum;
 }
 
-// npm/src/deps/jsr.io/@std/collections/1.1.6/zip.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.3/zip.ts
 function zip(...arrays) {
-  const { length } = arrays;
-  if (length === 0) return [];
-  let minLength = arrays[0].length;
-  for (let i = 1; i < length; ++i) {
-    if (arrays[i].length < minLength) {
-      minLength = arrays[i].length;
-    }
-  }
+  const minLength = minOf(arrays, (element) => element.length) ?? 0;
   const result = new Array(minLength);
-  for (let i = 0; i < minLength; ++i) {
-    const tuple = new Array(length);
-    for (let j = 0; j < length; ++j) {
-      tuple[j] = arrays[j][i];
-    }
-    result[i] = tuple;
+  for (let i = 0; i < minLength; i += 1) {
+    const arr = arrays.map((it) => it[i]);
+    result[i] = arr;
   }
   return result;
 }
@@ -54201,7 +54207,7 @@ var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_chars.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_chars.ts
 var TAB = 9;
 var LINE_FEED = 10;
 var CARRIAGE_RETURN = 13;
@@ -54242,7 +54248,7 @@ function isFlowIndicator(c) {
   return c === COMMA || c === LEFT_SQUARE_BRACKET || c === RIGHT_SQUARE_BRACKET || c === LEFT_CURLY_BRACKET || c === RIGHT_CURLY_BRACKET;
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/binary.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/binary.ts
 var BASE64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r";
 function resolveYamlBinary(data) {
   if (data === null) return false;
@@ -54330,7 +54336,7 @@ var binary = {
   resolve: resolveYamlBinary
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/bool.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/bool.ts
 var YAML_TRUE_BOOLEANS = ["true", "True", "TRUE"];
 var YAML_FALSE_BOOLEANS = ["false", "False", "FALSE"];
 var YAML_BOOLEANS = [...YAML_TRUE_BOOLEANS, ...YAML_FALSE_BOOLEANS];
@@ -54360,7 +54366,7 @@ var bool = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_utils.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_utils.ts
 function isObject(value) {
   return value !== null && typeof value === "object";
 }
@@ -54371,7 +54377,7 @@ function isPlainObject(object) {
   return Object.prototype.toString.call(object) === "[object Object]";
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/float.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/float.ts
 var YAML_FLOAT_PATTERN = new RegExp(
   // 2.5e4, 2.5 and integers
   "^(?:[-+]?(?:0|[1-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"
@@ -54448,7 +54454,7 @@ var float = {
   resolve: resolveYamlFloat
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/int.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/int.ts
 function isCharCodeInRange(c, lower, upper) {
   return lower <= c && c <= upper;
 }
@@ -54570,7 +54576,7 @@ var int = {
   resolve: resolveYamlInteger
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/map.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/map.ts
 var map = {
   tag: "tag:yaml.org,2002:map",
   resolve() {
@@ -54582,7 +54588,7 @@ var map = {
   kind: "mapping"
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/merge.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/merge.ts
 var merge = {
   tag: "tag:yaml.org,2002:merge",
   kind: "scalar",
@@ -54590,7 +54596,7 @@ var merge = {
   construct: (data) => data
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/nil.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/nil.ts
 var nil = {
   tag: "tag:yaml.org,2002:null",
   kind: "scalar",
@@ -54607,7 +54613,7 @@ var nil = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/omap.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/omap.ts
 function resolveYamlOmap(data) {
   const objectKeys = /* @__PURE__ */ new Set();
   for (const object of data) {
@@ -54630,7 +54636,7 @@ var omap = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/pairs.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/pairs.ts
 function resolveYamlPairs(data) {
   if (data === null) return true;
   return data.every((it) => isPlainObject(it) && Object.keys(it).length === 1);
@@ -54644,7 +54650,7 @@ var pairs = {
   resolve: resolveYamlPairs
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/regexp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/regexp.ts
 var REGEXP = /^\/(?<regexp>[\s\S]+)\/(?<modifiers>[gismuy]*)$/;
 var regexp = {
   tag: "tag:yaml.org,2002:js/regexp",
@@ -54667,7 +54673,7 @@ var regexp = {
   represent: (object) => object.toString()
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/seq.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/seq.ts
 var seq = {
   tag: "tag:yaml.org,2002:seq",
   kind: "sequence",
@@ -54675,7 +54681,7 @@ var seq = {
   construct: (data) => data !== null ? data : []
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/set.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/set.ts
 var set = {
   tag: "tag:yaml.org,2002:set",
   kind: "mapping",
@@ -54686,7 +54692,7 @@ var set = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/str.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/str.ts
 var str = {
   tag: "tag:yaml.org,2002:str",
   kind: "scalar",
@@ -54694,7 +54700,7 @@ var str = {
   construct: (data) => data !== null ? data : ""
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/timestamp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/timestamp.ts
 var YAML_DATE_REGEXP = new RegExp(
   "^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$"
   // [3] day
@@ -54759,7 +54765,7 @@ var timestamp = {
   resolve: resolveYamlTimestamp
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/undefined.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_type/undefined.ts
 var undefinedType = {
   tag: "tag:yaml.org,2002:js/undefined",
   kind: "scalar",
@@ -54777,7 +54783,7 @@ var undefinedType = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_schema.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_schema.ts
 function createTypeMap(implicitTypes, explicitTypes) {
   const result = {
     fallback: /* @__PURE__ */ new Map(),
@@ -54828,7 +54834,7 @@ var SCHEMA_MAP = /* @__PURE__ */ new Map([
   ["extended", EXTENDED_SCHEMA]
 ]);
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_loader_state.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/_loader_state.ts
 var CONTEXT_FLOW_IN = 1;
 var CONTEXT_FLOW_OUT = 2;
 var CONTEXT_BLOCK_IN = 3;
@@ -54957,29 +54963,12 @@ function writeFoldedLines(count) {
   if (count > 1) return "\n".repeat(count - 1);
   return "";
 }
-var Scanner = class {
-  source;
-  #length;
-  position = 0;
-  constructor(source) {
-    source += "\0";
-    this.source = source;
-    this.#length = source.length;
-  }
-  peek(offset = 0) {
-    return this.source.charCodeAt(this.position + offset);
-  }
-  next() {
-    this.position += 1;
-  }
-  eof() {
-    return this.position >= this.#length - 1;
-  }
-};
 var LoaderState = class {
-  #scanner;
+  input;
+  length;
   lineIndent = 0;
   lineStart = 0;
+  position = 0;
   line = 0;
   onWarning;
   allowDuplicateKeys;
@@ -54993,44 +54982,48 @@ var LoaderState = class {
     onWarning,
     allowDuplicateKeys = false
   }) {
-    this.#scanner = new Scanner(input);
+    this.input = input;
     this.onWarning = onWarning;
     this.allowDuplicateKeys = allowDuplicateKeys;
     this.implicitTypes = schema.implicitTypes;
     this.typeMap = schema.typeMap;
+    this.length = input.length;
     this.readIndent();
   }
   skipWhitespaces() {
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     while (isWhiteSpace(ch)) {
-      this.#scanner.next();
-      ch = this.#scanner.peek();
+      ch = this.next();
     }
   }
   skipComment() {
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     if (ch !== SHARP) return;
-    this.#scanner.next();
-    ch = this.#scanner.peek();
+    ch = this.next();
     while (ch !== 0 && !isEOL(ch)) {
-      this.#scanner.next();
-      ch = this.#scanner.peek();
+      ch = this.next();
     }
   }
   readIndent() {
-    let ch = this.#scanner.peek();
-    while (ch === SPACE) {
+    let char = this.peek();
+    while (char === SPACE) {
       this.lineIndent += 1;
-      this.#scanner.next();
-      ch = this.#scanner.peek();
+      char = this.next();
     }
+  }
+  peek(offset = 0) {
+    return this.input.charCodeAt(this.position + offset);
+  }
+  next() {
+    this.position += 1;
+    return this.peek();
   }
   #createError(message2) {
     const mark = markToString(
-      this.#scanner.source,
-      this.#scanner.position,
+      this.input,
+      this.position,
       this.line,
-      this.#scanner.position - this.lineStart
+      this.position - this.lineStart
     );
     return new SyntaxError(`${message2} ${mark}`);
   }
@@ -55092,7 +55085,7 @@ var LoaderState = class {
   }
   captureSegment(start, end, checkJson) {
     if (start < end) {
-      const result = this.#scanner.source.slice(start, end);
+      const result = this.input.slice(start, end);
       if (checkJson) {
         for (let position = 0; position < result.length; position++) {
           const character = result.charCodeAt(position);
@@ -55112,21 +55105,21 @@ var LoaderState = class {
     let detected = false;
     const result = [];
     if (anchor !== null) this.anchorMap.set(anchor, result);
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     while (ch !== 0) {
       if (ch !== MINUS) {
         break;
       }
-      const following = this.#scanner.peek(1);
+      const following = this.peek(1);
       if (!isWhiteSpaceOrEOL(following)) {
         break;
       }
       detected = true;
-      this.#scanner.next();
+      this.position++;
       if (this.skipSeparationSpace(true, -1)) {
         if (this.lineIndent <= nodeIndent) {
           result.push(null);
-          ch = this.#scanner.peek();
+          ch = this.peek();
           continue;
         }
       }
@@ -55139,7 +55132,7 @@ var LoaderState = class {
       });
       if (newState) result.push(newState.result);
       this.skipSeparationSpace(true, -1);
-      ch = this.#scanner.peek();
+      ch = this.peek();
       if ((this.line === line || this.lineIndent > nodeIndent) && ch !== 0) {
         throw this.#createError(
           "Cannot read block sequence: bad indentation of a sequence entry"
@@ -55200,7 +55193,7 @@ var LoaderState = class {
     } else {
       if (!this.allowDuplicateKeys && !overridableKeys.has(keyNode) && Object.hasOwn(result, keyNode)) {
         this.line = startLine || this.line;
-        this.#scanner.position = startPos || this.#scanner.position;
+        this.position = startPos || this.position;
         throw this.#createError("Cannot store mapping pair: duplicated key");
       }
       Object.defineProperty(result, keyNode, {
@@ -55214,37 +55207,37 @@ var LoaderState = class {
     return result;
   }
   readLineBreak() {
-    const ch = this.#scanner.peek();
+    const ch = this.peek();
     if (ch === LINE_FEED) {
-      this.#scanner.next();
+      this.position++;
     } else if (ch === CARRIAGE_RETURN) {
-      this.#scanner.next();
-      if (this.#scanner.peek() === LINE_FEED) {
-        this.#scanner.next();
+      this.position++;
+      if (this.peek() === LINE_FEED) {
+        this.position++;
       }
     } else {
       throw this.#createError("Cannot read line: line break not found");
     }
     this.line += 1;
-    this.lineStart = this.#scanner.position;
+    this.lineStart = this.position;
   }
   skipSeparationSpace(allowComments, checkIndent) {
     let lineBreaks = 0;
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     while (ch !== 0) {
       this.skipWhitespaces();
-      ch = this.#scanner.peek();
+      ch = this.peek();
       if (allowComments) {
         this.skipComment();
-        ch = this.#scanner.peek();
+        ch = this.peek();
       }
       if (isEOL(ch)) {
         this.readLineBreak();
-        ch = this.#scanner.peek();
+        ch = this.peek();
         lineBreaks++;
         this.lineIndent = 0;
         this.readIndent();
-        ch = this.#scanner.peek();
+        ch = this.peek();
       } else {
         break;
       }
@@ -55255,9 +55248,9 @@ var LoaderState = class {
     return lineBreaks;
   }
   testDocumentSeparator() {
-    let ch = this.#scanner.peek();
-    if ((ch === MINUS || ch === DOT) && ch === this.#scanner.peek(1) && ch === this.#scanner.peek(2)) {
-      ch = this.#scanner.peek(3);
+    let ch = this.peek();
+    if ((ch === MINUS || ch === DOT) && ch === this.peek(1) && ch === this.peek(2)) {
+      ch = this.peek(3);
       if (ch === 0 || isWhiteSpaceOrEOL(ch)) {
         return true;
       }
@@ -55265,34 +55258,34 @@ var LoaderState = class {
     return false;
   }
   readPlainScalar(tag, anchor, nodeIndent, withinFlowCollection) {
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     if (isWhiteSpaceOrEOL(ch) || isFlowIndicator(ch) || ch === SHARP || ch === AMPERSAND || ch === ASTERISK || ch === EXCLAMATION || ch === VERTICAL_LINE || ch === GREATER_THAN || ch === SINGLE_QUOTE || ch === DOUBLE_QUOTE || ch === PERCENT || ch === COMMERCIAL_AT || ch === GRAVE_ACCENT) {
       return;
     }
     let following;
     if (ch === QUESTION || ch === MINUS) {
-      following = this.#scanner.peek(1);
+      following = this.peek(1);
       if (isWhiteSpaceOrEOL(following) || withinFlowCollection && isFlowIndicator(following)) {
         return;
       }
     }
     let result = "";
-    let captureEnd = this.#scanner.position;
-    let captureStart = this.#scanner.position;
+    let captureEnd = this.position;
+    let captureStart = this.position;
     let hasPendingContent = false;
     let line = 0;
     while (ch !== 0) {
       if (ch === COLON) {
-        following = this.#scanner.peek(1);
+        following = this.peek(1);
         if (isWhiteSpaceOrEOL(following) || withinFlowCollection && isFlowIndicator(following)) {
           break;
         }
       } else if (ch === SHARP) {
-        const preceding = this.#scanner.peek(-1);
+        const preceding = this.peek(-1);
         if (isWhiteSpaceOrEOL(preceding)) {
           break;
         }
-      } else if (this.#scanner.position === this.lineStart && this.testDocumentSeparator() || withinFlowCollection && isFlowIndicator(ch)) {
+      } else if (this.position === this.lineStart && this.testDocumentSeparator() || withinFlowCollection && isFlowIndicator(ch)) {
         break;
       } else if (isEOL(ch)) {
         line = this.line;
@@ -55301,10 +55294,10 @@ var LoaderState = class {
         this.skipSeparationSpace(false, -1);
         if (this.lineIndent >= nodeIndent) {
           hasPendingContent = true;
-          ch = this.#scanner.peek();
+          ch = this.peek();
           continue;
         } else {
-          this.#scanner.position = captureEnd;
+          this.position = captureEnd;
           this.line = line;
           this.lineStart = lineStart;
           this.lineIndent = lineIndent;
@@ -55315,14 +55308,13 @@ var LoaderState = class {
         const segment2 = this.captureSegment(captureStart, captureEnd, false);
         if (segment2) result += segment2;
         result += writeFoldedLines(this.line - line);
-        captureStart = captureEnd = this.#scanner.position;
+        captureStart = captureEnd = this.position;
         hasPendingContent = false;
       }
       if (!isWhiteSpace(ch)) {
-        captureEnd = this.#scanner.position + 1;
+        captureEnd = this.position + 1;
       }
-      this.#scanner.next();
-      ch = this.#scanner.peek();
+      ch = this.next();
     }
     const segment = this.captureSegment(captureStart, captureEnd, false);
     if (segment) result += segment;
@@ -55330,27 +55322,22 @@ var LoaderState = class {
     if (result) return { tag, anchor, kind: "scalar", result };
   }
   readSingleQuotedScalar(tag, anchor, nodeIndent) {
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     if (ch !== SINGLE_QUOTE) return;
     let result = "";
-    this.#scanner.next();
-    let captureStart = this.#scanner.position;
-    let captureEnd = this.#scanner.position;
-    ch = this.#scanner.peek();
+    this.position++;
+    let captureStart = this.position;
+    let captureEnd = this.position;
+    ch = this.peek();
     while (ch !== 0) {
       if (ch === SINGLE_QUOTE) {
-        const segment = this.captureSegment(
-          captureStart,
-          this.#scanner.position,
-          true
-        );
+        const segment = this.captureSegment(captureStart, this.position, true);
         if (segment) result += segment;
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+        ch = this.next();
         if (ch === SINGLE_QUOTE) {
-          captureStart = this.#scanner.position;
-          this.#scanner.next();
-          captureEnd = this.#scanner.position;
+          captureStart = this.position;
+          this.position++;
+          captureEnd = this.position;
         } else {
           if (anchor !== null) this.anchorMap.set(anchor, result);
           return { tag, anchor, kind: "scalar", result };
@@ -55361,62 +55348,52 @@ var LoaderState = class {
         result += writeFoldedLines(
           this.skipSeparationSpace(false, nodeIndent)
         );
-        captureStart = captureEnd = this.#scanner.position;
-      } else if (this.#scanner.position === this.lineStart && this.testDocumentSeparator()) {
+        captureStart = captureEnd = this.position;
+      } else if (this.position === this.lineStart && this.testDocumentSeparator()) {
         throw this.#createError(
           "Unexpected end of the document within a single quoted scalar"
         );
       } else {
-        this.#scanner.next();
-        captureEnd = this.#scanner.position;
+        this.position++;
+        captureEnd = this.position;
       }
-      ch = this.#scanner.peek();
+      ch = this.peek();
     }
     throw this.#createError(
       "Unexpected end of the stream within a single quoted scalar"
     );
   }
   readDoubleQuotedScalar(tag, anchor, nodeIndent) {
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     if (ch !== DOUBLE_QUOTE) return;
     let result = "";
-    this.#scanner.next();
-    let captureEnd = this.#scanner.position;
-    let captureStart = this.#scanner.position;
+    this.position++;
+    let captureEnd = this.position;
+    let captureStart = this.position;
     let tmp;
-    ch = this.#scanner.peek();
+    ch = this.peek();
     while (ch !== 0) {
       if (ch === DOUBLE_QUOTE) {
-        const segment = this.captureSegment(
-          captureStart,
-          this.#scanner.position,
-          true
-        );
+        const segment = this.captureSegment(captureStart, this.position, true);
         if (segment) result += segment;
-        this.#scanner.next();
+        this.position++;
         if (anchor !== null) this.anchorMap.set(anchor, result);
         return { tag, anchor, kind: "scalar", result };
       }
       if (ch === BACKSLASH) {
-        const segment = this.captureSegment(
-          captureStart,
-          this.#scanner.position,
-          true
-        );
+        const segment = this.captureSegment(captureStart, this.position, true);
         if (segment) result += segment;
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+        ch = this.next();
         if (isEOL(ch)) {
           this.skipSeparationSpace(false, nodeIndent);
         } else if (ch < 256 && SIMPLE_ESCAPE_SEQUENCES.has(ch)) {
           result += SIMPLE_ESCAPE_SEQUENCES.get(ch);
-          this.#scanner.next();
+          this.position++;
         } else if ((tmp = ESCAPED_HEX_LENGTHS.get(ch) ?? 0) > 0) {
           let hexLength = tmp;
           let hexResult = 0;
           for (; hexLength > 0; hexLength--) {
-            this.#scanner.next();
-            ch = this.#scanner.peek();
+            ch = this.next();
             if ((tmp = hexCharCodeToNumber(ch)) >= 0) {
               hexResult = (hexResult << 4) + tmp;
             } else {
@@ -55426,36 +55403,36 @@ var LoaderState = class {
             }
           }
           result += codepointToChar(hexResult);
-          this.#scanner.next();
+          this.position++;
         } else {
           throw this.#createError(
             "Cannot read double quoted scalar: unknown escape sequence"
           );
         }
-        captureStart = captureEnd = this.#scanner.position;
+        captureStart = captureEnd = this.position;
       } else if (isEOL(ch)) {
         const segment = this.captureSegment(captureStart, captureEnd, true);
         if (segment) result += segment;
         result += writeFoldedLines(
           this.skipSeparationSpace(false, nodeIndent)
         );
-        captureStart = captureEnd = this.#scanner.position;
-      } else if (this.#scanner.position === this.lineStart && this.testDocumentSeparator()) {
+        captureStart = captureEnd = this.position;
+      } else if (this.position === this.lineStart && this.testDocumentSeparator()) {
         throw this.#createError(
           "Unexpected end of the document within a double quoted scalar"
         );
       } else {
-        this.#scanner.next();
-        captureEnd = this.#scanner.position;
+        this.position++;
+        captureEnd = this.position;
       }
-      ch = this.#scanner.peek();
+      ch = this.peek();
     }
     throw this.#createError(
       "Unexpected end of the stream within a double quoted scalar"
     );
   }
   readFlowCollection(tag, anchor, nodeIndent) {
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     let terminator;
     let isMapping = true;
     let result = {};
@@ -55469,8 +55446,7 @@ var LoaderState = class {
       return;
     }
     if (anchor !== null) this.anchorMap.set(anchor, result);
-    this.#scanner.next();
-    ch = this.#scanner.peek();
+    ch = this.next();
     let readNext = true;
     let valueNode = null;
     let keyNode = null;
@@ -55482,9 +55458,9 @@ var LoaderState = class {
     const overridableKeys = /* @__PURE__ */ new Set();
     while (ch !== 0) {
       this.skipSeparationSpace(true, nodeIndent);
-      ch = this.#scanner.peek();
+      ch = this.peek();
       if (ch === terminator) {
-        this.#scanner.next();
+        this.position++;
         const kind = isMapping ? "mapping" : "sequence";
         return { tag, anchor, kind, result };
       }
@@ -55496,10 +55472,10 @@ var LoaderState = class {
       keyTag = keyNode = valueNode = null;
       isPair = isExplicitPair = false;
       if (ch === QUESTION) {
-        following = this.#scanner.peek(1);
+        following = this.peek(1);
         if (isWhiteSpaceOrEOL(following)) {
           isPair = isExplicitPair = true;
-          this.#scanner.next();
+          this.position++;
           this.skipSeparationSpace(true, nodeIndent);
         }
       }
@@ -55515,11 +55491,10 @@ var LoaderState = class {
         keyNode = newState.result;
       }
       this.skipSeparationSpace(true, nodeIndent);
-      ch = this.#scanner.peek();
+      ch = this.peek();
       if ((isExplicitPair || this.line === line) && ch === COLON) {
         isPair = true;
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+        ch = this.next();
         this.skipSeparationSpace(true, nodeIndent);
         const newState2 = this.composeNode({
           parentIndent: nodeIndent,
@@ -55551,11 +55526,10 @@ var LoaderState = class {
         result.push(keyNode);
       }
       this.skipSeparationSpace(true, nodeIndent);
-      ch = this.#scanner.peek();
+      ch = this.peek();
       if (ch === COMMA) {
         readNext = true;
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+        ch = this.next();
       } else {
         readNext = false;
       }
@@ -55573,7 +55547,7 @@ var LoaderState = class {
     let textIndent = nodeIndent;
     let emptyLines = 0;
     let atMoreIndented = false;
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     let folding = false;
     if (ch === VERTICAL_LINE) {
       folding = false;
@@ -55585,8 +55559,7 @@ var LoaderState = class {
     let result = "";
     let tmp = 0;
     while (ch !== 0) {
-      this.#scanner.next();
-      ch = this.#scanner.peek();
+      ch = this.next();
       if (ch === PLUS || ch === MINUS) {
         if (CHOMPING_CLIP === chomping) {
           chomping = ch === PLUS ? CHOMPING_KEEP : CHOMPING_STRIP;
@@ -55615,16 +55588,15 @@ var LoaderState = class {
     if (isWhiteSpace(ch)) {
       this.skipWhitespaces();
       this.skipComment();
-      ch = this.#scanner.peek();
+      ch = this.peek();
     }
     while (ch !== 0) {
       this.readLineBreak();
       this.lineIndent = 0;
-      ch = this.#scanner.peek();
+      ch = this.peek();
       while ((!detectedIndent || this.lineIndent < textIndent) && ch === SPACE) {
         this.lineIndent++;
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+        ch = this.next();
       }
       if (!detectedIndent && this.lineIndent > textIndent) {
         textIndent = this.lineIndent;
@@ -55669,16 +55641,11 @@ var LoaderState = class {
       didReadContent = true;
       detectedIndent = true;
       emptyLines = 0;
-      const captureStart = this.#scanner.position;
+      const captureStart = this.position;
       while (!isEOL(ch) && ch !== 0) {
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+        ch = this.next();
       }
-      const segment = this.captureSegment(
-        captureStart,
-        this.#scanner.position,
-        false
-      );
+      const segment = this.captureSegment(captureStart, this.position, false);
       if (segment) result += segment;
     }
     if (anchor !== null) this.anchorMap.set(anchor, result);
@@ -55696,11 +55663,11 @@ var LoaderState = class {
     let atExplicitKey = false;
     let detected = false;
     if (anchor !== null) this.anchorMap.set(anchor, result);
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     while (ch !== 0) {
-      const following = this.#scanner.peek(1);
+      const following = this.peek(1);
       line = this.line;
-      pos = this.#scanner.position;
+      pos = this.position;
       if ((ch === QUESTION || ch === COLON) && isWhiteSpaceOrEOL(following)) {
         if (ch === QUESTION) {
           if (atExplicitKey) {
@@ -55726,7 +55693,7 @@ var LoaderState = class {
             "Cannot read block as explicit mapping pair is incomplete: a key node is missed or followed by a non-tabulated empty line"
           );
         }
-        this.#scanner.next();
+        this.position += 1;
         ch = following;
       } else {
         const newState = this.composeNode({
@@ -55737,12 +55704,11 @@ var LoaderState = class {
         });
         if (!newState) break;
         if (this.line === line) {
-          ch = this.#scanner.peek();
+          ch = this.peek();
           this.skipWhitespaces();
-          ch = this.#scanner.peek();
+          ch = this.peek();
           if (ch === COLON) {
-            this.#scanner.next();
-            ch = this.#scanner.peek();
+            ch = this.next();
             if (!isWhiteSpaceOrEOL(ch)) {
               throw this.#createError(
                 "Cannot read block: a whitespace character is expected after the key-value separator within a block mapping"
@@ -55809,7 +55775,7 @@ var LoaderState = class {
           keyTag = keyNode = valueNode = null;
         }
         this.skipSeparationSpace(true, -1);
-        ch = this.#scanner.peek();
+        ch = this.peek();
       }
       if (this.lineIndent > nodeIndent && ch !== 0) {
         throw this.#createError(
@@ -55835,37 +55801,32 @@ var LoaderState = class {
     let isNamed = false;
     let tagHandle = "";
     let tagName;
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     if (ch !== EXCLAMATION) return;
     if (tag !== null) {
       throw this.#createError(
         "Cannot read tag property: duplication of a tag property"
       );
     }
-    this.#scanner.next();
-    ch = this.#scanner.peek();
+    ch = this.next();
     if (ch === SMALLER_THAN) {
       isVerbatim = true;
-      this.#scanner.next();
-      ch = this.#scanner.peek();
+      ch = this.next();
     } else if (ch === EXCLAMATION) {
       isNamed = true;
       tagHandle = "!!";
-      this.#scanner.next();
-      ch = this.#scanner.peek();
+      ch = this.next();
     } else {
       tagHandle = "!";
     }
-    let position = this.#scanner.position;
+    let position = this.position;
     if (isVerbatim) {
       do {
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+        ch = this.next();
       } while (ch !== 0 && ch !== GREATER_THAN);
-      if (!this.#scanner.eof()) {
-        tagName = this.#scanner.source.slice(position, this.#scanner.position);
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+      if (this.position < this.length) {
+        tagName = this.input.slice(position, this.position);
+        ch = this.next();
       } else {
         throw this.#createError(
           "Cannot read tag property: unexpected end of stream"
@@ -55875,27 +55836,23 @@ var LoaderState = class {
       while (ch !== 0 && !isWhiteSpaceOrEOL(ch)) {
         if (ch === EXCLAMATION) {
           if (!isNamed) {
-            tagHandle = this.#scanner.source.slice(
-              position - 1,
-              this.#scanner.position + 1
-            );
+            tagHandle = this.input.slice(position - 1, this.position + 1);
             if (!PATTERN_TAG_HANDLE.test(tagHandle)) {
               throw this.#createError(
                 "Cannot read tag property: named tag handle contains invalid characters"
               );
             }
             isNamed = true;
-            position = this.#scanner.position + 1;
+            position = this.position + 1;
           } else {
             throw this.#createError(
               "Cannot read tag property: tag suffix cannot contain an exclamation mark"
             );
           }
         }
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+        ch = this.next();
       }
-      tagName = this.#scanner.source.slice(position, this.#scanner.position);
+      tagName = this.input.slice(position, this.position);
       if (PATTERN_FLOW_INDICATORS.test(tagName)) {
         throw this.#createError(
           "Cannot read tag property: tag suffix cannot contain flow indicator characters"
@@ -55921,42 +55878,38 @@ var LoaderState = class {
     );
   }
   readAnchorProperty(anchor) {
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     if (ch !== AMPERSAND) return;
     if (anchor !== null) {
       throw this.#createError(
         "Cannot read anchor property: duplicate anchor property"
       );
     }
-    this.#scanner.next();
-    ch = this.#scanner.peek();
-    const position = this.#scanner.position;
+    ch = this.next();
+    const position = this.position;
     while (ch !== 0 && !isWhiteSpaceOrEOL(ch) && !isFlowIndicator(ch)) {
-      this.#scanner.next();
-      ch = this.#scanner.peek();
+      ch = this.next();
     }
-    if (this.#scanner.position === position) {
+    if (this.position === position) {
       throw this.#createError(
         "Cannot read anchor property: name of an anchor node must contain at least one character"
       );
     }
-    return this.#scanner.source.slice(position, this.#scanner.position);
+    return this.input.slice(position, this.position);
   }
   readAlias() {
-    if (this.#scanner.peek() !== ASTERISK) return;
-    this.#scanner.next();
-    let ch = this.#scanner.peek();
-    const position = this.#scanner.position;
+    if (this.peek() !== ASTERISK) return;
+    let ch = this.next();
+    const position = this.position;
     while (ch !== 0 && !isWhiteSpaceOrEOL(ch) && !isFlowIndicator(ch)) {
-      this.#scanner.next();
-      ch = this.#scanner.peek();
+      ch = this.next();
     }
-    if (this.#scanner.position === position) {
+    if (this.position === position) {
       throw this.#createError(
         "Cannot read alias: alias name must contain at least one character"
       );
     }
-    const alias = this.#scanner.source.slice(position, this.#scanner.position);
+    const alias = this.input.slice(position, this.position);
     if (!this.anchorMap.has(alias)) {
       throw this.#createError(
         `Cannot read alias: unidentified alias "${alias}"`
@@ -56047,7 +56000,7 @@ var LoaderState = class {
       const cond = CONTEXT_FLOW_IN === nodeContext || CONTEXT_FLOW_OUT === nodeContext;
       const flowIndent = cond ? parentIndent : parentIndent + 1;
       if (allowBlockCollections) {
-        const blockIndent = this.#scanner.position - this.lineStart;
+        const blockIndent = this.position - this.lineStart;
         const blockSequenceState = this.readBlockSequence(
           tag,
           anchor,
@@ -56108,7 +56061,7 @@ var LoaderState = class {
         return this.resolveTag(plainScalarState);
       }
     } else if (indentStatus === 0 && CONTEXT_BLOCK_OUT === nodeContext && allowBlockCollections) {
-      const blockIndent = this.#scanner.position - this.lineStart;
+      const blockIndent = this.position - this.lineStart;
       const newState2 = this.readBlockSequence(tag, anchor, blockIndent);
       if (newState2) return this.resolveTag(newState2);
     }
@@ -56118,25 +56071,20 @@ var LoaderState = class {
   readDirectives() {
     let hasDirectives = false;
     let version = null;
-    let ch = this.#scanner.peek();
+    let ch = this.peek();
     while (ch !== 0) {
       this.skipSeparationSpace(true, -1);
-      ch = this.#scanner.peek();
+      ch = this.peek();
       if (this.lineIndent > 0 || ch !== PERCENT) {
         break;
       }
       hasDirectives = true;
-      this.#scanner.next();
-      ch = this.#scanner.peek();
-      let position = this.#scanner.position;
+      ch = this.next();
+      let position = this.position;
       while (ch !== 0 && !isWhiteSpaceOrEOL(ch)) {
-        this.#scanner.next();
-        ch = this.#scanner.peek();
+        ch = this.next();
       }
-      const directiveName = this.#scanner.source.slice(
-        position,
-        this.#scanner.position
-      );
+      const directiveName = this.input.slice(position, this.position);
       const directiveArgs = [];
       if (directiveName.length < 1) {
         throw this.#createError(
@@ -56146,16 +56094,13 @@ var LoaderState = class {
       while (ch !== 0) {
         this.skipWhitespaces();
         this.skipComment();
-        ch = this.#scanner.peek();
+        ch = this.peek();
         if (isEOL(ch)) break;
-        position = this.#scanner.position;
+        position = this.position;
         while (ch !== 0 && !isWhiteSpaceOrEOL(ch)) {
-          this.#scanner.next();
-          ch = this.#scanner.peek();
+          ch = this.next();
         }
-        directiveArgs.push(
-          this.#scanner.source.slice(position, this.#scanner.position)
-        );
+        directiveArgs.push(this.input.slice(position, this.position));
       }
       if (ch !== 0) this.readLineBreak();
       switch (directiveName) {
@@ -56174,20 +56119,20 @@ var LoaderState = class {
           this.dispatchWarning(`unknown document directive "${directiveName}"`);
           break;
       }
-      ch = this.#scanner.peek();
+      ch = this.peek();
     }
     return hasDirectives;
   }
   readDocument() {
-    const documentStart = this.#scanner.position;
+    const documentStart = this.position;
     this.checkLineBreaks = false;
     this.tagMap = /* @__PURE__ */ new Map();
     this.anchorMap = /* @__PURE__ */ new Map();
     const hasDirectives = this.readDirectives();
     this.skipSeparationSpace(true, -1);
     let result = null;
-    if (this.lineIndent === 0 && this.#scanner.peek() === MINUS && this.#scanner.peek(1) === MINUS && this.#scanner.peek(2) === MINUS) {
-      this.#scanner.position += 3;
+    if (this.lineIndent === 0 && this.peek() === MINUS && this.peek(1) === MINUS && this.peek(2) === MINUS) {
+      this.position += 3;
       this.skipSeparationSpace(true, -1);
     } else if (hasDirectives) {
       throw this.#createError(
@@ -56203,16 +56148,16 @@ var LoaderState = class {
     if (newState) result = newState.result;
     this.skipSeparationSpace(true, -1);
     if (this.checkLineBreaks && PATTERN_NON_ASCII_LINE_BREAKS.test(
-      this.#scanner.source.slice(documentStart, this.#scanner.position)
+      this.input.slice(documentStart, this.position)
     )) {
       this.dispatchWarning("non-ASCII line breaks are interpreted as content");
     }
-    if (this.#scanner.position === this.lineStart && this.testDocumentSeparator()) {
-      if (this.#scanner.peek() === DOT) {
-        this.#scanner.position += 3;
+    if (this.position === this.lineStart && this.testDocumentSeparator()) {
+      if (this.peek() === DOT) {
+        this.position += 3;
         this.skipSeparationSpace(true, -1);
       }
-    } else if (!this.#scanner.eof()) {
+    } else if (this.position < this.length - 1) {
       throw this.#createError(
         "Cannot read document: end of the stream or a document separator is expected"
       );
@@ -56220,19 +56165,20 @@ var LoaderState = class {
     return result;
   }
   *readDocuments() {
-    while (!this.#scanner.eof()) {
+    while (this.position < this.length - 1) {
       yield this.readDocument();
     }
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/parse.ts
+// npm/src/deps/jsr.io/@std/yaml/1.0.11/parse.ts
 function sanitizeInput(input) {
   input = String(input);
   if (input.length > 0) {
     if (!isEOL(input.charCodeAt(input.length - 1))) input += "\n";
     if (input.charCodeAt(0) === 65279) input = input.slice(1);
   }
+  input += "\0";
   return input;
 }
 function parse(content, options = {}) {
@@ -61651,7 +61597,7 @@ async function fetchWorkflowModel(client, workflowRun) {
   if (fileContent) return new WorkflowModel(fileContent);
   return void 0;
 }
-function identifyCompositeSteps(workflowJobs, workflowModel) {
+function identifyCompositeSteps(workflowJobs, workflowModel, minDurationSec) {
   const result = /* @__PURE__ */ new Map();
   for (const job of workflowJobs) {
     if (!job.steps) continue;
@@ -61663,6 +61609,8 @@ function identifyCompositeSteps(workflowJobs, workflowModel) {
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
+        const durationSec = apiStep.started_at && apiStep.completed_at ? (new Date(apiStep.completed_at).getTime() - new Date(apiStep.started_at).getTime()) / 1e3 : 0;
+        if (durationSec < minDurationSec) continue;
         compositeSteps.push({
           apiStepIndex: i,
           apiStepName: apiStep.name,
@@ -61783,13 +61731,18 @@ function extractSubSteps(logBlocks, compositeStartedAt, compositeCompletedAt, co
     };
   });
 }
-async function expandCompositeSteps(client, workflowRun, workflowJobs) {
+async function expandCompositeSteps(client, workflowRun, workflowJobs, options = {}) {
+  const minDurationSec = options.minDurationSec ?? 20;
   const workflowModel = await fetchWorkflowModel(client, workflowRun);
   if (!workflowModel) {
     console.warn("Could not fetch workflow YAML, skipping composite expansion");
     return workflowJobs;
   }
-  const compositeMap = identifyCompositeSteps(workflowJobs, workflowModel);
+  const compositeMap = identifyCompositeSteps(
+    workflowJobs,
+    workflowModel,
+    minDurationSec
+  );
   if (compositeMap.size === 0) {
     return workflowJobs;
   }
@@ -61886,6 +61839,9 @@ var main = async () => {
   const token = (0, import_core2.getInput)("github-token", { required: true });
   const showWaitingRunner = (0, import_core2.getBooleanInput)("show-waiting-runner");
   const expandCompositeActions = (0, import_core2.getBooleanInput)("expand-composite-actions");
+  const compositeActionMinDuration = Number(
+    (0, import_core2.getInput)("composite-action-min-duration") || "20"
+  );
   const client = new Github({ token });
   (0, import_core2.info)("Wait for workflow API result stability...");
   await (0, import_promises.setTimeout)(1e3);
@@ -61904,7 +61860,9 @@ var main = async () => {
   let jobs = workflowJobs;
   if (expandCompositeActions) {
     (0, import_core2.info)("Expanding composite action steps...");
-    jobs = await expandCompositeSteps(client, workflowRun, workflowJobs);
+    jobs = await expandCompositeSteps(client, workflowRun, workflowJobs, {
+      minDurationSec: compositeActionMinDuration
+    });
   }
   (0, import_core2.info)("Create gantt mermaid diagram...");
   const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });

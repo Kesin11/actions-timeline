@@ -21,6 +21,11 @@ const { options, args } = await new Command()
     "Expand composite action steps in the timeline. Default: false",
     { default: false },
   )
+  .option(
+    "--composite-action-min-duration <minDurationSec:number>",
+    "Minimum duration in seconds for a composite action step to be expanded. Default: 20",
+    { default: 20 },
+  )
   .arguments("<url:string>")
   .parse(Deno.args);
 
@@ -41,7 +46,9 @@ const workflowRun = await client.fetchWorkflowRun(
 const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
 
 const jobs = options.expandCompositeActions
-  ? await expandCompositeSteps(client, workflowRun, workflowJobs)
+  ? await expandCompositeSteps(client, workflowRun, workflowJobs, {
+    minDurationSec: options.compositeActionMinDuration,
+  })
   : workflowJobs;
 
 const gantt = createMermaid(workflowRun, jobs, {

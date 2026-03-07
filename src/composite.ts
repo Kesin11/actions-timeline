@@ -10,6 +10,10 @@ import {
   type WorkflowRun,
 } from "@kesin11/gha-utils";
 
+export type ExpandCompositeOptions = {
+  minDurationSec?: number; // default: 20
+};
+
 type CompositeStepInfo = {
   apiStepIndex: number;
   apiStepName: string;
@@ -74,9 +78,10 @@ async function fetchWorkflowModel(
 }
 
 // Identify composite steps in each job by matching API steps against the YAML model.
-function identifyCompositeSteps(
+export function identifyCompositeSteps(
   workflowJobs: WorkflowJobs,
   workflowModel: WorkflowModel,
+  minDurationSec: number,
 ): Map<number, CompositeStepInfo[]> {
   const result = new Map<number, CompositeStepInfo[]>();
 
@@ -93,6 +98,12 @@ function identifyCompositeSteps(
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
+        const durationSec = apiStep.started_at && apiStep.completed_at
+          ? (new Date(apiStep.completed_at).getTime() -
+            new Date(apiStep.started_at).getTime()) / 1000
+          : 0;
+        if (durationSec < minDurationSec) continue;
+
         compositeSteps.push({
           apiStepIndex: i,
           apiStepName: apiStep.name,
@@ -288,14 +299,21 @@ export async function expandCompositeSteps(
   client: Github,
   workflowRun: WorkflowRun,
   workflowJobs: WorkflowJobs,
+  options: ExpandCompositeOptions = {},
 ): Promise<WorkflowJobs> {
+  const minDurationSec = options.minDurationSec ?? 20;
+
   const workflowModel = await fetchWorkflowModel(client, workflowRun);
   if (!workflowModel) {
     console.warn("Could not fetch workflow YAML, skipping composite expansion");
     return workflowJobs;
   }
 
-  const compositeMap = identifyCompositeSteps(workflowJobs, workflowModel);
+  const compositeMap = identifyCompositeSteps(
+    workflowJobs,
+    workflowModel,
+    minDurationSec,
+  );
   if (compositeMap.size === 0) {
     return workflowJobs;
   }
