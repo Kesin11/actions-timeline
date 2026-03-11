@@ -12,7 +12,7 @@ import {
 } from "@kesin11/gha-utils";
 
 export type ExpandCompositeOptions = {
-  minDurationSec?: number; // default: 20
+  thresholdSec?: number; // default: 20
 };
 
 type CompositeStepInfo = {
@@ -82,7 +82,7 @@ async function fetchWorkflowModel(
 export function identifyCompositeSteps(
   workflowJobs: WorkflowJobs,
   workflowModel: WorkflowModel,
-  minDurationSec: number,
+  thresholdSec: number,
 ): Map<number, CompositeStepInfo[]> {
   const result = new Map<number, CompositeStepInfo[]>();
 
@@ -100,7 +100,7 @@ export function identifyCompositeSteps(
       const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
         if (
-          diffSec(apiStep.started_at, apiStep.completed_at) < minDurationSec
+          diffSec(apiStep.started_at, apiStep.completed_at) < thresholdSec
         ) {
           continue;
         }
@@ -302,7 +302,7 @@ export async function expandCompositeSteps(
   workflowJobs: WorkflowJobs,
   options: ExpandCompositeOptions = {},
 ): Promise<WorkflowJobs> {
-  const minDurationSec = options.minDurationSec ?? 20;
+  const thresholdSec = options.thresholdSec ?? 20;
 
   const workflowModel = await fetchWorkflowModel(client, workflowRun);
   if (!workflowModel) {
@@ -313,7 +313,7 @@ export async function expandCompositeSteps(
   const compositeMap = identifyCompositeSteps(
     workflowJobs,
     workflowModel,
-    minDurationSec,
+    thresholdSec,
   );
   if (compositeMap.size === 0) {
     return workflowJobs;

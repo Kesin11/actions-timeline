@@ -32,8 +32,8 @@ jobs:
           # actions (uses: ./.github/actions/...) are not expanded.
           # Default: false
           expand-composite-actions: false
-          # Minimum duration in seconds for a composite action step to be expanded
-          # when expand-composite-actions is enabled.
+          # Duration threshold in seconds for expanding composite action steps.
+          # Only steps at or above this duration are expanded.
           # Default: 20
           expand-composite-actions-threshold: 20
 

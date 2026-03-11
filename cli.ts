@@ -22,8 +22,8 @@ const { options, args } = await new Command()
     { default: false },
   )
   .option(
-    "--expand-composite-actions-threshold <minDurationSec:number>",
-    "Minimum duration in seconds for a composite action step to be expanded. Default: 20",
+    "--expand-composite-actions-threshold <thresholdSec:number>",
+    "Duration threshold in seconds for expanding composite action steps. Default: 20",
     { default: 20 },
   )
   .arguments("<url:string>")
@@ -47,7 +47,7 @@ const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
 
 const jobs = options.expandCompositeActions
   ? await expandCompositeSteps(client, workflowRun, workflowJobs, {
-    minDurationSec: options.expandCompositeActionsThreshold,
+    thresholdSec: options.expandCompositeActionsThreshold,
   })
   : workflowJobs;
 

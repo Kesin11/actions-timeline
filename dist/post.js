@@ -61597,7 +61597,7 @@ async function fetchWorkflowModel(client, workflowRun) {
   if (fileContent) return new WorkflowModel(fileContent);
   return void 0;
 }
-function identifyCompositeSteps(workflowJobs, workflowModel, minDurationSec) {
+function identifyCompositeSteps(workflowJobs, workflowModel, thresholdSec) {
   const result = /* @__PURE__ */ new Map();
   for (const job of workflowJobs) {
     if (!job.steps) continue;
@@ -61609,7 +61609,7 @@ function identifyCompositeSteps(workflowJobs, workflowModel, minDurationSec) {
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
-        if (diffSec(apiStep.started_at, apiStep.completed_at) < minDurationSec) {
+        if (diffSec(apiStep.started_at, apiStep.completed_at) < thresholdSec) {
           continue;
         }
         compositeSteps.push({
@@ -61733,7 +61733,7 @@ function extractSubSteps(logBlocks, compositeStartedAt, compositeCompletedAt, co
   });
 }
 async function expandCompositeSteps(client, workflowRun, workflowJobs, options = {}) {
-  const minDurationSec = options.minDurationSec ?? 20;
+  const thresholdSec = options.thresholdSec ?? 20;
   const workflowModel = await fetchWorkflowModel(client, workflowRun);
   if (!workflowModel) {
     console.warn("Could not fetch workflow YAML, skipping composite expansion");
@@ -61742,7 +61742,7 @@ async function expandCompositeSteps(client, workflowRun, workflowJobs, options =
   const compositeMap = identifyCompositeSteps(
     workflowJobs,
     workflowModel,
-    minDurationSec
+    thresholdSec
   );
   if (compositeMap.size === 0) {
     return workflowJobs;
@@ -61862,7 +61862,7 @@ var main = async () => {
   if (expandCompositeActions) {
     (0, import_core2.info)("Expanding composite action steps...");
     jobs = await expandCompositeSteps(client, workflowRun, workflowJobs, {
-      minDurationSec: expandCompositeActionsThreshold
+      thresholdSec: expandCompositeActionsThreshold
     });
   }
   (0, import_core2.info)("Create gantt mermaid diagram...");

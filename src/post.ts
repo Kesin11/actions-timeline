@@ -40,7 +40,7 @@ const main = async () => {
   if (expandCompositeActions) {
     info("Expanding composite action steps...");
     jobs = await expandCompositeSteps(client, workflowRun, workflowJobs, {
-      minDurationSec: expandCompositeActionsThreshold,
+      thresholdSec: expandCompositeActionsThreshold,
     });
   }
 

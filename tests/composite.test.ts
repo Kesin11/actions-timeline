@@ -59,10 +59,10 @@ function makeWorkflowJobs(
 
 Deno.test(identifyCompositeSteps.name, async (t) => {
   const workflowModel = makeWorkflowModel(COMPOSITE_WORKFLOW_YAML);
-  const minDurationSec = 20;
+  const thresholdSec = 20;
 
   await t.step("includes step with duration at threshold", () => {
-    const durationMs = minDurationSec * 1000;
+    const durationMs = thresholdSec * 1000;
     const startedAt = "2024-01-15T10:00:00.000Z";
     const completedAt = new Date(
       new Date(startedAt).getTime() + durationMs,
@@ -72,7 +72,7 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
     const result = identifyCompositeSteps(
       workflowJobs,
       workflowModel,
-      minDurationSec,
+      thresholdSec,
     );
     assertEquals(result.size, 1);
     assertEquals(result.get(1)?.length, 1);
@@ -87,13 +87,13 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
     const result = identifyCompositeSteps(
       workflowJobs,
       workflowModel,
-      minDurationSec,
+      thresholdSec,
     );
     assertEquals(result.size, 1);
   });
 
   await t.step("excludes step with duration below threshold", () => {
-    const durationMs = (minDurationSec - 1) * 1000; // 19 seconds
+    const durationMs = (thresholdSec - 1) * 1000; // 19 seconds
     const startedAt = "2024-01-15T10:00:00.000Z";
     const completedAt = new Date(
       new Date(startedAt).getTime() + durationMs,
@@ -103,7 +103,7 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
     const result = identifyCompositeSteps(
       workflowJobs,
       workflowModel,
-      minDurationSec,
+      thresholdSec,
     );
     assertEquals(result.size, 0);
   });
@@ -116,7 +116,7 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
       const result = identifyCompositeSteps(
         workflowJobs,
         workflowModel,
-        minDurationSec,
+        thresholdSec,
       );
       assertEquals(result.size, 0);
     },

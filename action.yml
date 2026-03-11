@@ -19,8 +19,8 @@ inputs:
     required: false
   expand-composite-actions-threshold:
     description: >
-      Minimum duration in seconds for a composite action step to be expanded
-      when expand-composite-actions is enabled. Default: 20
+      Duration threshold in seconds for expanding composite action steps.
+      Only steps at or above this duration are expanded. Default: 20
     default: "20"
     required: false
 runs:
