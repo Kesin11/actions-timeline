@@ -11,7 +11,7 @@ const main = async () => {
   const showWaitingRunner = getBooleanInput("show-waiting-runner");
   const expandCompositeActions = getBooleanInput("expand-composite-actions");
   const expandCompositeActionsThreshold = Number(
-    getInput("expand-composite-actions-threshold") || "20",
+    getInput("expand-composite-actions-threshold"),
   );
   const client = new Github({ token });
 

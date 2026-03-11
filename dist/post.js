@@ -61609,8 +61609,9 @@ function identifyCompositeSteps(workflowJobs, workflowModel, minDurationSec) {
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
-        const durationSec = apiStep.started_at && apiStep.completed_at ? (new Date(apiStep.completed_at).getTime() - new Date(apiStep.started_at).getTime()) / 1e3 : 0;
-        if (durationSec < minDurationSec) continue;
+        if (diffSec(apiStep.started_at, apiStep.completed_at) < minDurationSec) {
+          continue;
+        }
         compositeSteps.push({
           apiStepIndex: i,
           apiStepName: apiStep.name,
@@ -61840,7 +61841,7 @@ var main = async () => {
   const showWaitingRunner = (0, import_core2.getBooleanInput)("show-waiting-runner");
   const expandCompositeActions = (0, import_core2.getBooleanInput)("expand-composite-actions");
   const expandCompositeActionsThreshold = Number(
-    (0, import_core2.getInput)("expand-composite-actions-threshold") || "20"
+    (0, import_core2.getInput)("expand-composite-actions-threshold")
   );
   const client = new Github({ token });
   (0, import_core2.info)("Wait for workflow API result stability...");

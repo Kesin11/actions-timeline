@@ -1,5 +1,6 @@
 import { decodeBase64 } from "@std/encoding";
 import { parse as parseYaml } from "@std/yaml";
+import { diffSec } from "./format_util.ts";
 import {
   type CompositeAction,
   Github,
@@ -98,11 +99,11 @@ export function identifyCompositeSteps(
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
-        const durationSec = apiStep.started_at && apiStep.completed_at
-          ? (new Date(apiStep.completed_at).getTime() -
-            new Date(apiStep.started_at).getTime()) / 1000
-          : 0;
-        if (durationSec < minDurationSec) continue;
+        if (
+          diffSec(apiStep.started_at, apiStep.completed_at) < minDurationSec
+        ) {
+          continue;
+        }
 
         compositeSteps.push({
           apiStepIndex: i,
