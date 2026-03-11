@@ -10,6 +10,9 @@ const main = async () => {
   const token = getInput("github-token", { required: true });
   const showWaitingRunner = getBooleanInput("show-waiting-runner");
   const expandCompositeActions = getBooleanInput("expand-composite-actions");
+  const expandCompositeActionsThreshold = Number(
+    getInput("expand-composite-actions-threshold"),
+  );
   const client = new Github({ token });
 
   info("Wait for workflow API result stability...");
@@ -36,7 +39,9 @@ const main = async () => {
   let jobs = workflowJobs;
   if (expandCompositeActions) {
     info("Expanding composite action steps...");
-    jobs = await expandCompositeSteps(client, workflowRun, workflowJobs);
+    jobs = await expandCompositeSteps(client, workflowRun, workflowJobs, {
+      thresholdSec: expandCompositeActionsThreshold,
+    });
   }
 
   info("Create gantt mermaid diagram...");

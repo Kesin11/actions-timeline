@@ -1,5 +1,6 @@
 import { decodeBase64 } from "@std/encoding";
 import { parse as parseYaml } from "@std/yaml";
+import { diffSec } from "./format_util.ts";
 import {
   type CompositeAction,
   Github,
@@ -9,6 +10,10 @@ import {
   WorkflowModel,
   type WorkflowRun,
 } from "@kesin11/gha-utils";
+
+export type ExpandCompositeOptions = {
+  thresholdSec?: number; // default: 20
+};
 
 type CompositeStepInfo = {
   apiStepIndex: number;
@@ -74,9 +79,10 @@ async function fetchWorkflowModel(
 }
 
 // Identify composite steps in each job by matching API steps against the YAML model.
-function identifyCompositeSteps(
+export function identifyCompositeSteps(
   workflowJobs: WorkflowJobs,
   workflowModel: WorkflowModel,
+  thresholdSec: number,
 ): Map<number, CompositeStepInfo[]> {
   const result = new Map<number, CompositeStepInfo[]>();
 
@@ -93,6 +99,12 @@ function identifyCompositeSteps(
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
+        if (
+          diffSec(apiStep.started_at, apiStep.completed_at) < thresholdSec
+        ) {
+          continue;
+        }
+
         compositeSteps.push({
           apiStepIndex: i,
           apiStepName: apiStep.name,
@@ -288,14 +300,21 @@ export async function expandCompositeSteps(
   client: Github,
   workflowRun: WorkflowRun,
   workflowJobs: WorkflowJobs,
+  options: ExpandCompositeOptions = {},
 ): Promise<WorkflowJobs> {
+  const thresholdSec = options.thresholdSec ?? 20;
+
   const workflowModel = await fetchWorkflowModel(client, workflowRun);
   if (!workflowModel) {
     console.warn("Could not fetch workflow YAML, skipping composite expansion");
     return workflowJobs;
   }
 
-  const compositeMap = identifyCompositeSteps(workflowJobs, workflowModel);
+  const compositeMap = identifyCompositeSteps(
+    workflowJobs,
+    workflowModel,
+    thresholdSec,
+  );
   if (compositeMap.size === 0) {
     return workflowJobs;
   }

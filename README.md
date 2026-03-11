@@ -32,6 +32,10 @@ jobs:
           # actions (uses: ./.github/actions/...) are not expanded.
           # Default: false
           expand-composite-actions: false
+          # Duration threshold in seconds for expanding composite action steps.
+          # Only steps at or above this duration are expanded.
+          # Default: 20
+          expand-composite-actions-threshold: 20
 
       # Your build steps...
 ```
@@ -142,6 +146,17 @@ deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
   https://github.com/OWNER/REPO/actions/runs/RUN_ID \
   -t $(gh auth token) \
   --expand-composite-actions true \
+  -o output.md
+```
+
+```bash
+# Expand composite actions that take more than 10 seconds
+deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
+  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+  https://github.com/OWNER/REPO/actions/runs/RUN_ID \
+  -t $(gh auth token) \
+  --expand-composite-actions true \
+  --expand-composite-actions-threshold 10 \
   -o output.md
 ```
 

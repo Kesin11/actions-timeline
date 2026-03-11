@@ -17,6 +17,12 @@ inputs:
     description: Expand composite action steps in the timeline.
     default: false
     required: false
+  expand-composite-actions-threshold:
+    description: >
+      Duration threshold in seconds for expanding composite action steps.
+      Only steps at or above this duration are expanded. Default: 20
+    default: "20"
+    required: false
 runs:
   using: "node24"
   main: "dist/main.js"
