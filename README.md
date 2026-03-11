@@ -35,7 +35,7 @@ jobs:
           # Minimum duration in seconds for a composite action step to be expanded
           # when expand-composite-actions is enabled.
           # Default: 20
-          composite-action-min-duration: 20
+          expand-composite-actions-threshold: 20
 
       # Your build steps...
 ```
@@ -156,7 +156,7 @@ deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
   https://github.com/OWNER/REPO/actions/runs/RUN_ID \
   -t $(gh auth token) \
   --expand-composite-actions true \
-  --composite-action-min-duration 10 \
+  --expand-composite-actions-threshold 10 \
   -o output.md
 ```
 

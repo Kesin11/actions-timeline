@@ -17,7 +17,7 @@ inputs:
     description: Expand composite action steps in the timeline.
     default: false
     required: false
-  composite-action-min-duration:
+  expand-composite-actions-threshold:
     description: >
       Minimum duration in seconds for a composite action step to be expanded
       when expand-composite-actions is enabled. Default: 20

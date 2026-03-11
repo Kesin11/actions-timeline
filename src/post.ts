@@ -10,8 +10,8 @@ const main = async () => {
   const token = getInput("github-token", { required: true });
   const showWaitingRunner = getBooleanInput("show-waiting-runner");
   const expandCompositeActions = getBooleanInput("expand-composite-actions");
-  const compositeActionMinDuration = Number(
-    getInput("composite-action-min-duration") || "20",
+  const expandCompositeActionsThreshold = Number(
+    getInput("expand-composite-actions-threshold") || "20",
   );
   const client = new Github({ token });
 
@@ -40,7 +40,7 @@ const main = async () => {
   if (expandCompositeActions) {
     info("Expanding composite action steps...");
     jobs = await expandCompositeSteps(client, workflowRun, workflowJobs, {
-      minDurationSec: compositeActionMinDuration,
+      minDurationSec: expandCompositeActionsThreshold,
     });
   }
 

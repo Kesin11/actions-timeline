@@ -86,8 +86,8 @@ jobs:
         uses: ./
         with:
           expand-composite-actions: true
-      - name: Run self action with 'expand-composite-actions=true' and 'composite-action-min-duration=5'
+      - name: Run self action with 'expand-composite-actions=true' and 'expand-composite-actions-threshold=5'
         uses: ./
         with:
           expand-composite-actions: true
-          composite-action-min-duration: 5
+          expand-composite-actions-threshold: 5

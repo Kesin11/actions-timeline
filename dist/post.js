@@ -61839,8 +61839,8 @@ var main = async () => {
   const token = (0, import_core2.getInput)("github-token", { required: true });
   const showWaitingRunner = (0, import_core2.getBooleanInput)("show-waiting-runner");
   const expandCompositeActions = (0, import_core2.getBooleanInput)("expand-composite-actions");
-  const compositeActionMinDuration = Number(
-    (0, import_core2.getInput)("composite-action-min-duration") || "20"
+  const expandCompositeActionsThreshold = Number(
+    (0, import_core2.getInput)("expand-composite-actions-threshold") || "20"
   );
   const client = new Github({ token });
   (0, import_core2.info)("Wait for workflow API result stability...");
@@ -61861,7 +61861,7 @@ var main = async () => {
   if (expandCompositeActions) {
     (0, import_core2.info)("Expanding composite action steps...");
     jobs = await expandCompositeSteps(client, workflowRun, workflowJobs, {
-      minDurationSec: compositeActionMinDuration
+      minDurationSec: expandCompositeActionsThreshold
     });
   }
   (0, import_core2.info)("Create gantt mermaid diagram...");
