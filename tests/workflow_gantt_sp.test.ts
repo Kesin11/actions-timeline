@@ -170,8 +170,8 @@ section ${workflowJobs[0].name}
 Waiting for a runner (2s) :active, job0-0, 00:00:00, 2s
 Set up job (1s) :job0-1, after job0-0, 1s
 Run ./.github/actions/setup (10s) :job0-2, after job0-1, 10s
-(sub) denoland/setup-deno@v1 (2s) :job0-3, 00:00:04, 2s
-(sub) actions/setup-node@v6 (3s) :job0-4, 00:00:06, 3s
+(sub) denoland/setup-deno@v1 (2s) :job0-3, after job0-1, 2s
+(sub) actions/setup-node@v6 (3s) :job0-4, after job0-3, 3s
 Run deno test (1s) :job0-5, after job0-2, 1s
 \`\`\``;
 

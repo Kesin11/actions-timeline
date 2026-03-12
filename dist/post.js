@@ -54049,12 +54049,18 @@ var filterSteps = (steps) => {
 var filterJobs = (jobs) => {
   return jobs.filter((job) => job.conclusion !== "skipped");
 };
-var createStepPosition = (workflow, jobStartedAt, step, previousTopLevelStepId) => {
+var createTopLevelStepPosition = (workflow, jobStartedAt, previousTopLevelStepId) => {
   if (previousTopLevelStepId === void 0) {
-    const startAt = step.timelineRowKind === "composite-child" ? step.started_at : jobStartedAt;
-    return formatElapsedTime(diffSec(workflow.run_started_at, startAt));
+    return formatElapsedTime(diffSec(workflow.run_started_at, jobStartedAt));
   }
-  return step.timelineRowKind === "composite-child" ? formatElapsedTime(diffSec(workflow.run_started_at, step.started_at)) : `after ${previousTopLevelStepId}`;
+  return `after ${previousTopLevelStepId}`;
+};
+var createCompositeChildPosition = (workflow, step, compositeChildAnchorId, previousCompositeChildId) => {
+  const anchorId = previousCompositeChildId ?? compositeChildAnchorId;
+  if (anchorId === void 0) {
+    return formatElapsedTime(diffSec(workflow.run_started_at, step.started_at));
+  }
+  return `after ${anchorId}`;
 };
 var createWaitingRunnerStep = (workflow, job, jobIndex) => {
   const status = "active";
@@ -54084,6 +54090,8 @@ var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
       if (completedSteps.length === 0) return void 0;
       const steps = [];
       let previousTopLevelStepId;
+      let compositeChildAnchorId;
+      let previousCompositeChildId;
       const waitingRunnerStep = createWaitingRunnerStep(
         workflow,
         job,
@@ -54093,24 +54101,34 @@ var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
         steps.push(waitingRunnerStep);
         previousTopLevelStepId = waitingRunnerStep.id;
       }
-      completedSteps.forEach((step) => {
+      completedSteps.forEach((step, stepIndex) => {
         const stepElapsedSec = diffSec(step.started_at, step.completed_at);
         const id = createGanttStepId(jobIndex, steps.length);
+        const nextStep = completedSteps[stepIndex + 1];
+        const position = step.timelineRowKind === "composite-child" ? createCompositeChildPosition(
+          workflow,
+          step,
+          compositeChildAnchorId,
+          previousCompositeChildId
+        ) : createTopLevelStepPosition(
+          workflow,
+          job.started_at,
+          previousTopLevelStepId
+        );
         steps.push({
           name: formatName(step.name, stepElapsedSec),
           id,
           status: convertStepToStatus(step.conclusion),
-          position: createStepPosition(
-            workflow,
-            job.started_at,
-            step,
-            previousTopLevelStepId
-          ),
+          position,
           sec: stepElapsedSec
         });
-        if (step.timelineRowKind !== "composite-child") {
-          previousTopLevelStepId = id;
+        if (step.timelineRowKind === "composite-child") {
+          previousCompositeChildId = id;
+          return;
         }
+        compositeChildAnchorId = nextStep?.timelineRowKind === "composite-child" ? previousTopLevelStepId : void 0;
+        previousCompositeChildId = void 0;
+        previousTopLevelStepId = id;
       });
       return { section, steps };
     }
