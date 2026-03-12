@@ -337,7 +337,6 @@ export function expandJobSteps(
         name: `(sub) ${subStep.name}`,
         started_at: subStep.started_at,
         completed_at: subStep.completed_at,
-        number: apiStep.number,
         timelineRowKind: "composite-child",
       });
     });
