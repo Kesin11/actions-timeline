@@ -25,7 +25,9 @@ jobs:
           # Show waiting runner time in the timeline.
           # Default: true
           show-waiting-runner: true
-          # Expand repo-local composite action steps in the timeline.
+          # Expand repo-local composite action steps in the timeline while
+          # keeping the original composite bar and showing expanded sub-steps
+          # beneath it.
           # Note: This option requires additional API calls to fetch job logs
           # and workflow files, which may increase execution time.
           # Limitation: Composite actions that contain nested local composite
@@ -140,7 +142,7 @@ deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
 ```
 
 ```bash
-# Expand composite action steps
+# Expand composite action steps while keeping the parent composite bar
 deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
   https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
   https://github.com/OWNER/REPO/actions/runs/RUN_ID \

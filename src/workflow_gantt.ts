@@ -1,5 +1,5 @@
 import { sumOf } from "@std/collections";
-import type { WorkflowJobs, WorkflowRun } from "@kesin11/gha-utils";
+import type { WorkflowRun } from "@kesin11/gha-utils";
 import {
   convertStepToStatus,
   diffSec,
@@ -13,12 +13,19 @@ import type {
   GanttOptions,
   ganttStep,
   StepConclusion,
+  TimelineJobs,
+  TimelineStep,
 } from "./types.ts";
 
 // ref: MAX_TEXTLENGTH https://github.com/mermaid-js/mermaid/blob/develop/packages/mermaid/src/mermaidAPI.ts
 const MERMAID_MAX_CHAR = 50_000;
 
-type workflowJobSteps = NonNullable<WorkflowJobs[0]["steps"]>;
+type workflowJobSteps = NonNullable<TimelineJobs[0]["steps"]>;
+
+const createGanttStepId = (
+  jobIndex: number,
+  stepIndex: number,
+): ganttStep["id"] => `job${jobIndex}-${stepIndex}`;
 
 // Skip steps that is not status:completed (ex. status:queued, status:in_progress)
 const filterSteps = (steps: workflowJobSteps): workflowJobSteps => {
@@ -26,13 +33,31 @@ const filterSteps = (steps: workflowJobSteps): workflowJobSteps => {
 };
 
 // Skip jobs that is conclusion:skipped
-const filterJobs = (jobs: WorkflowJobs): WorkflowJobs => {
+const filterJobs = (jobs: TimelineJobs): TimelineJobs => {
   return jobs.filter((job) => job.conclusion !== "skipped");
+};
+
+const createStepPosition = (
+  workflow: WorkflowRun,
+  jobStartedAt: string,
+  step: TimelineStep,
+  previousTopLevelStepId?: ganttStep["id"],
+): string => {
+  if (previousTopLevelStepId === undefined) {
+    const startAt = step.timelineRowKind === "composite-child"
+      ? step.started_at
+      : jobStartedAt;
+    return formatElapsedTime(diffSec(workflow.run_started_at, startAt));
+  }
+
+  return step.timelineRowKind === "composite-child"
+    ? formatElapsedTime(diffSec(workflow.run_started_at, step.started_at))
+    : `after ${previousTopLevelStepId}`;
 };
 
 const createWaitingRunnerStep = (
   workflow: WorkflowRun,
-  job: WorkflowJobs[0],
+  job: TimelineJobs[0],
   jobIndex: number,
 ): ganttStep | undefined => {
   const status: ganttStep["status"] = "active";
@@ -51,7 +76,7 @@ const createWaitingRunnerStep = (
     const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
     return {
       name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
-      id: `job${jobIndex}-0`,
+      id: createGanttStepId(jobIndex, 0),
       status,
       position: formatElapsedTime(startJobElapsedSec),
       sec: waitingRunnerElapsedSec,
@@ -61,7 +86,7 @@ const createWaitingRunnerStep = (
 
 export const createGanttJobs = (
   workflow: WorkflowRun,
-  workflowJobs: WorkflowJobs,
+  workflowJobs: TimelineJobs,
   showWaitingRunner = true,
 ): ganttJob[] => {
   return filterJobs(workflowJobs).map(
@@ -69,52 +94,44 @@ export const createGanttJobs = (
       if (job.steps === undefined) return undefined;
 
       const section = escapeName(job.name);
-      let firstStep: ganttStep;
+      const completedSteps = filterSteps(job.steps);
+      if (completedSteps.length === 0) return undefined;
+
+      const steps: ganttStep[] = [];
+      let previousTopLevelStepId: ganttStep["id"] | undefined;
 
       const waitingRunnerStep = createWaitingRunnerStep(
         workflow,
         job,
         jobIndex,
       );
-      if (!showWaitingRunner || waitingRunnerStep === undefined) {
-        const rawFirstStep = job.steps.shift();
-        if (rawFirstStep === undefined) return undefined;
-
-        const startJobElapsedSec = diffSec(
-          workflow.run_started_at,
-          job.started_at,
-        );
-        const stepElapsedSec = diffSec(
-          rawFirstStep.started_at,
-          rawFirstStep.completed_at,
-        );
-        firstStep = {
-          name: formatName(rawFirstStep.name, stepElapsedSec),
-          id: `job${jobIndex}-0`,
-          status: convertStepToStatus(
-            rawFirstStep.conclusion as StepConclusion,
-          ),
-          position: formatElapsedTime(startJobElapsedSec),
-          sec: stepElapsedSec,
-        };
-      } else {
-        firstStep = waitingRunnerStep;
+      if (showWaitingRunner && waitingRunnerStep !== undefined) {
+        steps.push(waitingRunnerStep);
+        previousTopLevelStepId = waitingRunnerStep.id;
       }
 
-      const steps = filterSteps(job.steps).map(
-        (step, stepIndex, _steps): ganttStep => {
-          const stepElapsedSec = diffSec(step.started_at, step.completed_at);
-          return {
-            name: formatName(step.name, stepElapsedSec),
-            id: `job${jobIndex}-${stepIndex + 1}`,
-            status: convertStepToStatus(step.conclusion as StepConclusion),
-            position: `after job${jobIndex}-${stepIndex}`,
-            sec: stepElapsedSec,
-          };
-        },
-      );
+      completedSteps.forEach((step) => {
+        const stepElapsedSec = diffSec(step.started_at, step.completed_at);
+        const id = createGanttStepId(jobIndex, steps.length);
+        steps.push({
+          name: formatName(step.name, stepElapsedSec),
+          id,
+          status: convertStepToStatus(step.conclusion as StepConclusion),
+          position: createStepPosition(
+            workflow,
+            job.started_at,
+            step,
+            previousTopLevelStepId,
+          ),
+          sec: stepElapsedSec,
+        });
 
-      return { section, steps: [firstStep, ...steps] };
+        if (step.timelineRowKind !== "composite-child") {
+          previousTopLevelStepId = id;
+        }
+      });
+
+      return { section, steps };
     },
   ).filter((gantJobs): gantJobs is ganttJob => gantJobs !== undefined);
 };
@@ -176,7 +193,7 @@ axisFormat  %H:%M:%S
 
 export const createMermaid = (
   workflow: WorkflowRun,
-  workflowJobs: WorkflowJobs,
+  workflowJobs: TimelineJobs,
   options: GanttOptions,
 ): string => {
   const title = workflow.name ?? "";

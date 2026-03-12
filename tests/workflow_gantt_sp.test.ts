@@ -6,6 +6,7 @@ import {
 } from "../src/workflow_gantt.ts";
 import { formatSection } from "../src/format_util.ts";
 import { WorkflowJobs, WorkflowRun } from "@kesin11/gha-utils";
+import type { TimelineJobs } from "../src/types.ts";
 
 const commonWorkflow = {
   "id": 5833450919,
@@ -94,6 +95,88 @@ ${workflowJobs[0].steps![2].name} (0s) :job0-3, after job0-2, 0s
       assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
     },
   );
+
+  await t.step("Keep composite parent and place sub-steps in parallel", () => {
+    const workflow = {
+      ...commonWorkflow,
+      "name": "CI",
+      "run_started_at": "2024-01-15T10:00:00Z",
+    } as unknown as WorkflowRun;
+
+    const workflowJobs = [{
+      "id": 1,
+      "run_id": 5833450919,
+      "workflow_name": "CI",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2024-01-15T10:00:00Z",
+      "started_at": "2024-01-15T10:00:02Z",
+      "completed_at": "2024-01-15T10:00:14Z",
+      "name": "test",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2024-01-15T10:00:02Z",
+          "completed_at": "2024-01-15T10:00:03Z",
+        },
+        {
+          "name": "Run ./.github/actions/setup",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2024-01-15T10:00:03Z",
+          "completed_at": "2024-01-15T10:00:13Z",
+        },
+        {
+          "name": "(sub) denoland/setup-deno@v1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2024-01-15T10:00:04Z",
+          "completed_at": "2024-01-15T10:00:06Z",
+          "timelineRowKind": "composite-child",
+        },
+        {
+          "name": "(sub) actions/setup-node@v6",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2024-01-15T10:00:06Z",
+          "completed_at": "2024-01-15T10:00:09Z",
+          "timelineRowKind": "composite-child",
+        },
+        {
+          "name": "Run deno test",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2024-01-15T10:00:13Z",
+          "completed_at": "2024-01-15T10:00:14Z",
+        },
+      ],
+    }] as unknown as TimelineJobs;
+
+    // deno-fmt-ignore
+    const expect = `
+\`\`\`mermaid
+gantt
+title ${workflowJobs[0].workflow_name}
+dateFormat  HH:mm:ss
+axisFormat  %H:%M:%S
+section ${workflowJobs[0].name}
+Waiting for a runner (2s) :active, job0-0, 00:00:00, 2s
+Set up job (1s) :job0-1, after job0-0, 1s
+Run ./.github/actions/setup (10s) :job0-2, after job0-1, 10s
+(sub) denoland/setup-deno@v1 (2s) :job0-3, 00:00:04, 2s
+(sub) actions/setup-node@v6 (3s) :job0-4, 00:00:06, 3s
+Run deno test (1s) :job0-5, after job0-2, 1s
+\`\`\``;
+
+    assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
+  });
 
   await t.step("Retried job", () => {
     const workflow = {

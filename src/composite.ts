@@ -1,6 +1,7 @@
 import { decodeBase64 } from "@std/encoding";
 import { parse as parseYaml } from "@std/yaml";
 import { diffSec } from "./format_util.ts";
+import type { TimelineJobs, TimelineStep } from "./types.ts";
 import {
   type CompositeAction,
   Github,
@@ -15,7 +16,7 @@ export type ExpandCompositeOptions = {
   thresholdSec?: number; // default: 20
 };
 
-type CompositeStepInfo = {
+export type CompositeStepInfo = {
   apiStepIndex: number;
   apiStepName: string;
   usesPath: string;
@@ -287,6 +288,64 @@ export function extractSubSteps(
   });
 }
 
+export function expandJobSteps(
+  steps: NonNullable<WorkflowJobs[0]["steps"]>,
+  compositeInfos: CompositeStepInfo[],
+  compositeStepCounts: Map<string, number>,
+  logBlocks: LogBlock[],
+): TimelineStep[] {
+  const compositeInfoByIndex = new Map(
+    compositeInfos.map((info) => [info.apiStepIndex, info]),
+  );
+
+  const newSteps: TimelineStep[] = [];
+
+  for (let i = 0; i < steps.length; i++) {
+    const compositeInfo = compositeInfoByIndex.get(i);
+
+    if (!compositeInfo || !compositeStepCounts.has(compositeInfo.usesPath)) {
+      newSteps.push(steps[i]);
+      continue;
+    }
+
+    const apiStep = steps[i];
+    if (!apiStep.started_at || !apiStep.completed_at) {
+      newSteps.push(apiStep);
+      continue;
+    }
+
+    const expectedStepCount = compositeStepCounts.get(compositeInfo.usesPath)!;
+
+    const subSteps = extractSubSteps(
+      logBlocks,
+      apiStep.started_at,
+      apiStep.completed_at,
+      apiStep.status,
+      apiStep.conclusion,
+      compositeInfo.usesPath,
+      expectedStepCount,
+    );
+
+    newSteps.push(apiStep);
+    if (subSteps.length === 0) {
+      continue;
+    }
+
+    subSteps.forEach((subStep) => {
+      newSteps.push({
+        ...apiStep,
+        name: `(sub) ${subStep.name}`,
+        started_at: subStep.started_at,
+        completed_at: subStep.completed_at,
+        number: apiStep.number,
+        timelineRowKind: "composite-child",
+      });
+    });
+  }
+
+  return newSteps;
+}
+
 /**
  * Expand composite action steps in workflowJobs.
  * Returns a new WorkflowJobs with composite steps replaced by their sub-steps.
@@ -301,7 +360,7 @@ export async function expandCompositeSteps(
   workflowRun: WorkflowRun,
   workflowJobs: WorkflowJobs,
   options: ExpandCompositeOptions = {},
-): Promise<WorkflowJobs> {
+): Promise<TimelineJobs> {
   const thresholdSec = options.thresholdSec ?? 20;
 
   const workflowModel = await fetchWorkflowModel(client, workflowRun);
@@ -362,7 +421,7 @@ export async function expandCompositeSteps(
   );
   const logMap = new Map(logResults);
 
-  const expandedJobs: WorkflowJobs = workflowJobs.map((job) => {
+  const expandedJobs: TimelineJobs = workflowJobs.map((job) => {
     const compositeInfos = compositeMap.get(job.id);
     if (!compositeInfos || !job.steps) return job;
 
@@ -372,64 +431,15 @@ export async function expandCompositeSteps(
     const logBlocks = parseLogBlocks(logText);
     if (logBlocks.length === 0) return job;
 
-    // Precompute a lookup map from apiStepIndex to CompositeStepInfo
-    const compositeInfoByIndex = new Map(
-      compositeInfos.map((info) => [info.apiStepIndex, info]),
-    );
-
-    const newSteps: NonNullable<typeof job.steps> = [];
-
-    for (let i = 0; i < job.steps.length; i++) {
-      const compositeInfo = compositeInfoByIndex.get(i);
-
-      // Non-composite step or composite without known step count: keep as-is
-      if (
-        !compositeInfo || !compositeStepCounts.has(compositeInfo.usesPath)
-      ) {
-        newSteps.push(job.steps[i]);
-        continue;
-      }
-
-      // Composite step without timing data: keep as-is
-      const apiStep = job.steps[i];
-      if (!apiStep.started_at || !apiStep.completed_at) {
-        newSteps.push(apiStep);
-        continue;
-      }
-
-      const expectedStepCount = compositeStepCounts.get(
-        compositeInfo.usesPath,
-      )!;
-
-      const subSteps = extractSubSteps(
+    return {
+      ...job,
+      steps: expandJobSteps(
+        job.steps,
+        compositeInfos,
+        compositeStepCounts,
         logBlocks,
-        apiStep.started_at,
-        apiStep.completed_at,
-        apiStep.status,
-        apiStep.conclusion,
-        compositeInfo.usesPath,
-        expectedStepCount,
-      );
-
-      // Expansion failed: keep original step
-      if (subSteps.length === 0) {
-        newSteps.push(apiStep);
-        continue;
-      }
-
-      // Replace composite step with expanded sub-steps
-      for (const subStep of subSteps) {
-        newSteps.push({
-          ...apiStep,
-          name: `(sub) ${subStep.name}`,
-          started_at: subStep.started_at,
-          completed_at: subStep.completed_at,
-          number: apiStep.number,
-        });
-      }
-    }
-
-    return { ...job, steps: newSteps };
+      ),
+    };
   });
 
   return expandedJobs;

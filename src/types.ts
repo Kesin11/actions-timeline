@@ -1,3 +1,17 @@
+import type { WorkflowJobs } from "@kesin11/gha-utils";
+
+export type TimelineStep =
+  & NonNullable<WorkflowJobs[number]["steps"]>[number]
+  & {
+    timelineRowKind?: "composite-child";
+  };
+
+export type TimelineJob = Omit<WorkflowJobs[number], "steps"> & {
+  steps?: TimelineStep[];
+};
+
+export type TimelineJobs = TimelineJob[];
+
 export type ganttJob = {
   section: string;
   steps: ganttStep[];
