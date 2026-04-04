@@ -60877,7 +60877,7 @@ function retry(octokit, octokitOptions) {
 }
 retry.VERSION = VERSION12;
 
-// npm/src/deps/jsr.io/@kesin11/gha-utils/0.2.3/api_client/api_client.ts
+// npm/src/deps/jsr.io/@kesin11/gha-utils/0.3.0/api_client/api_client.ts
 var FileContent = class {
   /** Raw file content response from GitHub API */
   raw;
@@ -60896,7 +60896,7 @@ var FileContent = class {
 };
 var Github = class _Github {
   /** Octokit instance for GitHub API calls */
-  octokit;
+  octokitClient;
   /** GitHub token for authentication */
   token;
   /** Base URL for GitHub API */
@@ -60905,6 +60905,15 @@ var Github = class _Github {
   isGHES;
   /** Cache for file content responses */
   contentCache = /* @__PURE__ */ new Map();
+  /**
+   * Public Octokit-compatible subset for advanced consumers.
+   *
+   * This intentionally exposes only the operations relied upon by downstream
+   * consumers while keeping the concrete Octokit type out of the public API.
+   */
+  get octokit() {
+    return this.octokitClient;
+  }
   /**
    * Creates a new GitHub API client
    *
@@ -60919,13 +60928,13 @@ var Github = class _Github {
     this.isGHES = this.baseUrl !== "https://api.github.com";
     this.token = options?.token ?? import_shim_deno2.Deno.env.get("GITHUB_TOKEN") ?? void 0;
     const MyOctokit = options?._workaroundDenoTest ? Octokit2.plugin(retry) : Octokit2.plugin(throttling, retry);
-    this.octokit = new MyOctokit({
+    this.octokitClient = new MyOctokit({
       auth: this.token,
       baseUrl: this.baseUrl,
       log: options?.debug ? console : void 0,
       throttle: {
         onRateLimit: (retryAfter, options2, _octokit, retryCount) => {
-          this.octokit.log.warn(
+          this.octokitClient.log.warn(
             `Request quota exhausted for request ${options2.method} ${options2.url}`
           );
           if (retryCount <= 2) {
@@ -60969,7 +60978,7 @@ var Github = class _Github {
    * ```
    */
   async fetchRepository(owner, repo) {
-    const res = await this.octokit.repos.get({
+    const res = await this.octokitClient.repos.get({
       owner,
       repo
     });
@@ -60998,13 +61007,15 @@ var Github = class _Github {
     const workflowRunsUsages = [];
     for (const chunk2 of workflowRunsChunks) {
       const promises = chunk2.map((run) => {
-        return this.octokit.actions.getWorkflowRunUsage({
+        return this.octokitClient.actions.getWorkflowRunUsage({
           owner: run.repository.owner.login,
           repo: run.repository.name,
           run_id: run.id
         });
       });
-      const chunkResults = (await Promise.all(promises)).map((res) => res.data);
+      const chunkResults = (await Promise.all(promises)).map(
+        (res) => res.data
+      );
       workflowRunsUsages.push(...chunkResults);
     }
     return workflowRunsUsages;
@@ -61030,7 +61041,7 @@ var Github = class _Github {
     const workflowJobsChunks = chunk(workflowRuns, chunkSize);
     for (const chunk2 of workflowJobsChunks) {
       const promises = chunk2.map((run) => {
-        return this.octokit.actions.listJobsForWorkflowRunAttempt({
+        return this.octokitClient.actions.listJobsForWorkflowRunAttempt({
           owner: run.repository.owner.login,
           repo: run.repository.name,
           run_id: run.id,
@@ -61059,7 +61070,7 @@ var Github = class _Github {
    * ```
    */
   async fetchWorkflowRunJobs(workflowRun) {
-    const workflowJobs = await this.octokit.actions.listJobsForWorkflowRunAttempt({
+    const workflowJobs = await this.octokitClient.actions.listJobsForWorkflowRunAttempt({
       owner: workflowRun.repository.owner.login,
       repo: workflowRun.repository.name,
       run_id: workflowRun.id,
@@ -61084,7 +61095,7 @@ var Github = class _Github {
    * ```
    */
   async fetchWorkflowRuns(owner, repo, branch) {
-    const res = await this.octokit.actions.listWorkflowRunsForRepo(
+    const res = await this.octokitClient.actions.listWorkflowRunsForRepo(
       {
         owner,
         repo,
@@ -61093,7 +61104,9 @@ var Github = class _Github {
         branch
       }
     );
-    return res.data.workflow_runs.filter((run) => run.event !== "dynamic");
+    return res.data.workflow_runs.filter(
+      (run) => run.event !== "dynamic"
+    );
   }
   /**
    * Fetches a single workflow run
@@ -61112,7 +61125,7 @@ var Github = class _Github {
    */
   async fetchWorkflowRun(owner, repo, runId, runAttempt) {
     if (runAttempt) {
-      const res = await this.octokit.actions.getWorkflowRunAttempt({
+      const res = await this.octokitClient.actions.getWorkflowRunAttempt({
         owner,
         repo,
         run_id: runId,
@@ -61120,7 +61133,7 @@ var Github = class _Github {
       });
       return res.data;
     } else {
-      const res = await this.octokit.actions.getWorkflowRun({
+      const res = await this.octokitClient.actions.getWorkflowRun({
         owner,
         repo,
         run_id: runId
@@ -61145,8 +61158,8 @@ var Github = class _Github {
    * ```
    */
   async fetchWorkflowRunsWithCreated(owner, repo, created, branch) {
-    const workflowRuns = await this.octokit.paginate(
-      this.octokit.actions.listWorkflowRunsForRepo,
+    const workflowRuns = await this.octokitClient.paginate(
+      this.octokitClient.actions.listWorkflowRunsForRepo,
       {
         owner,
         repo,
@@ -61156,7 +61169,9 @@ var Github = class _Github {
         branch
       }
     );
-    return workflowRuns.filter((run) => run.event !== "dynamic");
+    return workflowRuns.filter(
+      (run) => run.event !== "dynamic"
+    );
   }
   /**
    * Fetches Actions cache usage for a repository
@@ -61172,7 +61187,7 @@ var Github = class _Github {
    * ```
    */
   async fetchActionsCacheUsage(owner, repo) {
-    const res = await this.octokit.actions.getActionsCacheUsage({
+    const res = await this.octokitClient.actions.getActionsCacheUsage({
       owner,
       repo
     });
@@ -61193,7 +61208,7 @@ var Github = class _Github {
    * ```
    */
   async fetchActionsCacheList(owner, repo, perPage = 100) {
-    const res = await this.octokit.actions.getActionsCacheList({
+    const res = await this.octokitClient.actions.getActionsCacheList({
       owner,
       repo,
       sort: "size_in_bytes",
@@ -61287,7 +61302,7 @@ var Github = class _Github {
   async fetchContent(params) {
     const cache = this.contentCache.get(JSON.stringify(params));
     if (cache) return cache;
-    return this.octokit.repos.getContent({
+    return this.octokitClient.repos.getContent({
       owner: params.owner,
       repo: params.repo,
       path: params.path,
@@ -61308,7 +61323,7 @@ var Github = class _Github {
   }
 };
 
-// npm/src/deps/jsr.io/@kesin11/gha-utils/0.2.3/workflow_model/src/workflow_ast.ts
+// npm/src/deps/jsr.io/@kesin11/gha-utils/0.3.0/workflow_model/src/workflow_ast.ts
 var import_yaml_ast_parser = __toESM(require_src());
 var import_structured_source = __toESM(require_structured_source());
 var WorkflowAst = class {
@@ -61420,7 +61435,7 @@ var StepAst = class {
   }
 };
 
-// npm/src/deps/jsr.io/@kesin11/gha-utils/0.2.3/workflow_model/src/workflow_file.ts
+// npm/src/deps/jsr.io/@kesin11/gha-utils/0.3.0/workflow_model/src/workflow_file.ts
 var WorkflowModel = class {
   /** Original file content from GitHub API */
   fileContent;
