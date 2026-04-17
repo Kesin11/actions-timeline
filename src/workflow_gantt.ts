@@ -22,6 +22,8 @@ const MERMAID_MAX_CHAR = 50_000;
 
 type workflowJobSteps = NonNullable<TimelineJobs[0]["steps"]>;
 
+const isString = (value: unknown): value is string => typeof value === "string";
+
 const createGanttStepId = (
   jobIndex: number,
   stepIndex: number,
@@ -73,7 +75,7 @@ const createWaitingRunnerStep = (
   // job.created_at does not exist in < GHES v3.9.
   // So it is not possible to calculate the elapsed time the runner is waiting for a job, is not supported instead of the elapsed time.
   // Also, it is not possible to create an exact job start time position. So use job.started_at instead of job.created_at.
-  if (job.created_at === undefined) {
+  if (!isString(job.created_at) || !isString(job.started_at)) {
     return undefined;
   } else {
     // >= GHES v3.9 or GitHub.com
@@ -99,9 +101,17 @@ export const createGanttJobs = (
 ): ganttJob[] => {
   return filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs): ganttJob | undefined => {
-      if (job.steps === undefined) return undefined;
+      if (
+        job.steps === undefined ||
+        !isString(job.name) ||
+        !isString(job.started_at)
+      ) {
+        return undefined;
+      }
 
-      const section = escapeName(job.name);
+      const jobName = job.name;
+      const jobStartedAt = job.started_at;
+      const section = escapeName(jobName);
       const completedSteps = filterSteps(job.steps);
       if (completedSteps.length === 0) return undefined;
 
@@ -133,7 +143,7 @@ export const createGanttJobs = (
           )
           : createTopLevelStepPosition(
             workflow,
-            job.started_at,
+            jobStartedAt,
             previousTopLevelStepId,
           );
 
