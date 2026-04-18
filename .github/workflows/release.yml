@@ -38,7 +38,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create semver outputs
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         id: semver
         with:
           script: |
