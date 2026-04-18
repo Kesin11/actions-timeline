@@ -54081,15 +54081,30 @@ var convertStepToStatus = (conclusion) => {
 
 // npm/src/workflow_gantt.ts
 var MERMAID_MAX_CHAR = 5e4;
+var isString = (value) => typeof value === "string";
+var createGanttStepId = (jobIndex, stepIndex) => `job${jobIndex}-${stepIndex}`;
 var filterSteps = (steps) => {
   return steps.filter((step) => step.status === "completed");
 };
 var filterJobs = (jobs) => {
   return jobs.filter((job) => job.conclusion !== "skipped");
 };
+var createTopLevelStepPosition = (workflow, jobStartedAt, previousTopLevelStepId) => {
+  if (previousTopLevelStepId === void 0) {
+    return formatElapsedTime(diffSec(workflow.run_started_at, jobStartedAt));
+  }
+  return `after ${previousTopLevelStepId}`;
+};
+var createCompositeChildPosition = (workflow, step, compositeChildAnchorId, previousCompositeChildId) => {
+  const anchorId = previousCompositeChildId ?? compositeChildAnchorId;
+  if (anchorId === void 0) {
+    return formatElapsedTime(diffSec(workflow.run_started_at, step.started_at));
+  }
+  return `after ${anchorId}`;
+};
 var createWaitingRunnerStep = (workflow, job, jobIndex) => {
   const status = "active";
-  if (job.created_at === void 0) {
+  if (!isString(job.created_at) || !isString(job.started_at)) {
     return void 0;
   } else {
     const startJobElapsedSec = diffSec(
@@ -54099,7 +54114,7 @@ var createWaitingRunnerStep = (workflow, job, jobIndex) => {
     const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
     return {
       name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
-      id: `job${jobIndex}-0`,
+      id: createGanttStepId(jobIndex, 0),
       status,
       position: formatElapsedTime(startJobElapsedSec),
       sec: waitingRunnerElapsedSec
@@ -54109,50 +54124,57 @@ var createWaitingRunnerStep = (workflow, job, jobIndex) => {
 var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
   return filterJobs(workflowJobs).map(
     (job, jobIndex, _jobs) => {
-      if (job.steps === void 0) return void 0;
-      const section = escapeName(job.name);
-      let firstStep;
+      if (job.steps === void 0 || !isString(job.name) || !isString(job.started_at)) {
+        return void 0;
+      }
+      const jobName = job.name;
+      const jobStartedAt = job.started_at;
+      const section = escapeName(jobName);
+      const completedSteps = filterSteps(job.steps);
+      if (completedSteps.length === 0) return void 0;
+      const steps = [];
+      let previousTopLevelStepId;
+      let compositeChildAnchorId;
+      let previousCompositeChildId;
       const waitingRunnerStep = createWaitingRunnerStep(
         workflow,
         job,
         jobIndex
       );
-      if (!showWaitingRunner || waitingRunnerStep === void 0) {
-        const rawFirstStep = job.steps.shift();
-        if (rawFirstStep === void 0) return void 0;
-        const startJobElapsedSec = diffSec(
-          workflow.run_started_at,
-          job.started_at
-        );
-        const stepElapsedSec = diffSec(
-          rawFirstStep.started_at,
-          rawFirstStep.completed_at
-        );
-        firstStep = {
-          name: formatName(rawFirstStep.name, stepElapsedSec),
-          id: `job${jobIndex}-0`,
-          status: convertStepToStatus(
-            rawFirstStep.conclusion
-          ),
-          position: formatElapsedTime(startJobElapsedSec),
-          sec: stepElapsedSec
-        };
-      } else {
-        firstStep = waitingRunnerStep;
+      if (showWaitingRunner && waitingRunnerStep !== void 0) {
+        steps.push(waitingRunnerStep);
+        previousTopLevelStepId = waitingRunnerStep.id;
       }
-      const steps = filterSteps(job.steps).map(
-        (step, stepIndex, _steps) => {
-          const stepElapsedSec = diffSec(step.started_at, step.completed_at);
-          return {
-            name: formatName(step.name, stepElapsedSec),
-            id: `job${jobIndex}-${stepIndex + 1}`,
-            status: convertStepToStatus(step.conclusion),
-            position: `after job${jobIndex}-${stepIndex}`,
-            sec: stepElapsedSec
-          };
+      completedSteps.forEach((step, stepIndex) => {
+        const stepElapsedSec = diffSec(step.started_at, step.completed_at);
+        const id = createGanttStepId(jobIndex, steps.length);
+        const nextStep = completedSteps[stepIndex + 1];
+        const position = step.timelineRowKind === "composite-child" ? createCompositeChildPosition(
+          workflow,
+          step,
+          compositeChildAnchorId,
+          previousCompositeChildId
+        ) : createTopLevelStepPosition(
+          workflow,
+          jobStartedAt,
+          previousTopLevelStepId
+        );
+        steps.push({
+          name: formatName(step.name, stepElapsedSec),
+          id,
+          status: convertStepToStatus(step.conclusion),
+          position,
+          sec: stepElapsedSec
+        });
+        if (step.timelineRowKind === "composite-child") {
+          previousCompositeChildId = id;
+          return;
         }
-      );
-      return { section, steps: [firstStep, ...steps] };
+        compositeChildAnchorId = nextStep?.timelineRowKind === "composite-child" ? previousTopLevelStepId : void 0;
+        previousCompositeChildId = void 0;
+        previousTopLevelStepId = id;
+      });
+      return { section, steps };
     }
   ).filter((gantJobs) => gantJobs !== void 0);
 };
@@ -56948,12 +56970,12 @@ var JSONParse = (text, reviver) => {
   const serializedData = text.replace(
     stringsOrLargeNumbers,
     (text2, digits, fractional, exponential) => {
-      const isString = text2[0] === '"';
-      const isNoise = isString && noiseValueWithQuotes.test(text2);
+      const isString2 = text2[0] === '"';
+      const isNoise = isString2 && noiseValueWithQuotes.test(text2);
       if (isNoise) return text2.substring(0, text2.length - 1) + 'n"';
       const isFractionalOrExponential = fractional || exponential;
       const isLessThanMaxSafeInt = digits && (digits.length < MAX_DIGITS || digits.length === MAX_DIGITS && digits <= MAX_INT);
-      if (isString || isFractionalOrExponential || isLessThanMaxSafeInt)
+      if (isString2 || isFractionalOrExponential || isLessThanMaxSafeInt)
         return text2;
       return '"' + text2 + 'n"';
     }
@@ -61934,6 +61956,48 @@ function extractSubSteps(logBlocks, compositeStartedAt, compositeCompletedAt, co
     };
   });
 }
+function expandJobSteps(steps, compositeInfos, compositeStepCounts, logBlocks) {
+  const compositeInfoByIndex = new Map(
+    compositeInfos.map((info2) => [info2.apiStepIndex, info2])
+  );
+  const newSteps = [];
+  for (let i = 0; i < steps.length; i++) {
+    const compositeInfo = compositeInfoByIndex.get(i);
+    if (!compositeInfo || !compositeStepCounts.has(compositeInfo.usesPath)) {
+      newSteps.push(steps[i]);
+      continue;
+    }
+    const apiStep = steps[i];
+    if (!apiStep.started_at || !apiStep.completed_at) {
+      newSteps.push(apiStep);
+      continue;
+    }
+    const expectedStepCount = compositeStepCounts.get(compositeInfo.usesPath);
+    const subSteps = extractSubSteps(
+      logBlocks,
+      apiStep.started_at,
+      apiStep.completed_at,
+      apiStep.status,
+      apiStep.conclusion,
+      compositeInfo.usesPath,
+      expectedStepCount
+    );
+    newSteps.push(apiStep);
+    if (subSteps.length === 0) {
+      continue;
+    }
+    subSteps.forEach((subStep) => {
+      newSteps.push({
+        ...apiStep,
+        name: `(sub) ${subStep.name}`,
+        started_at: subStep.started_at,
+        completed_at: subStep.completed_at,
+        timelineRowKind: "composite-child"
+      });
+    });
+  }
+  return newSteps;
+}
 async function expandCompositeSteps(client, workflowRun, workflowJobs, options = {}) {
   const thresholdSec = options.thresholdSec ?? 20;
   const workflowModel = await fetchWorkflowModel(client, workflowRun);
@@ -61991,48 +62055,15 @@ async function expandCompositeSteps(client, workflowRun, workflowJobs, options =
     if (!logText) return job;
     const logBlocks = parseLogBlocks(logText);
     if (logBlocks.length === 0) return job;
-    const compositeInfoByIndex = new Map(
-      compositeInfos.map((info2) => [info2.apiStepIndex, info2])
-    );
-    const newSteps = [];
-    for (let i = 0; i < job.steps.length; i++) {
-      const compositeInfo = compositeInfoByIndex.get(i);
-      if (!compositeInfo || !compositeStepCounts.has(compositeInfo.usesPath)) {
-        newSteps.push(job.steps[i]);
-        continue;
-      }
-      const apiStep = job.steps[i];
-      if (!apiStep.started_at || !apiStep.completed_at) {
-        newSteps.push(apiStep);
-        continue;
-      }
-      const expectedStepCount = compositeStepCounts.get(
-        compositeInfo.usesPath
-      );
-      const subSteps = extractSubSteps(
-        logBlocks,
-        apiStep.started_at,
-        apiStep.completed_at,
-        apiStep.status,
-        apiStep.conclusion,
-        compositeInfo.usesPath,
-        expectedStepCount
-      );
-      if (subSteps.length === 0) {
-        newSteps.push(apiStep);
-        continue;
-      }
-      for (const subStep of subSteps) {
-        newSteps.push({
-          ...apiStep,
-          name: `(sub) ${subStep.name}`,
-          started_at: subStep.started_at,
-          completed_at: subStep.completed_at,
-          number: apiStep.number
-        });
-      }
-    }
-    return { ...job, steps: newSteps };
+    return {
+      ...job,
+      steps: expandJobSteps(
+        job.steps,
+        compositeInfos,
+        compositeStepCounts,
+        logBlocks
+      )
+    };
   });
   return expandedJobs;
 }

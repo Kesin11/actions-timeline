@@ -7,10 +7,13 @@ import {
   WorkflowModel,
 } from "@kesin11/gha-utils";
 import {
+  type CompositeStepInfo,
+  expandJobSteps,
   extractSubSteps,
   identifyCompositeSteps,
   parseLogBlocks,
 } from "../src/composite.ts";
+import type { TimelineStep } from "../src/types.ts";
 
 function makeWorkflowModel(yamlContent: string): WorkflowModel {
   const fileContentResponse: FileContentResponse = {
@@ -364,5 +367,71 @@ Deno.test(extractSubSteps.name, async (t) => {
         },
       ]);
     },
+  );
+});
+
+Deno.test(expandJobSteps.name, () => {
+  const compositeStep: TimelineStep = {
+    name: "Run ./.github/actions/setup",
+    status: "completed",
+    conclusion: "success",
+    number: 2,
+    started_at: "2024-01-15T10:00:05Z",
+    completed_at: "2024-01-15T10:00:15Z",
+  };
+  const normalStep: TimelineStep = {
+    name: "Run deno test",
+    status: "completed",
+    conclusion: "success",
+    number: 3,
+    started_at: "2024-01-15T10:00:15Z",
+    completed_at: "2024-01-15T10:00:18Z",
+  };
+  const steps = [compositeStep, normalStep] as NonNullable<
+    WorkflowJobs[0]["steps"]
+  >;
+  const compositeInfos: CompositeStepInfo[] = [{
+    apiStepIndex: 0,
+    apiStepName: compositeStep.name,
+    usesPath: "./.github/actions/setup",
+    status: compositeStep.status,
+    conclusion: compositeStep.conclusion,
+  }];
+  const compositeStepCounts = new Map([["./.github/actions/setup", 2]]);
+  const logBlocks = [
+    {
+      name: "Run ./.github/actions/setup",
+      startedAt: new Date("2024-01-15T10:00:05Z"),
+    },
+    {
+      name: "Run denoland/setup-deno@v1",
+      startedAt: new Date("2024-01-15T10:00:06Z"),
+    },
+    {
+      name: "Run actions/setup-node@v6",
+      startedAt: new Date("2024-01-15T10:00:10Z"),
+    },
+  ];
+
+  assertEquals(
+    expandJobSteps(steps, compositeInfos, compositeStepCounts, logBlocks),
+    [
+      compositeStep,
+      {
+        ...compositeStep,
+        name: "(sub) denoland/setup-deno@v1",
+        started_at: "2024-01-15T10:00:06.000Z",
+        completed_at: "2024-01-15T10:00:10.000Z",
+        timelineRowKind: "composite-child",
+      },
+      {
+        ...compositeStep,
+        name: "(sub) actions/setup-node@v6",
+        started_at: "2024-01-15T10:00:10.000Z",
+        completed_at: "2024-01-15T10:00:15Z",
+        timelineRowKind: "composite-child",
+      },
+      normalStep,
+    ],
   );
 });

@@ -1,5 +1,7 @@
 #!/bin/bash
 # Verify composite action expansion by comparing CLI output with actual GitHub Actions logs.
+# The expanded output should keep the original composite bar and add child rows
+# beneath it when expansion succeeds.
 #
 # Usage:
 #   verify_composite.sh <org/repo> <run_id> [output_dir]
@@ -73,5 +75,5 @@ done
 
 echo "=== Done ==="
 echo "Compare the following files:"
-echo "  Composite: ${COMPOSITE_OUT}"
+echo "  Composite-expanded: ${COMPOSITE_OUT}"
 echo "  Normal:    ${NORMAL_OUT}"

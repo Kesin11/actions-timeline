@@ -86,8 +86,9 @@ jobs:
         uses: ./
         with:
           expand-composite-actions: true
-      - name: Run self action with 'expand-composite-actions=true' and 'expand-composite-actions-threshold=5'
+      - name: Run self action with 'expand-composite-actions=true' and 'expand-composite-actions-threshold'
         uses: ./
         with:
           expand-composite-actions: true
-          expand-composite-actions-threshold: 5
+          # Always expand composite actions for dogfooding
+          expand-composite-actions-threshold: 1
