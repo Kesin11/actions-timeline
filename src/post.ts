@@ -2,8 +2,9 @@ import { setTimeout } from "node:timers/promises";
 import process from "node:process";
 import { debug, getBooleanInput, getInput, info, summary } from "@actions/core";
 import * as github from "@actions/github";
-import { createMermaid } from "./workflow_gantt.ts";
+import { createGanttJobs } from "./workflow_gantt.ts";
 import { expandCompositeSteps } from "./composite.ts";
+import { createRenderer, type OutputFormat } from "./renderer.ts";
 import { Github } from "@kesin11/gha-utils";
 
 const main = async () => {
@@ -13,6 +14,7 @@ const main = async () => {
   const expandCompositeActionsThreshold = Number(
     getInput("expand-composite-actions-threshold"),
   );
+  const outputFormat = (getInput("output-format") || "mermaid") as OutputFormat;
   const client = new Github({ token });
 
   info("Wait for workflow API result stability...");
@@ -44,10 +46,22 @@ const main = async () => {
     });
   }
 
-  info("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });
-  await summary.addRaw(gantt).write();
-  debug(gantt);
+  info("Create gantt diagram...");
+  const title = workflowRun.name ?? "";
+  const ganttJobs = createGanttJobs(workflowRun, jobs, showWaitingRunner);
+  const renderer = createRenderer(outputFormat);
+  const output = renderer.render(title, ganttJobs);
+
+  if (outputFormat === "svg") {
+    // GitHub Job Summary は <svg> タグをサニタイズ除去するため Base64 <img> に変換する
+    const base64 = btoa(unescape(encodeURIComponent(output)));
+    await summary.addRaw(
+      `<img src="data:image/svg+xml;base64,${base64}" alt="Actions Timeline" />`,
+    ).write();
+  } else {
+    await summary.addRaw(output).write();
+  }
+  debug(output);
 
   info("Complete!");
 };

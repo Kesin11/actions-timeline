@@ -36,6 +36,12 @@ jobs:
           # Only steps at or above this duration are expanded.
           # Default: 20
           expand-composite-actions-threshold: 20
+          # Output format for the timeline chart.
+          # "mermaid" uses GitHub's built-in Mermaid rendering (default).
+          # "svg" generates a standalone SVG image that does not rely on
+          # GitHub's Mermaid support and is embedded directly in the summary.
+          # Default: mermaid
+          output-format: mermaid
 
       # Your build steps...
 ```
@@ -60,10 +66,11 @@ jobs:
 ## How it works
 
 `actions-timeline` fetches the jobs and steps of the workflow run from the
-GitHub API, and then generates a timeline with
-[mermaid gantt diagrams](https://mermaid.js.org/syntax/gantt.html). Thanks to
-the GitHub flavored markdown that can visualize mermaid diagrams, the timeline
-is displayed in the run summary page.
+GitHub API, and then generates a timeline. By default it uses
+[mermaid gantt diagrams](https://mermaid.js.org/syntax/gantt.html) rendered by
+GitHub's built-in Mermaid support. With `output-format: svg`, it generates an
+SVG image directly without relying on any external service or browser, and
+embeds it in the run summary page.
 
 This action is run on post-processing of the job, so you should register this
 action before your build step. If you register this action after your build
@@ -160,14 +167,30 @@ deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
   -o output.md
 ```
 
-`cli.ts` just outputs the markdown to file or STDOUT, so you have to use other
-tools to visualize mermaid diagrams.
+```bash
+# Output as SVG (no external service or browser required)
+deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
+  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+  https://github.com/Kesin11/actions-timeline/actions/runs/8021493760/attempts/1 \
+  -t $(gh auth token) \
+  --output-format svg \
+  -o output.svg
+
+# Open in browser
+open output.svg
+```
+
+When using `--output-format mermaid` (default), `cli.ts` outputs a markdown
+file, so you need one of the following tools to visualize Mermaid diagrams.
+When using `--output-format svg`, the output is a standalone SVG file that can
+be opened directly in any browser or image viewer.
 
 - Online editor:
   [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/)
 - VSCode extension:
   [Markdown Preview Mermaid Support](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-mermaid)
 - Local terminal: [mermaid-cli](https://github.com/mermaid-js/mermaid-cli)
+- Use `--output-format svg` to get a self-contained SVG without any extra tools
 
 # DEVELOPMENT
 

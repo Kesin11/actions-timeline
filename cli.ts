@@ -1,6 +1,7 @@
 import { Command } from "@cliffy/command";
-import { createMermaid } from "./src/workflow_gantt.ts";
+import { createGanttJobs } from "./src/workflow_gantt.ts";
 import { expandCompositeSteps } from "./src/composite.ts";
+import { createRenderer, type OutputFormat } from "./src/renderer.ts";
 import { Github, parseWorkflowRunUrl } from "@kesin11/gha-utils";
 
 const { options, args } = await new Command()
@@ -25,6 +26,11 @@ const { options, args } = await new Command()
     "--expand-composite-actions-threshold <thresholdSec:number>",
     "Duration threshold in seconds for expanding composite action steps. Default: 20",
     { default: 20 },
+  )
+  .option(
+    "--output-format <outputFormat:string>",
+    'Output format for the timeline chart: "mermaid" or "svg". Default: mermaid',
+    { default: "mermaid" },
   )
   .arguments("<url:string>")
   .parse(Deno.args);
@@ -51,12 +57,13 @@ const jobs = options.expandCompositeActions
   })
   : workflowJobs;
 
-const gantt = createMermaid(workflowRun, jobs, {
-  showWaitingRunner: options.showWaitingRunner,
-});
+const title = workflowRun.name ?? "";
+const ganttJobs = createGanttJobs(workflowRun, jobs, options.showWaitingRunner);
+const renderer = createRenderer(options.outputFormat as OutputFormat);
+const output = renderer.render(title, ganttJobs);
 
 if (options.output) {
-  await Deno.writeTextFile(options.output, gantt);
+  await Deno.writeTextFile(options.output, output);
 } else {
-  console.log(gantt);
+  console.log(output);
 }

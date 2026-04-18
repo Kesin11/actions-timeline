@@ -23,6 +23,13 @@ inputs:
       Only steps at or above this duration are expanded. Default: 20
     default: "20"
     required: false
+  output-format:
+    description: >
+      Output format for the timeline chart.
+      "mermaid" uses GitHub's built-in Mermaid rendering.
+      "svg" generates a standalone SVG image embedded in the summary.
+    default: "mermaid"
+    required: false
 runs:
   using: "node24"
   main: "dist/main.js"
