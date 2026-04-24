@@ -49674,13 +49674,13 @@ var require_float = __commonJS({
     "use strict";
     var common = require_common();
     var type_1 = require_type();
-    var YAML_FLOAT_PATTERN2 = new RegExp("^(?:[-+]?(?:[0-9][0-9_]*)\\.[0-9_]*(?:[eE][-+][0-9]+)?|\\.[0-9_]+(?:[eE][-+][0-9]+)?|[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\\.[0-9_]*|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$");
+    var YAML_FLOAT_PATTERN = new RegExp("^(?:[-+]?(?:[0-9][0-9_]*)\\.[0-9_]*(?:[eE][-+][0-9]+)?|\\.[0-9_]+(?:[eE][-+][0-9]+)?|[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\\.[0-9_]*|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$");
     function resolveYamlFloat2(data) {
       if (null === data) {
         return false;
       }
       var value, sign, base, digits;
-      if (!YAML_FLOAT_PATTERN2.test(data)) {
+      if (!YAML_FLOAT_PATTERN.test(data)) {
         return false;
       }
       return true;
@@ -50256,11 +50256,11 @@ var require_loader = __commonJS({
     var CHOMPING_CLIP2 = 1;
     var CHOMPING_STRIP2 = 2;
     var CHOMPING_KEEP2 = 3;
-    var PATTERN_NON_PRINTABLE2 = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/;
-    var PATTERN_NON_ASCII_LINE_BREAKS2 = /[\x85\u2028\u2029]/;
-    var PATTERN_FLOW_INDICATORS2 = /[,\[\]\{\}]/;
-    var PATTERN_TAG_HANDLE2 = /^(?:!|!!|![a-z\-]+!)$/i;
-    var PATTERN_TAG_URI2 = /^(?:!|[^,\[\]\{\}])(?:%[0-9a-f]{2}|[0-9a-z\-#;\/\?:@&=\+\$,_\.!~\*'\(\)\[\]])*$/i;
+    var PATTERN_NON_PRINTABLE = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/;
+    var PATTERN_NON_ASCII_LINE_BREAKS = /[\x85\u2028\u2029]/;
+    var PATTERN_FLOW_INDICATORS = /[,\[\]\{\}]/;
+    var PATTERN_TAG_HANDLE = /^(?:!|!!|![a-z\-]+!)$/i;
+    var PATTERN_TAG_URI = /^(?:!|[^,\[\]\{\}])(?:%[0-9a-f]{2}|[0-9a-z\-#;\/\?:@&=\+\$,_\.!~\*'\(\)\[\]])*$/i;
     function is_EOL(c) {
       return c === 10 || c === 13;
     }
@@ -50444,13 +50444,13 @@ var require_loader = __commonJS({
         }
         handle = args[0];
         prefix = args[1];
-        if (!PATTERN_TAG_HANDLE2.test(handle)) {
+        if (!PATTERN_TAG_HANDLE.test(handle)) {
           throwError(state, "ill-formed tag handle (first argument) of the TAG directive");
         }
         if (_hasOwnProperty.call(state.tagMap, handle)) {
           throwError(state, 'there is a previously declared suffix for "' + handle + '" tag handle');
         }
-        if (!PATTERN_TAG_URI2.test(prefix)) {
+        if (!PATTERN_TAG_URI.test(prefix)) {
           throwError(state, "ill-formed tag prefix (second argument) of the TAG directive");
         }
         state.tagMap[handle] = prefix;
@@ -50471,7 +50471,7 @@ var require_loader = __commonJS({
               throwError(state, "expected valid JSON character");
             }
           }
-        } else if (PATTERN_NON_PRINTABLE2.test(_result)) {
+        } else if (PATTERN_NON_PRINTABLE.test(_result)) {
           throwError(state, "the stream contains non-printable characters");
         }
         scalar.value += _result;
@@ -51155,7 +51155,7 @@ var require_loader = __commonJS({
           if (33 === ch) {
             if (!isNamed) {
               tagHandle = state.input.slice(_position - 1, state.position + 1);
-              if (!PATTERN_TAG_HANDLE2.test(tagHandle)) {
+              if (!PATTERN_TAG_HANDLE.test(tagHandle)) {
                 throwError(state, "named tag handle cannot contain such characters");
               }
               isNamed = true;
@@ -51167,11 +51167,11 @@ var require_loader = __commonJS({
           ch = state.input.charCodeAt(++state.position);
         }
         tagName = state.input.slice(_position, state.position);
-        if (PATTERN_FLOW_INDICATORS2.test(tagName)) {
+        if (PATTERN_FLOW_INDICATORS.test(tagName)) {
           throwError(state, "tag suffix cannot contain flow indicator characters");
         }
       }
-      if (tagName && !PATTERN_TAG_URI2.test(tagName)) {
+      if (tagName && !PATTERN_TAG_URI.test(tagName)) {
         throwError(state, "tag name cannot contain such characters: " + tagName);
       }
       if (isVerbatim) {
@@ -51411,7 +51411,7 @@ var require_loader = __commonJS({
       }
       composeNode(state, state.lineIndent - 1, CONTEXT_BLOCK_OUT2, false, true);
       skipSeparationSpace(state, true, -1);
-      if (state.checkLineBreaks && PATTERN_NON_ASCII_LINE_BREAKS2.test(state.input.slice(documentStart, state.position))) {
+      if (state.checkLineBreaks && PATTERN_NON_ASCII_LINE_BREAKS.test(state.input.slice(documentStart, state.position))) {
         throwWarning(state, "non-ASCII line breaks are interpreted as content");
       }
       state.documents.push(state.result);
@@ -52378,7 +52378,7 @@ var import_node_process = __toESM(require("node:process"));
 var import_core2 = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/jsr.io/@std/collections/1.1.6/chunk.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.7/chunk.ts
 function chunk(iterable, size) {
   if (size <= 0 || !Number.isInteger(size)) {
     throw new RangeError(
@@ -52408,7 +52408,7 @@ function chunk(iterable, size) {
   return result;
 }
 
-// npm/src/deps/jsr.io/@std/collections/1.1.6/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.7/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
@@ -52417,7 +52417,7 @@ function sumOf(array, selector) {
   return sum;
 }
 
-// npm/src/deps/jsr.io/@std/collections/1.1.6/zip.ts
+// npm/src/deps/jsr.io/@std/collections/1.1.7/zip.ts
 function zip(...arrays) {
   const { length } = arrays;
   if (length === 0) return [];
@@ -54339,7 +54339,7 @@ var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_chars.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_chars.ts
 var TAB = 9;
 var LINE_FEED = 10;
 var CARRIAGE_RETURN = 13;
@@ -54380,7 +54380,7 @@ function isFlowIndicator(c) {
   return c === COMMA || c === LEFT_SQUARE_BRACKET || c === RIGHT_SQUARE_BRACKET || c === LEFT_CURLY_BRACKET || c === RIGHT_CURLY_BRACKET;
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/binary.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/binary.ts
 var BASE64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r";
 function resolveYamlBinary(data) {
   if (data === null) return false;
@@ -54468,7 +54468,7 @@ var binary = {
   resolve: resolveYamlBinary
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/bool.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/bool.ts
 var YAML_TRUE_BOOLEANS = ["true", "True", "TRUE"];
 var YAML_FALSE_BOOLEANS = ["false", "False", "FALSE"];
 var YAML_BOOLEANS = [...YAML_TRUE_BOOLEANS, ...YAML_FALSE_BOOLEANS];
@@ -54498,7 +54498,7 @@ var bool = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_utils.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_utils.ts
 function isObject(value) {
   return value !== null && typeof value === "object";
 }
@@ -54509,13 +54509,13 @@ function isPlainObject(object) {
   return Object.prototype.toString.call(object) === "[object Object]";
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/float.ts
-var YAML_FLOAT_PATTERN = new RegExp(
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/float.ts
+var YAML_FLOAT_REGEXP = new RegExp(
   // 2.5e4, 2.5 and integers
   "^(?:[-+]?(?:0|[1-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"
 );
 function resolveYamlFloat(data) {
-  if (!YAML_FLOAT_PATTERN.test(data) || // Quick hack to not allow integers end with `_`
+  if (!YAML_FLOAT_REGEXP.test(data) || // Quick hack to not allow integers end with `_`
   // Probably should update regexp & check speed
   data[data.length - 1] === "_") {
     return false;
@@ -54536,7 +54536,7 @@ function constructYamlFloat(data) {
   }
   return sign * parseFloat(value);
 }
-var SCIENTIFIC_WITHOUT_DOT = /^[-+]?[0-9]+e/;
+var SCIENTIFIC_WITHOUT_DOT_REGEXP = /^[-+]?[0-9]+e/;
 function representYamlFloat(object, style) {
   const value = object instanceof Number ? object.valueOf() : object;
   if (isNaN(value)) {
@@ -54570,7 +54570,7 @@ function representYamlFloat(object, style) {
     return "-0.0";
   }
   const res = value.toString(10);
-  return SCIENTIFIC_WITHOUT_DOT.test(res) ? res.replace("e", ".e") : res;
+  return SCIENTIFIC_WITHOUT_DOT_REGEXP.test(res) ? res.replace("e", ".e") : res;
 }
 function isFloat(object) {
   if (object instanceof Number) object = object.valueOf();
@@ -54586,7 +54586,7 @@ var float = {
   resolve: resolveYamlFloat
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/int.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/int.ts
 function isCharCodeInRange(c, lower, upper) {
   return lower <= c && c <= upper;
 }
@@ -54708,7 +54708,7 @@ var int = {
   resolve: resolveYamlInteger
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/map.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/map.ts
 var map = {
   tag: "tag:yaml.org,2002:map",
   resolve() {
@@ -54720,7 +54720,7 @@ var map = {
   kind: "mapping"
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/merge.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/merge.ts
 var merge = {
   tag: "tag:yaml.org,2002:merge",
   kind: "scalar",
@@ -54728,7 +54728,7 @@ var merge = {
   construct: (data) => data
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/nil.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/nil.ts
 var nil = {
   tag: "tag:yaml.org,2002:null",
   kind: "scalar",
@@ -54745,7 +54745,7 @@ var nil = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/omap.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/omap.ts
 function resolveYamlOmap(data) {
   const objectKeys = /* @__PURE__ */ new Set();
   for (const object of data) {
@@ -54768,7 +54768,7 @@ var omap = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/pairs.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/pairs.ts
 function resolveYamlPairs(data) {
   if (data === null) return true;
   return data.every((it) => isPlainObject(it) && Object.keys(it).length === 1);
@@ -54782,7 +54782,7 @@ var pairs = {
   resolve: resolveYamlPairs
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/regexp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/regexp.ts
 var REGEXP = /^\/(?<regexp>[\s\S]+)\/(?<modifiers>[gismuy]*)$/;
 var regexp = {
   tag: "tag:yaml.org,2002:js/regexp",
@@ -54805,7 +54805,7 @@ var regexp = {
   represent: (object) => object.toString()
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/seq.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/seq.ts
 var seq = {
   tag: "tag:yaml.org,2002:seq",
   kind: "sequence",
@@ -54813,7 +54813,7 @@ var seq = {
   construct: (data) => data !== null ? data : []
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/set.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/set.ts
 var set = {
   tag: "tag:yaml.org,2002:set",
   kind: "mapping",
@@ -54824,7 +54824,7 @@ var set = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/str.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/str.ts
 var str = {
   tag: "tag:yaml.org,2002:str",
   kind: "scalar",
@@ -54832,7 +54832,7 @@ var str = {
   construct: (data) => data !== null ? data : ""
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/timestamp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/timestamp.ts
 var YAML_DATE_REGEXP = new RegExp(
   "^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$"
   // [3] day
@@ -54897,7 +54897,7 @@ var timestamp = {
   resolve: resolveYamlTimestamp
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_type/undefined.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/undefined.ts
 var undefinedType = {
   tag: "tag:yaml.org,2002:js/undefined",
   kind: "scalar",
@@ -54915,7 +54915,7 @@ var undefinedType = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_schema.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_schema.ts
 function createTypeMap(implicitTypes, explicitTypes) {
   const result = {
     fallback: /* @__PURE__ */ new Map(),
@@ -54966,7 +54966,7 @@ var SCHEMA_MAP = /* @__PURE__ */ new Map([
   ["extended", EXTENDED_SCHEMA]
 ]);
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/_loader_state.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/_loader_state.ts
 var CONTEXT_FLOW_IN = 1;
 var CONTEXT_FLOW_OUT = 2;
 var CONTEXT_BLOCK_IN = 3;
@@ -54974,14 +54974,14 @@ var CONTEXT_BLOCK_OUT = 4;
 var CHOMPING_CLIP = 1;
 var CHOMPING_STRIP = 2;
 var CHOMPING_KEEP = 3;
-var PATTERN_NON_PRINTABLE = (
+var PATTERN_NON_PRINTABLE_REGEXP = (
   // deno-lint-ignore no-control-regex
   /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/
 );
-var PATTERN_NON_ASCII_LINE_BREAKS = /[\x85\u2028\u2029]/;
-var PATTERN_FLOW_INDICATORS = /[,\[\]\{\}]/;
-var PATTERN_TAG_HANDLE = /^(?:!|!!|![a-z\-]+!)$/i;
-var PATTERN_TAG_URI = /^(?:!|[^,\[\]\{\}])(?:%[0-9a-f]{2}|[0-9a-z\-#;\/\?:@&=\+\$,_\.!~\*'\(\)\[\]])*$/i;
+var PATTERN_NON_ASCII_LINE_BREAKS_REGEXP = /[\x85\u2028\u2029]/;
+var PATTERN_FLOW_INDICATORS_REGEXP = /[,\[\]\{\}]/;
+var PATTERN_TAG_HANDLE_REGEXP = /^(?:!|!!|![a-z\-]+!)$/i;
+var PATTERN_TAG_URI_REGEXP = /^(?:!|[^,\[\]\{\}])(?:%[0-9a-f]{2}|[0-9a-z\-#;\/\?:@&=\+\$,_\.!~\*'\(\)\[\]])*$/i;
 var ESCAPED_HEX_LENGTHS = /* @__PURE__ */ new Map([
   [120, 2],
   // x
@@ -55211,7 +55211,7 @@ var LoaderState = class {
     }
     const handle = args[0];
     const prefix = args[1];
-    if (!PATTERN_TAG_HANDLE.test(handle)) {
+    if (!PATTERN_TAG_HANDLE_REGEXP.test(handle)) {
       throw this.#createError(
         `Cannot handle tag directive: ill-formed handle (first argument) in "${handle}"`
       );
@@ -55221,7 +55221,7 @@ var LoaderState = class {
         `Cannot handle tag directive: previously declared suffix for "${handle}" tag handle`
       );
     }
-    if (!PATTERN_TAG_URI.test(prefix)) {
+    if (!PATTERN_TAG_URI_REGEXP.test(prefix)) {
       throw this.#createError(
         "Cannot handle tag directive: ill-formed tag prefix (second argument) of the TAG directive"
       );
@@ -55240,7 +55240,7 @@ var LoaderState = class {
             );
           }
         }
-      } else if (PATTERN_NON_PRINTABLE.test(result)) {
+      } else if (PATTERN_NON_PRINTABLE_REGEXP.test(result)) {
         throw this.#createError("Stream contains non-printable characters");
       }
       return result;
@@ -56017,7 +56017,7 @@ var LoaderState = class {
               position - 1,
               this.#scanner.position + 1
             );
-            if (!PATTERN_TAG_HANDLE.test(tagHandle)) {
+            if (!PATTERN_TAG_HANDLE_REGEXP.test(tagHandle)) {
               throw this.#createError(
                 "Cannot read tag property: named tag handle contains invalid characters"
               );
@@ -56034,13 +56034,13 @@ var LoaderState = class {
         ch = this.#scanner.peek();
       }
       tagName = this.#scanner.source.slice(position, this.#scanner.position);
-      if (PATTERN_FLOW_INDICATORS.test(tagName)) {
+      if (PATTERN_FLOW_INDICATORS_REGEXP.test(tagName)) {
         throw this.#createError(
           "Cannot read tag property: tag suffix cannot contain flow indicator characters"
         );
       }
     }
-    if (tagName && !PATTERN_TAG_URI.test(tagName)) {
+    if (tagName && !PATTERN_TAG_URI_REGEXP.test(tagName)) {
       throw this.#createError(
         `Cannot read tag property: invalid characters in tag name "${tagName}"`
       );
@@ -56340,7 +56340,7 @@ var LoaderState = class {
     });
     if (newState) result = newState.result;
     this.skipSeparationSpace(true, -1);
-    if (this.checkLineBreaks && PATTERN_NON_ASCII_LINE_BREAKS.test(
+    if (this.checkLineBreaks && PATTERN_NON_ASCII_LINE_BREAKS_REGEXP.test(
       this.#scanner.source.slice(documentStart, this.#scanner.position)
     )) {
       this.dispatchWarning("non-ASCII line breaks are interpreted as content");
@@ -56364,7 +56364,7 @@ var LoaderState = class {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.0.12/parse.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.0/parse.ts
 function sanitizeInput(input) {
   input = String(input);
   if (input.length > 0) {
