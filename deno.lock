@@ -9,7 +9,8 @@
     "jsr:@deno/dnt@0.42.3": "0.42.3",
     "jsr:@kesin11/gha-utils@0.3.0": "0.3.0",
     "jsr:@std/assert@^1.0.19": "1.0.19",
-    "jsr:@std/collections@^1.1.2": "1.1.6",
+    "jsr:@std/collections@^1.1.2": "1.1.7",
+    "jsr:@std/collections@^1.1.7": "1.1.7",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/fmt@1": "1.0.10",
     "jsr:@std/fmt@^1.0.9": "1.0.10",
@@ -19,8 +20,8 @@
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/semver@^1.0.8": "1.0.8",
     "jsr:@std/text@^1.0.17": "1.0.18",
-    "jsr:@std/yaml@^1.0.11": "1.0.12",
-    "jsr:@std/yaml@^1.0.8": "1.0.12",
+    "jsr:@std/yaml@^1.0.11": "1.1.0",
+    "jsr:@std/yaml@^1.0.8": "1.1.0",
     "jsr:@ts-morph/bootstrap@0.27": "0.27.0",
     "jsr:@ts-morph/common@0.27": "0.27.0",
     "npm:@actions/core@2.0.3": "2.0.3",
@@ -79,7 +80,7 @@
     "@kesin11/gha-utils@0.3.0": {
       "integrity": "7a6b6df05d4c60a7d3c89c2a9c1548b272334a12d03a614b0e2c76ec62a5e052",
       "dependencies": [
-        "jsr:@std/collections",
+        "jsr:@std/collections@^1.1.2",
         "jsr:@std/encoding",
         "jsr:@std/yaml@^1.0.8",
         "npm:@octokit/plugin-retry",
@@ -95,8 +96,8 @@
         "jsr:@std/internal"
       ]
     },
-    "@std/collections@1.1.6": {
-      "integrity": "b458160ce65ea5ad35da05d0a5cbee4b583677c8b443a10d7beb0c4ac63f2baa"
+    "@std/collections@1.1.7": {
+      "integrity": "56f659d011218a69740b12829cf5ea2c9b70bbed0af02597e27dc1eb5e69e208"
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
@@ -129,8 +130,8 @@
     "@std/yaml@1.0.9": {
       "integrity": "6bad3dc766dd85b4b37eabcba81b6aa4eac7a392792ae29abcfb0f90602d55bb"
     },
-    "@std/yaml@1.0.12": {
-      "integrity": "7deabca4545bcedd07c5f69ea53acea71b8b4c67562f224e17b90d75944cb20c"
+    "@std/yaml@1.1.0": {
+      "integrity": "fc1c5c63e05c4c5eb6118355f557958035d41940d6c29d35b306ef7155d6edb0"
     },
     "@ts-morph/bootstrap@0.27.0": {
       "integrity": "b8d7bc8f7942ce853dde4161b28f9aa96769cef3d8eebafb379a81800b9e2448",
@@ -762,7 +763,7 @@
       "jsr:@deno/dnt@0.42.3",
       "jsr:@kesin11/gha-utils@0.3.0",
       "jsr:@std/assert@^1.0.19",
-      "jsr:@std/collections@^1.1.2",
+      "jsr:@std/collections@^1.1.7",
       "jsr:@std/encoding@^1.0.10",
       "jsr:@std/yaml@^1.0.11",
       "npm:@actions/core@2.0.3",
