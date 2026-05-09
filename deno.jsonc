@@ -11,7 +11,7 @@
     "exclude": ["./dist/", "./npm/"]
   },
   "imports": {
-    "@cliffy/command": "jsr:@cliffy/command@^1.0.1",
+    "@cliffy/command": "jsr:@cliffy/command@^1.1.0",
     "@kesin11/gha-utils": "jsr:@kesin11/gha-utils@0.3.0",
     "@std/assert": "jsr:@std/assert@^1.0.19",
     "@std/collections": "jsr:@std/collections@^1.1.7",
