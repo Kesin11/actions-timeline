@@ -29,9 +29,7 @@
     "npm:@types/node@*": "22.15.15",
     "npm:date-fns@4.1.0": "4.1.0",
     "npm:esbuild@0.25.5": "0.25.5",
-    "npm:esbuild@0.28.0": "0.28.0",
-    "npm:structured-source@4": "4.0.0",
-    "npm:yaml-ast-parser@^0.0.43": "0.0.43"
+    "npm:esbuild@0.28.0": "0.28.0"
   },
   "jsr": {
     "@cliffy/command@1.1.0": {
@@ -621,9 +619,6 @@
     "bottleneck@2.19.5": {
       "integrity": "sha512-VHiNCbI1lKdl44tGrhNfU3lup0Tj/ZBMJB5/2ZbNXRCPuRCO7ed2mgcK4r17y+KB2EfuYuRaVlwNbAeaWGSpbw=="
     },
-    "boundary@2.0.0": {
-      "integrity": "sha512-rJKn5ooC9u8q13IMCrW0RSp31pxBCHE3y9V/tp3TdWSLf8Em3p6Di4NBpfzbJge9YjjFEsD0RtFEjtvHL5VyEA=="
-    },
     "date-fns@4.1.0": {
       "integrity": "sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg=="
     },
@@ -707,12 +702,6 @@
         "wrappy"
       ]
     },
-    "structured-source@4.0.0": {
-      "integrity": "sha512-qGzRFNJDjFieQkl/sVOI2dUjHKRyL9dAJi2gCPGJLbJHBIkyOHxjuocpIEfbLioX+qSJpvbYdT49/YCdMznKxA==",
-      "dependencies": [
-        "boundary"
-      ]
-    },
     "tunnel@0.0.6": {
       "integrity": "sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg=="
     },
@@ -736,9 +725,6 @@
     },
     "wrappy@1.0.2": {
       "integrity": "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ=="
-    },
-    "yaml-ast-parser@0.0.43": {
-      "integrity": "sha512-2PTINUwsRqSd+s8XxKaJWQlUuEMHJQyEuh2edBbW8KNJz0SJPwUSD2zRWqezFEdN7IzAgeuYHFUCF7o8zRdZ0A=="
     }
   },
   "workspace": {
@@ -755,9 +741,7 @@
       "npm:@octokit/plugin-throttling@^11.0.1",
       "npm:@octokit/rest@22",
       "npm:date-fns@4.1.0",
-      "npm:esbuild@0.28.0",
-      "npm:structured-source@4",
-      "npm:yaml-ast-parser@^0.0.43"
+      "npm:esbuild@0.28.0"
     ]
   }
 }

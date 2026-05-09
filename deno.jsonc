@@ -23,8 +23,6 @@
     "date-fns": "npm:date-fns@4.1.0",
     "@octokit/plugin-retry": "npm:@octokit/plugin-retry@^8.0.1",
     "@octokit/plugin-throttling": "npm:@octokit/plugin-throttling@^11.0.1",
-    "@octokit/rest": "npm:@octokit/rest@^22.0.0",
-    "structured-source": "npm:structured-source@^4.0.0",
-    "yaml-ast-parser": "npm:yaml-ast-parser@^0.0.43"
+    "@octokit/rest": "npm:@octokit/rest@^22.0.0"
   }
 }

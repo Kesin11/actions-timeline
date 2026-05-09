@@ -1,7 +1,5 @@
 import { parse } from "@std/yaml";
-import { zip } from "@std/collections";
 import type { FileContent } from "./github.ts";
-import { type JobAst, type StepAst, WorkflowAst } from "./workflow_ast.ts";
 
 export type Workflow = {
   name?: string;
@@ -14,20 +12,10 @@ export type Workflow = {
 export class WorkflowModel {
   fileContent: FileContent;
   raw: Workflow;
-  ast: WorkflowAst;
-  htmlUrl?: string;
 
   constructor(fileContent: FileContent) {
     this.fileContent = fileContent;
-    this.ast = new WorkflowAst(fileContent.content);
-    this.htmlUrl = fileContent.raw.html_url ?? undefined;
     this.raw = parse(fileContent.content) as Workflow;
-  }
-
-  static createWorkflowNameMap(
-    workflowModels: WorkflowModel[],
-  ): Map<string, WorkflowModel> {
-    return new Map(workflowModels.map((it) => [it.name, it]));
   }
 
   get name(): string {
@@ -35,34 +23,8 @@ export class WorkflowModel {
   }
 
   get jobs(): JobModel[] {
-    return zip(Object.entries(this.raw.jobs), this.ast.jobAsts()).map(
-      ([[id, job], jobAst]) => new JobModel(id, job, this.fileContent, jobAst),
-    );
-  }
-}
-
-export type ReusableWorkflow = {
-  name: string;
-  on: {
-    workflow_call: unknown;
-  };
-  jobs: Record<string, Job>;
-};
-
-export class ReusableWorkflowModel {
-  fileContent: FileContent;
-  raw: ReusableWorkflow;
-  ast: WorkflowAst;
-
-  constructor(fileContent: FileContent) {
-    this.fileContent = fileContent;
-    this.ast = new WorkflowAst(fileContent.content);
-    this.raw = parse(fileContent.content) as ReusableWorkflow;
-  }
-
-  get jobs(): JobModel[] {
-    return zip(Object.entries(this.raw.jobs), this.ast.jobAsts()).map(
-      ([[id, job], jobAst]) => new JobModel(id, job, this.fileContent, jobAst),
+    return Object.entries(this.raw.jobs).map(
+      ([id, job]) => new JobModel(id, job),
     );
   }
 }
@@ -82,40 +44,16 @@ export type Job = {
 export class JobModel {
   id: string;
   name?: string;
-  fileContent: FileContent;
   raw: Job;
-  ast: JobAst;
-  htmlUrl?: string;
 
-  constructor(
-    id: string,
-    obj: Job,
-    fileContent: FileContent,
-    ast: JobAst,
-  ) {
+  constructor(id: string, obj: Job) {
     this.id = id;
     this.name = obj.name;
     this.raw = obj;
-    this.ast = ast;
-    this.fileContent = fileContent;
-    this.htmlUrl = fileContent.raw.html_url ?? undefined;
-  }
-
-  get startLine(): number {
-    return this.ast.startLine();
-  }
-
-  get htmlUrlWithLine(): string {
-    return `${this.htmlUrl}#L${this.startLine}`;
   }
 
   get steps(): StepModel[] {
-    const stepAsts = this.ast.stepAsts();
-    if (this.raw.steps === undefined || stepAsts === undefined) return [];
-
-    return zip(this.raw.steps, stepAsts).map(
-      ([step, stepAst]) => new StepModel(step, this.fileContent, stepAst),
-    );
+    return (this.raw.steps ?? []).map((step) => new StepModel(step));
   }
 
   static match(
@@ -141,13 +79,7 @@ export class JobModel {
   }
 
   isMatrix(): boolean {
-    if (this.raw.strategy?.matrix !== undefined) return true;
-    return false;
-  }
-
-  isReusable(): boolean {
-    if (this.raw.uses?.startsWith("./")) return true;
-    return false;
+    return this.raw.strategy?.matrix !== undefined;
   }
 }
 
@@ -159,24 +91,6 @@ export type CompositeAction = {
     steps: Step[];
   };
 };
-
-export class CompositeStepModel {
-  fileContent: FileContent;
-  raw: CompositeAction;
-  ast: StepAst;
-
-  constructor(fileContent: FileContent, fakeAst: StepAst) {
-    this.fileContent = fileContent;
-    this.raw = parse(fileContent.content) as CompositeAction;
-    this.ast = fakeAst;
-  }
-
-  get steps(): StepModel[] {
-    return this.raw.runs.steps.map((step) =>
-      new StepModel(step, this.fileContent, this.ast)
-    );
-  }
-}
 
 export type Step = {
   uses?: string;
@@ -193,34 +107,13 @@ export class StepModel {
     action: string;
     ref?: string;
   };
-  ast: StepAst;
-  htmlUrl?: string;
 
-  constructor(
-    obj: Step,
-    fileContent: FileContent,
-    ast: StepAst,
-  ) {
+  constructor(obj: Step) {
     this.raw = obj;
     this.uses = obj.uses
       ? { action: obj.uses.split("@")[0], ref: obj.uses.split("@")[1] }
       : undefined;
     this.name = obj.name ?? obj.run ?? this.uses?.action ?? "";
-    this.ast = ast;
-    this.htmlUrl = fileContent.raw.html_url ?? undefined;
-  }
-
-  get startLine(): number {
-    return this.ast.startLine();
-  }
-
-  get htmlUrlWithLine(): string {
-    return `${this.htmlUrl}#L${this.startLine}`;
-  }
-
-  get showable(): string {
-    return this.raw.name ?? this.raw.uses ?? this.raw.run ??
-      "Error: Not showable step";
   }
 
   static match(
@@ -247,7 +140,6 @@ export class StepModel {
 
   isComposite(): boolean {
     if (this.raw.uses === "./") return false;
-    if (this.raw.uses?.startsWith("./")) return true;
-    return false;
+    return this.raw.uses?.startsWith("./") ?? false;
   }
 }
