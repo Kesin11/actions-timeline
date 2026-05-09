@@ -32,7 +32,7 @@ mkdir -p "${OUTPUT_DIR}"
 echo "--- [1/5] Generating mermaid WITH composite expansion ---"
 deno run --allow-net --allow-env --allow-write \
   "${REPO_DIR}/cli.ts" \
-  --token "$(gh auth token)" \
+  --token "${GITHUB_TOKEN:?GITHUB_TOKEN is not set. Run: export GITHUB_TOKEN=\$(gh auth token)}" \
   --expand-composite-actions=true \
   "${RUN_URL}" \
   -o "${COMPOSITE_OUT}"
@@ -43,7 +43,7 @@ echo ""
 echo "--- [2/5] Generating mermaid WITHOUT composite expansion ---"
 deno run --allow-net --allow-env --allow-write \
   "${REPO_DIR}/cli.ts" \
-  --token "$(gh auth token)" \
+  --token "${GITHUB_TOKEN:?GITHUB_TOKEN is not set. Run: export GITHUB_TOKEN=\$(gh auth token)}" \
   "${RUN_URL}" \
   -o "${NORMAL_OUT}"
 echo "  -> ${NORMAL_OUT}"
