@@ -30,8 +30,8 @@ export type WorkflowJobStep = {
   number: number;
   status: string;
   conclusion: string | null;
-  started_at: string;
-  completed_at: string;
+  started_at: string | null;
+  completed_at: string | null;
   [key: string]: unknown;
 };
 
@@ -40,7 +40,7 @@ export type WorkflowJob = {
   name: string;
   status: string;
   conclusion: string | null;
-  started_at: string;
+  started_at: string | null;
   completed_at: string | null;
   created_at?: string;
   steps?: WorkflowJobStep[];
@@ -85,10 +85,32 @@ export type WorkflowRunUrl = {
 export function parseWorkflowRunUrl(runUrl: string): WorkflowRunUrl {
   const url = new URL(runUrl);
   const path = url.pathname.split("/");
+  if (path[3] !== "actions" || path[4] !== "runs") {
+    throw new Error(
+      `Invalid workflow run URL: expected /owner/repo/actions/runs/<runId>, got ${url.pathname}`,
+    );
+  }
   const owner = path[1];
   const repo = path[2];
   const runId = Number(path[5]);
+  if (!Number.isFinite(runId) || runId <= 0) {
+    throw new Error(
+      `Invalid workflow run URL: runId must be a positive integer, got ${
+        path[5]
+      }`,
+    );
+  }
   const runAttempt = path[6] === "attempts" ? Number(path[7]) : undefined;
+  if (
+    runAttempt !== undefined &&
+    (!Number.isFinite(runAttempt) || runAttempt <= 0)
+  ) {
+    throw new Error(
+      `Invalid workflow run URL: runAttempt must be a positive integer, got ${
+        path[7]
+      }`,
+    );
+  }
   return {
     origin: url.origin,
     owner,
@@ -130,7 +152,7 @@ export class Github {
           _octokit: unknown,
           retryCount: number,
         ) => {
-          this.octokitClient.log.warn(
+          console.warn(
             `Request quota exhausted for request ${options.method} ${options.url}`,
           );
           if (retryCount <= 2) {
@@ -182,7 +204,7 @@ export class Github {
     runId: number,
     runAttempt?: number,
   ): Promise<WorkflowRun> {
-    if (runAttempt) {
+    if (runAttempt !== undefined && runAttempt > 1) {
       const res = await this.octokitClient.actions.getWorkflowRunAttempt({
         owner,
         repo,

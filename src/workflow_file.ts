@@ -15,7 +15,13 @@ export class WorkflowModel {
 
   constructor(fileContent: FileContent) {
     this.fileContent = fileContent;
-    this.raw = parse(fileContent.content) as Workflow;
+    const parsed = parse(fileContent.content);
+    if (parsed === null || typeof parsed !== "object") {
+      throw new Error(
+        `Failed to parse workflow file: ${fileContent.raw.path}`,
+      );
+    }
+    this.raw = parsed as Workflow;
   }
 
   get name(): string {
@@ -23,6 +29,7 @@ export class WorkflowModel {
   }
 
   get jobs(): JobModel[] {
+    if (!this.raw.jobs) return [];
     return Object.entries(this.raw.jobs).map(
       ([id, job]) => new JobModel(id, job),
     );
@@ -31,7 +38,7 @@ export class WorkflowModel {
 
 export type Job = {
   name?: string;
-  "runs-on": string;
+  "runs-on"?: string | string[];
   uses?: string;
   steps?: Step[];
   strategy?: {
@@ -70,8 +77,8 @@ export class JobModel {
         if (rawName.startsWith(jobModel.id)) return jobModel;
 
         if (jobModel.name === undefined) continue;
-        const trimedName = jobModel.name.replace(/\$\{\{.+\}\}/g, "").trim();
-        if (rawName.includes(trimedName)) return jobModel;
+        const trimmedName = jobModel.name.replace(/\$\{\{.+\}\}/g, "").trim();
+        if (rawName.includes(trimmedName)) return jobModel;
       }
     }
 
