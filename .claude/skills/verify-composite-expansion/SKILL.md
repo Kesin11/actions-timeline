@@ -36,13 +36,13 @@ The script performs:
 With composite expansion:
 
 ```bash
-deno run --allow-net --allow-env --allow-write cli.ts --token "$(gh auth token)" --expand-composite-actions=true "https://github.com/{org}/{repo}/actions/runs/{run_id}" -o {repo}_composite.md
+deno run --allow-net --allow-env --allow-write cli.ts --token "$GITHUB_TOKEN" --expand-composite-actions=true "https://github.com/{org}/{repo}/actions/runs/{run_id}" -o {repo}_composite.md
 ```
 
 Without composite expansion:
 
 ```bash
-deno run --allow-net --allow-env --allow-write cli.ts --token "$(gh auth token)" "https://github.com/{org}/{repo}/actions/runs/{run_id}" -o {repo}.md
+deno run --allow-net --allow-env --allow-write cli.ts --token "$GITHUB_TOKEN" "https://github.com/{org}/{repo}/actions/runs/{run_id}" -o {repo}.md
 ```
 
 List jobs:
