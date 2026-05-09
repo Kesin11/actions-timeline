@@ -1,5 +1,5 @@
 import { sumOf } from "@std/collections";
-import type { WorkflowRun } from "@kesin11/gha-utils";
+import type { WorkflowRun } from "./github.ts";
 import {
   convertStepToStatus,
   diffSec,

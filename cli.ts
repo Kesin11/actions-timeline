@@ -1,7 +1,7 @@
 import { Command } from "@cliffy/command";
 import { createMermaid } from "./src/workflow_gantt.ts";
 import { expandCompositeSteps } from "./src/composite.ts";
-import { Github, parseWorkflowRunUrl } from "@kesin11/gha-utils";
+import { Github, parseWorkflowRunUrl } from "./src/github.ts";
 
 const { options, args } = await new Command()
   .name("actions-timeline-cli")

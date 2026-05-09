@@ -4,8 +4,8 @@ import {
   FileContent,
   type FileContentResponse,
   type WorkflowJobs,
-  WorkflowModel,
-} from "@kesin11/gha-utils";
+} from "../src/github.ts";
+import { WorkflowModel } from "../src/workflow_file.ts";
 import {
   type CompositeStepInfo,
   expandJobSteps,

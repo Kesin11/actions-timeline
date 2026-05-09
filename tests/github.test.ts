@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { parseWorkflowRunUrl } from "@kesin11/gha-utils";
+import { parseWorkflowRunUrl } from "../src/github.ts";
 
 Deno.test(parseWorkflowRunUrl.name, async (t) => {
   await t.step("Basic", () => {

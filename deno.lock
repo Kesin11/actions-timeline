@@ -7,9 +7,7 @@
     "jsr:@cliffy/table@1.1.0": "1.1.0",
     "jsr:@david/code-block-writer@^13.0.3": "13.0.3",
     "jsr:@deno/dnt@0.42.3": "0.42.3",
-    "jsr:@kesin11/gha-utils@0.3.0": "0.3.0",
     "jsr:@std/assert@^1.0.19": "1.0.19",
-    "jsr:@std/collections@^1.1.2": "1.1.7",
     "jsr:@std/collections@^1.1.7": "1.1.7",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/fmt@1": "1.0.10",
@@ -20,7 +18,6 @@
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/semver@^1.0.8": "1.0.8",
     "jsr:@std/text@^1.0.17": "1.0.18",
-    "jsr:@std/yaml@^1.0.8": "1.1.0",
     "jsr:@std/yaml@^1.1.0": "1.1.0",
     "jsr:@ts-morph/bootstrap@0.27": "0.27.0",
     "jsr:@ts-morph/common@0.27": "0.27.0",
@@ -75,19 +72,6 @@
         "jsr:@std/fs",
         "jsr:@std/path@1",
         "jsr:@ts-morph/bootstrap"
-      ]
-    },
-    "@kesin11/gha-utils@0.3.0": {
-      "integrity": "7a6b6df05d4c60a7d3c89c2a9c1548b272334a12d03a614b0e2c76ec62a5e052",
-      "dependencies": [
-        "jsr:@std/collections@^1.1.2",
-        "jsr:@std/encoding",
-        "jsr:@std/yaml@^1.0.8",
-        "npm:@octokit/plugin-retry",
-        "npm:@octokit/plugin-throttling",
-        "npm:@octokit/rest",
-        "npm:structured-source",
-        "npm:yaml-ast-parser"
       ]
     },
     "@std/assert@1.0.19": {
@@ -761,15 +745,19 @@
     "dependencies": [
       "jsr:@cliffy/command@^1.1.0",
       "jsr:@deno/dnt@0.42.3",
-      "jsr:@kesin11/gha-utils@0.3.0",
       "jsr:@std/assert@^1.0.19",
       "jsr:@std/collections@^1.1.7",
       "jsr:@std/encoding@^1.0.10",
       "jsr:@std/yaml@^1.1.0",
       "npm:@actions/core@2.0.3",
       "npm:@actions/github@7.0.0",
+      "npm:@octokit/plugin-retry@^8.0.1",
+      "npm:@octokit/plugin-throttling@^11.0.1",
+      "npm:@octokit/rest@22",
       "npm:date-fns@4.1.0",
-      "npm:esbuild@0.28.0"
+      "npm:esbuild@0.28.0",
+      "npm:structured-source@4",
+      "npm:yaml-ast-parser@^0.0.43"
     ]
   }
 }
