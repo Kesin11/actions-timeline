@@ -21,8 +21,8 @@
     "@actions/core": "npm:@actions/core@2.0.3",
     "@actions/github": "npm:@actions/github@7.0.0",
     "date-fns": "npm:date-fns@4.1.0",
-    "@octokit/plugin-retry": "npm:@octokit/plugin-retry@^8.0.1",
-    "@octokit/plugin-throttling": "npm:@octokit/plugin-throttling@^11.0.1",
-    "@octokit/rest": "npm:@octokit/rest@^22.0.0"
+    "@octokit/plugin-retry": "npm:@octokit/plugin-retry@^8.1.0",
+    "@octokit/plugin-throttling": "npm:@octokit/plugin-throttling@^11.0.3",
+    "@octokit/rest": "npm:@octokit/rest@^22.0.1"
   }
 }
