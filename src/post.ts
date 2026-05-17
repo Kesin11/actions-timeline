@@ -4,7 +4,7 @@ import { debug, getBooleanInput, getInput, info, summary } from "@actions/core";
 import * as github from "@actions/github";
 import { createMermaid } from "./workflow_gantt.ts";
 import { expandCompositeSteps } from "./composite.ts";
-import { Github } from "@kesin11/gha-utils";
+import { Github } from "./github.ts";
 
 const main = async () => {
   const token = getInput("github-token", { required: true });

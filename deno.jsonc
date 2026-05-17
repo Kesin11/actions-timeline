@@ -12,7 +12,6 @@
   },
   "imports": {
     "@cliffy/command": "jsr:@cliffy/command@^1.1.0",
-    "@kesin11/gha-utils": "jsr:@kesin11/gha-utils@0.3.0",
     "@std/assert": "jsr:@std/assert@^1.0.19",
     "@std/collections": "jsr:@std/collections@^1.1.7",
     "@deno/dnt": "jsr:@deno/dnt@0.42.3",
@@ -21,6 +20,9 @@
     "esbuild": "npm:esbuild@0.28.0",
     "@actions/core": "npm:@actions/core@2.0.3",
     "@actions/github": "npm:@actions/github@7.0.0",
-    "date-fns": "npm:date-fns@4.1.0"
+    "date-fns": "npm:date-fns@4.1.0",
+    "@octokit/plugin-retry": "npm:@octokit/plugin-retry@^8.0.1",
+    "@octokit/plugin-throttling": "npm:@octokit/plugin-throttling@^11.0.1",
+    "@octokit/rest": "npm:@octokit/rest@^22.0.0"
   }
 }

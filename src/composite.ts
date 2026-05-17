@@ -2,15 +2,13 @@ import { decodeBase64 } from "@std/encoding";
 import { parse as parseYaml } from "@std/yaml";
 import { diffSec } from "./format_util.ts";
 import type { TimelineJobs, TimelineStep } from "./types.ts";
+import { Github, type WorkflowJobs, type WorkflowRun } from "./github.ts";
 import {
   type CompositeAction,
-  Github,
   JobModel,
   StepModel,
-  type WorkflowJobs,
   WorkflowModel,
-  type WorkflowRun,
-} from "@kesin11/gha-utils";
+} from "./workflow_file.ts";
 
 export type ExpandCompositeOptions = {
   thresholdSec?: number; // default: 20

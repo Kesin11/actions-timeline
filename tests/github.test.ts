@@ -1,5 +1,5 @@
-import { assertEquals } from "@std/assert";
-import { parseWorkflowRunUrl } from "@kesin11/gha-utils";
+import { assertEquals, assertThrows } from "@std/assert";
+import { parseWorkflowRunUrl } from "../src/github.ts";
 
 Deno.test(parseWorkflowRunUrl.name, async (t) => {
   await t.step("Basic", () => {
@@ -42,5 +42,23 @@ Deno.test(parseWorkflowRunUrl.name, async (t) => {
       runAttempt: 2,
     };
     assertEquals(actual, expect);
+  });
+
+  await t.step("throws for wrong path segments", () => {
+    const url = "https://github.com/Kesin11/actions-timeline/pulls/123";
+    assertThrows(
+      () => parseWorkflowRunUrl(url),
+      Error,
+      "Invalid workflow run URL",
+    );
+  });
+
+  await t.step("throws for non-numeric runId", () => {
+    const url = "https://github.com/Kesin11/actions-timeline/actions/runs/abc";
+    assertThrows(
+      () => parseWorkflowRunUrl(url),
+      Error,
+      "runId must be a positive integer",
+    );
   });
 });
