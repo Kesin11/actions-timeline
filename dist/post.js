@@ -38963,7 +38963,7 @@ var require_dist_node3 = __commonJS({
         return template.replace(/\/$/, "");
       }
     }
-    function parse4(options) {
+    function parse6(options) {
       let method = options.method.toUpperCase();
       let url = (options.url || "/").replace(/:([a-z]\w+)/g, "{$1}");
       let headers = Object.assign({}, options.headers);
@@ -39027,7 +39027,7 @@ var require_dist_node3 = __commonJS({
       );
     }
     function endpointWithDefaults3(defaults, route, options) {
-      return parse4(merge4(defaults, route, options));
+      return parse6(merge4(defaults, route, options));
     }
     function withDefaults6(oldDefaults, newDefaults) {
       const DEFAULTS22 = merge4(oldDefaults, newDefaults);
@@ -39036,7 +39036,7 @@ var require_dist_node3 = __commonJS({
         DEFAULTS: DEFAULTS22,
         defaults: withDefaults6.bind(null, DEFAULTS22),
         merge: merge4.bind(null, DEFAULTS22),
-        parse: parse4
+        parse: parse6
       });
     }
     var endpoint3 = withDefaults6(null, DEFAULTS3);
@@ -47540,99 +47540,134 @@ var require_dist2 = __commonJS({
   }
 });
 
-// npm/node_modules/fast-content-type-parse/index.js
-var require_fast_content_type_parse = __commonJS({
-  "npm/node_modules/fast-content-type-parse/index.js"(exports2, module2) {
+// npm/node_modules/content-type/dist/index.js
+var require_dist3 = __commonJS({
+  "npm/node_modules/content-type/dist/index.js"(exports2) {
     "use strict";
-    var NullObject = function NullObject2() {
-    };
-    NullObject.prototype = /* @__PURE__ */ Object.create(null);
-    var paramRE = /; *([!#$%&'*+.^\w`|~-]+)=("(?:[\v\u0020\u0021\u0023-\u005b\u005d-\u007e\u0080-\u00ff]|\\[\v\u0020-\u00ff])*"|[!#$%&'*+.^\w`|~-]+) */gu;
-    var quotedPairRE = /\\([\v\u0020-\u00ff])/gu;
-    var mediaTypeRE = /^[!#$%&'*+.^\w|~-]+\/[!#$%&'*+.^\w|~-]+$/u;
-    var defaultContentType = { type: "", parameters: new NullObject() };
-    Object.freeze(defaultContentType.parameters);
-    Object.freeze(defaultContentType);
-    function parse4(header) {
-      if (typeof header !== "string") {
-        throw new TypeError("argument header is required and must be a string");
-      }
-      let index = header.indexOf(";");
-      const type = index !== -1 ? header.slice(0, index).trim() : header.trim();
-      if (mediaTypeRE.test(type) === false) {
-        throw new TypeError("invalid media type");
-      }
-      const result = {
-        type: type.toLowerCase(),
-        parameters: new NullObject()
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.format = format2;
+    exports2.parse = parse6;
+    var TEXT_REGEXP = /^[\u0009\u0020-\u007e\u0080-\u00ff]*$/;
+    var TOKEN_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+    var QUOTE_REGEXP = /[\\"]/g;
+    var TYPE_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+\/[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+    var NullObject = /* @__PURE__ */ (() => {
+      const C = function() {
       };
-      if (index === -1) {
-        return result;
+      C.prototype = /* @__PURE__ */ Object.create(null);
+      return C;
+    })();
+    function format2(obj) {
+      const { type, parameters } = obj;
+      if (!type || !TYPE_REGEXP.test(type)) {
+        throw new TypeError(`Invalid type: ${type}`);
       }
-      let key;
-      let match2;
-      let value;
-      paramRE.lastIndex = index;
-      while (match2 = paramRE.exec(header)) {
-        if (match2.index !== index) {
-          throw new TypeError("invalid parameter format");
+      let result = type;
+      if (parameters) {
+        for (const param of Object.keys(parameters)) {
+          if (!TOKEN_REGEXP.test(param)) {
+            throw new TypeError(`Invalid parameter name: ${param}`);
+          }
+          result += `; ${param}=${qstring(parameters[param])}`;
         }
-        index += match2[0].length;
-        key = match2[1].toLowerCase();
-        value = match2[2];
-        if (value[0] === '"') {
-          value = value.slice(1, value.length - 1);
-          quotedPairRE.test(value) && (value = value.replace(quotedPairRE, "$1"));
-        }
-        result.parameters[key] = value;
-      }
-      if (index !== header.length) {
-        throw new TypeError("invalid parameter format");
       }
       return result;
     }
-    function safeParse3(header) {
-      if (typeof header !== "string") {
-        return defaultContentType;
-      }
-      let index = header.indexOf(";");
-      const type = index !== -1 ? header.slice(0, index).trim() : header.trim();
-      if (mediaTypeRE.test(type) === false) {
-        return defaultContentType;
-      }
-      const result = {
-        type: type.toLowerCase(),
-        parameters: new NullObject()
-      };
-      if (index === -1) {
-        return result;
-      }
-      let key;
-      let match2;
-      let value;
-      paramRE.lastIndex = index;
-      while (match2 = paramRE.exec(header)) {
-        if (match2.index !== index) {
-          return defaultContentType;
-        }
-        index += match2[0].length;
-        key = match2[1].toLowerCase();
-        value = match2[2];
-        if (value[0] === '"') {
-          value = value.slice(1, value.length - 1);
-          quotedPairRE.test(value) && (value = value.replace(quotedPairRE, "$1"));
-        }
-        result.parameters[key] = value;
-      }
-      if (index !== header.length) {
-        return defaultContentType;
-      }
-      return result;
+    function parse6(header, options) {
+      const len = header.length;
+      let index = skipOWS(header, 0, len);
+      const valueStart = index;
+      index = skipValue(header, index, len);
+      const valueEnd = trailingOWS(header, valueStart, index);
+      const type = header.slice(valueStart, valueEnd).toLowerCase();
+      const parameters = options?.parameters === false ? new NullObject() : parseParameters(header, index, len);
+      return { type, parameters };
     }
-    module2.exports.default = { parse: parse4, safeParse: safeParse3 };
-    module2.exports.parse = parse4;
-    module2.exports.safeParse = safeParse3;
-    module2.exports.defaultContentType = defaultContentType;
+    var SP = 32;
+    var HTAB = 9;
+    var SEMI = 59;
+    var EQ = 61;
+    var DQUOTE = 34;
+    var BSLASH = 92;
+    function parseParameters(header, index, len) {
+      const parameters = new NullObject();
+      parameter: while (index < len) {
+        index = skipOWS(header, index + 1, len);
+        const keyStart = index;
+        while (index < len) {
+          const code = header.charCodeAt(index);
+          if (code === SEMI)
+            continue parameter;
+          if (code === EQ) {
+            const keyEnd = trailingOWS(header, keyStart, index);
+            const key = header.slice(keyStart, keyEnd).toLowerCase();
+            index = skipOWS(header, index + 1, len);
+            if (index < len && header.charCodeAt(index) === DQUOTE) {
+              index++;
+              let value = "";
+              while (index < len) {
+                const code2 = header.charCodeAt(index++);
+                if (code2 === DQUOTE) {
+                  index = skipValue(header, index, len);
+                  if (parameters[key] === void 0)
+                    parameters[key] = value;
+                  break;
+                }
+                if (code2 === BSLASH && index < len) {
+                  value += header[index++];
+                  continue;
+                }
+                value += String.fromCharCode(code2);
+              }
+              continue parameter;
+            }
+            const valueStart = index;
+            index = skipValue(header, index, len);
+            if (parameters[key] === void 0) {
+              const valueEnd = trailingOWS(header, valueStart, index);
+              parameters[key] = header.slice(valueStart, valueEnd);
+            }
+            continue parameter;
+          }
+          index++;
+        }
+      }
+      return parameters;
+    }
+    function skipValue(str2, index, len) {
+      while (index < len) {
+        const char = str2.charCodeAt(index);
+        if (char === SEMI)
+          break;
+        index++;
+      }
+      return index;
+    }
+    function skipOWS(header, index, len) {
+      while (index < len) {
+        const char = header.charCodeAt(index);
+        if (char !== SP && char !== HTAB)
+          break;
+        index++;
+      }
+      return index;
+    }
+    function trailingOWS(header, start, end) {
+      while (end > start) {
+        const char = header.charCodeAt(end - 1);
+        if (char !== SP && char !== HTAB)
+          break;
+        end--;
+      }
+      return end;
+    }
+    function qstring(str2) {
+      if (TOKEN_REGEXP.test(str2))
+        return str2;
+      if (TEXT_REGEXP.test(str2))
+        return `"${str2.replace(QUOTE_REGEXP, "\\$&")}"`;
+      throw new TypeError(`Invalid parameter value: ${str2}`);
+    }
   }
 });
 
@@ -52942,12 +52977,19 @@ var WorkflowModel = class {
   raw;
   constructor(fileContent) {
     this.fileContent = fileContent;
-    this.raw = parse(fileContent.content);
+    const parsed = parse(fileContent.content);
+    if (parsed === null || typeof parsed !== "object") {
+      throw new Error(
+        `Failed to parse workflow file: ${fileContent.raw.path}`
+      );
+    }
+    this.raw = parsed;
   }
   get name() {
     return this.raw.name ?? this.fileContent.raw.path;
   }
   get jobs() {
+    if (!this.raw.jobs) return [];
     return Object.entries(this.raw.jobs).map(
       ([id, job]) => new JobModel(id, job)
     );
@@ -52973,8 +53015,8 @@ var JobModel = class {
       if (jobModel.isMatrix()) {
         if (rawName.startsWith(jobModel.id)) return jobModel;
         if (jobModel.name === void 0) continue;
-        const trimedName = jobModel.name.replace(/\$\{\{.+\}\}/g, "").trim();
-        if (rawName.includes(trimedName)) return jobModel;
+        const trimmedName = jobModel.name.replace(/\$\{\{.+\}\}/g, "").trim();
+        if (rawName.includes(trimmedName)) return jobModel;
       }
     }
     return void 0;
@@ -53781,7 +53823,7 @@ function withDefaults(oldDefaults, newDefaults) {
 var endpoint = withDefaults(null, DEFAULTS);
 
 // npm/node_modules/@octokit/core/node_modules/@octokit/request/dist-bundle/index.js
-var import_fast_content_type_parse = __toESM(require_fast_content_type_parse(), 1);
+var import_content_type = __toESM(require_dist3(), 1);
 
 // npm/node_modules/json-with-bigint/json-with-bigint.js
 var intRegex = /^-?\d+$/;
@@ -53926,7 +53968,7 @@ var RequestError = class extends Error {
 };
 
 // npm/node_modules/@octokit/core/node_modules/@octokit/request/dist-bundle/index.js
-var VERSION2 = "10.0.8";
+var VERSION2 = "10.0.9";
 var defaults_default = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION2} ${getUserAgent()}`
@@ -54044,7 +54086,7 @@ async function getResponseData(response) {
   if (!contentType) {
     return response.text().catch(noop);
   }
-  const mimetype = (0, import_fast_content_type_parse.safeParse)(contentType);
+  const mimetype = (0, import_content_type.parse)(contentType);
   if (isJSONResponse(mimetype)) {
     let text = "";
     try {
@@ -54338,7 +54380,7 @@ function expand2(template, context2) {
     return template.replace(/\/$/, "");
   }
 }
-function parse3(options) {
+function parse4(options) {
   let method = options.method.toUpperCase();
   let url = (options.url || "/").replace(/:([a-z]\w+)/g, "{$1}");
   let headers = Object.assign({}, options.headers);
@@ -54402,7 +54444,7 @@ function parse3(options) {
   );
 }
 function endpointWithDefaults2(defaults, route, options) {
-  return parse3(merge3(defaults, route, options));
+  return parse4(merge3(defaults, route, options));
 }
 function withDefaults3(oldDefaults, newDefaults) {
   const DEFAULTS22 = merge3(oldDefaults, newDefaults);
@@ -54411,13 +54453,13 @@ function withDefaults3(oldDefaults, newDefaults) {
     DEFAULTS: DEFAULTS22,
     defaults: withDefaults3.bind(null, DEFAULTS22),
     merge: merge3.bind(null, DEFAULTS22),
-    parse: parse3
+    parse: parse4
   });
 }
 var endpoint2 = withDefaults3(null, DEFAULTS2);
 
 // npm/node_modules/@octokit/graphql/node_modules/@octokit/request/dist-bundle/index.js
-var import_fast_content_type_parse2 = __toESM(require_fast_content_type_parse(), 1);
+var import_content_type2 = __toESM(require_dist3(), 1);
 
 // npm/node_modules/@octokit/graphql/node_modules/@octokit/request-error/dist-src/index.js
 var RequestError2 = class extends Error {
@@ -54459,7 +54501,7 @@ var RequestError2 = class extends Error {
 };
 
 // npm/node_modules/@octokit/graphql/node_modules/@octokit/request/dist-bundle/index.js
-var VERSION4 = "10.0.8";
+var VERSION4 = "10.0.9";
 var defaults_default2 = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION4} ${getUserAgent()}`
@@ -54577,7 +54619,7 @@ async function getResponseData2(response) {
   if (!contentType) {
     return response.text().catch(noop2);
   }
-  const mimetype = (0, import_fast_content_type_parse2.safeParse)(contentType);
+  const mimetype = (0, import_content_type2.parse)(contentType);
   if (isJSONResponse2(mimetype)) {
     let text = "";
     try {
@@ -57875,7 +57917,7 @@ var Github = class _Github {
       log: options?.debug ? console : void 0,
       throttle: {
         onRateLimit: (retryAfter, options2, _octokit, retryCount) => {
-          this.octokitClient.log.warn(
+          console.warn(
             `Request quota exhausted for request ${options2.method} ${options2.url}`
           );
           if (retryCount <= 2) {
@@ -57911,7 +57953,7 @@ var Github = class _Github {
     return res.data.jobs;
   }
   async fetchWorkflowRun(owner, repo, runId, runAttempt) {
-    if (runAttempt) {
+    if (runAttempt !== void 0 && runAttempt > 1) {
       const res = await this.octokitClient.actions.getWorkflowRunAttempt({
         owner,
         repo,
@@ -58011,6 +58053,13 @@ undici/lib/fetch/body.js:
 undici/lib/web/websocket/frame.js:
 undici/lib/websocket/frame.js:
   (*! ws. MIT License. Einar Otto Stangvik <einaros@gmail.com> *)
+
+content-type/dist/index.js:
+  (*!
+   * content-type
+   * Copyright(c) 2015 Douglas Christopher Wilson
+   * MIT Licensed
+   *)
 
 @octokit/request-error/dist-src/index.js:
 @octokit/request-error/dist-src/index.js:
