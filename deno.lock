@@ -8,7 +8,7 @@
     "jsr:@david/code-block-writer@^13.0.3": "13.0.3",
     "jsr:@deno/dnt@0.42.3": "0.42.3",
     "jsr:@std/assert@^1.0.19": "1.0.19",
-    "jsr:@std/collections@^1.1.7": "1.1.7",
+    "jsr:@std/collections@^1.2.0": "1.2.0",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/fmt@1": "1.0.10",
     "jsr:@std/fmt@^1.0.9": "1.0.10",
@@ -78,8 +78,8 @@
         "jsr:@std/internal"
       ]
     },
-    "@std/collections@1.1.7": {
-      "integrity": "56f659d011218a69740b12829cf5ea2c9b70bbed0af02597e27dc1eb5e69e208"
+    "@std/collections@1.2.0": {
+      "integrity": "47627a21d3a13138b77fd0e4d790ba9d2e603c3510b686cde6b132fe9aa98a88"
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
@@ -736,7 +736,7 @@
       "jsr:@cliffy/command@^1.1.0",
       "jsr:@deno/dnt@0.42.3",
       "jsr:@std/assert@^1.0.19",
-      "jsr:@std/collections@^1.1.7",
+      "jsr:@std/collections@^1.2.0",
       "jsr:@std/encoding@^1.0.10",
       "jsr:@std/yaml@^1.1.0",
       "npm:@actions/core@2.0.3",
