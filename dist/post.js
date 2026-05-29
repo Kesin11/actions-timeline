@@ -6149,23 +6149,54 @@ var require_client_h1 = __commonJS({
             currentBufferRef = null;
           }
           const offset = llhttp.llhttp_get_error_pos(this.ptr) - currentBufferPtr;
-          if (ret === constants.ERROR.PAUSED_UPGRADE) {
-            this.onUpgrade(data.slice(offset));
-          } else if (ret === constants.ERROR.PAUSED) {
-            this.paused = true;
-            socket.unshift(data.slice(offset));
-          } else if (ret !== constants.ERROR.OK) {
-            const ptr = llhttp.llhttp_get_error_reason(this.ptr);
-            let message2 = "";
-            if (ptr) {
-              const len = new Uint8Array(llhttp.memory.buffer, ptr).indexOf(0);
-              message2 = "Response does not match the HTTP/1.1 protocol (" + Buffer.from(llhttp.memory.buffer, ptr, len).toString() + ")";
+          if (ret !== constants.ERROR.OK) {
+            const body = data.subarray(offset);
+            if (ret === constants.ERROR.PAUSED_UPGRADE) {
+              this.onUpgrade(body);
+            } else if (ret === constants.ERROR.PAUSED) {
+              this.paused = true;
+              socket.unshift(body);
+            } else {
+              throw this.createError(ret, body);
             }
-            throw new HTTPParserError(message2, constants.ERROR[ret], data.slice(offset));
           }
         } catch (err) {
           util.destroy(socket, err);
         }
+      }
+      finish() {
+        assert(currentParser === null);
+        assert(this.ptr != null);
+        assert(!this.paused);
+        const { llhttp } = this;
+        let ret;
+        try {
+          currentParser = this;
+          ret = llhttp.llhttp_finish(this.ptr);
+        } finally {
+          currentParser = null;
+        }
+        if (ret === constants.ERROR.OK) {
+          return null;
+        }
+        if (ret === constants.ERROR.PAUSED || ret === constants.ERROR.PAUSED_UPGRADE) {
+          this.paused = true;
+          return null;
+        }
+        return this.createError(ret, EMPTY_BUF);
+      }
+      createError(ret, data) {
+        const { llhttp, contentLength, bytesRead } = this;
+        if (contentLength && bytesRead !== parseInt(contentLength, 10)) {
+          return new ResponseContentLengthMismatchError();
+        }
+        const ptr = llhttp.llhttp_get_error_reason(this.ptr);
+        let message2 = "";
+        if (ptr) {
+          const len = new Uint8Array(llhttp.memory.buffer, ptr).indexOf(0);
+          message2 = "Response does not match the HTTP/1.1 protocol (" + Buffer.from(llhttp.memory.buffer, ptr, len).toString() + ")";
+        }
+        return new HTTPParserError(message2, constants.ERROR[ret], data);
       }
       destroy() {
         assert(this.ptr != null);
@@ -6438,7 +6469,11 @@ var require_client_h1 = __commonJS({
         assert(err.code !== "ERR_TLS_CERT_ALTNAME_INVALID");
         const parser = this[kParser];
         if (err.code === "ECONNRESET" && parser.statusCode && !parser.shouldKeepAlive) {
-          parser.onMessageComplete();
+          const parserErr = parser.finish();
+          if (parserErr) {
+            this[kError] = parserErr;
+            this[kClient][kOnError](parserErr);
+          }
           return;
         }
         this[kError] = err;
@@ -6453,7 +6488,10 @@ var require_client_h1 = __commonJS({
       addListener(socket, "end", function() {
         const parser = this[kParser];
         if (parser.statusCode && !parser.shouldKeepAlive) {
-          parser.onMessageComplete();
+          const parserErr = parser.finish();
+          if (parserErr) {
+            util.destroy(this, parserErr);
+          }
           return;
         }
         util.destroy(this, new SocketError("other side closed", util.getSocketInfo(this)));
@@ -6463,7 +6501,7 @@ var require_client_h1 = __commonJS({
         const parser = this[kParser];
         if (parser) {
           if (!this[kError] && parser.statusCode && !parser.shouldKeepAlive) {
-            parser.onMessageComplete();
+            this[kError] = parser.finish() || this[kError];
           }
           this[kParser].destroy();
           this[kParser] = null;
@@ -49011,7 +49049,7 @@ var import_node_process = __toESM(require("node:process"));
 var import_core2 = __toESM(require_core());
 var github = __toESM(require_github());
 
-// npm/src/deps/jsr.io/@std/collections/1.1.7/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.2.0/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   for (const i of array) {
@@ -50921,7 +50959,7 @@ var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_chars.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_chars.ts
 var TAB = 9;
 var LINE_FEED = 10;
 var CARRIAGE_RETURN = 13;
@@ -50962,7 +51000,7 @@ function isFlowIndicator(c) {
   return c === COMMA || c === LEFT_SQUARE_BRACKET || c === RIGHT_SQUARE_BRACKET || c === LEFT_CURLY_BRACKET || c === RIGHT_CURLY_BRACKET;
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/binary.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/binary.ts
 var BASE64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r";
 function resolveYamlBinary(data) {
   if (data === null) return false;
@@ -51050,7 +51088,7 @@ var binary = {
   resolve: resolveYamlBinary
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/bool.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/bool.ts
 var YAML_TRUE_BOOLEANS = ["true", "True", "TRUE"];
 var YAML_FALSE_BOOLEANS = ["false", "False", "FALSE"];
 var YAML_BOOLEANS = [...YAML_TRUE_BOOLEANS, ...YAML_FALSE_BOOLEANS];
@@ -51080,7 +51118,7 @@ var bool = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_utils.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_utils.ts
 function isObject(value) {
   return value !== null && typeof value === "object";
 }
@@ -51091,7 +51129,7 @@ function isPlainObject(object) {
   return Object.prototype.toString.call(object) === "[object Object]";
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/float.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/float.ts
 var YAML_FLOAT_REGEXP = new RegExp(
   // 2.5e4, 2.5 and integers
   "^(?:[-+]?(?:0|[1-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"
@@ -51168,7 +51206,7 @@ var float = {
   resolve: resolveYamlFloat
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/int.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/int.ts
 function isCharCodeInRange(c, lower, upper) {
   return lower <= c && c <= upper;
 }
@@ -51290,7 +51328,7 @@ var int = {
   resolve: resolveYamlInteger
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/map.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/map.ts
 var map = {
   tag: "tag:yaml.org,2002:map",
   resolve() {
@@ -51302,7 +51340,7 @@ var map = {
   kind: "mapping"
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/merge.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/merge.ts
 var merge = {
   tag: "tag:yaml.org,2002:merge",
   kind: "scalar",
@@ -51310,7 +51348,7 @@ var merge = {
   construct: (data) => data
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/nil.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/nil.ts
 var nil = {
   tag: "tag:yaml.org,2002:null",
   kind: "scalar",
@@ -51327,7 +51365,7 @@ var nil = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/omap.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/omap.ts
 function resolveYamlOmap(data) {
   const objectKeys = /* @__PURE__ */ new Set();
   for (const object of data) {
@@ -51350,7 +51388,7 @@ var omap = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/pairs.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/pairs.ts
 function resolveYamlPairs(data) {
   if (data === null) return true;
   return data.every((it) => isPlainObject(it) && Object.keys(it).length === 1);
@@ -51364,7 +51402,7 @@ var pairs = {
   resolve: resolveYamlPairs
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/regexp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/regexp.ts
 var REGEXP = /^\/(?<regexp>[\s\S]+)\/(?<modifiers>[gismuy]*)$/;
 var regexp = {
   tag: "tag:yaml.org,2002:js/regexp",
@@ -51387,7 +51425,7 @@ var regexp = {
   represent: (object) => object.toString()
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/seq.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/seq.ts
 var seq = {
   tag: "tag:yaml.org,2002:seq",
   kind: "sequence",
@@ -51395,7 +51433,7 @@ var seq = {
   construct: (data) => data !== null ? data : []
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/set.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/set.ts
 var set = {
   tag: "tag:yaml.org,2002:set",
   kind: "mapping",
@@ -51406,7 +51444,7 @@ var set = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/str.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/str.ts
 var str = {
   tag: "tag:yaml.org,2002:str",
   kind: "scalar",
@@ -51414,7 +51452,7 @@ var str = {
   construct: (data) => data !== null ? data : ""
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/timestamp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/timestamp.ts
 var YAML_DATE_REGEXP = new RegExp(
   "^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$"
   // [3] day
@@ -51479,7 +51517,7 @@ var timestamp = {
   resolve: resolveYamlTimestamp
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_type/undefined.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_type/undefined.ts
 var undefinedType = {
   tag: "tag:yaml.org,2002:js/undefined",
   kind: "scalar",
@@ -51497,7 +51535,7 @@ var undefinedType = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_schema.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_schema.ts
 function createTypeMap(implicitTypes, explicitTypes) {
   const result = {
     fallback: /* @__PURE__ */ new Map(),
@@ -51548,7 +51586,7 @@ var SCHEMA_MAP = /* @__PURE__ */ new Map([
   ["extended", EXTENDED_SCHEMA]
 ]);
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/_loader_state.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/_loader_state.ts
 var CONTEXT_FLOW_IN = 1;
 var CONTEXT_FLOW_OUT = 2;
 var CONTEXT_BLOCK_IN = 3;
@@ -51878,12 +51916,16 @@ var LoaderState = class {
     }
     for (const [key, value] of Object.entries(source)) {
       if (Object.hasOwn(destination, key)) continue;
-      Object.defineProperty(destination, key, {
-        value,
-        writable: true,
-        enumerable: true,
-        configurable: true
-      });
+      if (key === "__proto__") {
+        Object.defineProperty(destination, key, {
+          value,
+          writable: true,
+          enumerable: true,
+          configurable: true
+        });
+      } else {
+        destination[key] = value;
+      }
       overridableKeys.add(key);
     }
   }
@@ -51923,12 +51965,16 @@ var LoaderState = class {
         this.#scanner.position = startPos || this.#scanner.position;
         throw this.#createError("Cannot store mapping pair: duplicated key");
       }
-      Object.defineProperty(result, keyNode, {
-        value: valueNode,
-        writable: true,
-        enumerable: true,
-        configurable: true
-      });
+      if (keyNode === "__proto__") {
+        Object.defineProperty(result, keyNode, {
+          value: valueNode,
+          writable: true,
+          enumerable: true,
+          configurable: true
+        });
+      } else {
+        result[keyNode] = valueNode;
+      }
       overridableKeys.delete(keyNode);
     }
     return result;
@@ -52946,7 +52992,7 @@ var LoaderState = class {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.0/parse.ts
+// npm/src/deps/jsr.io/@std/yaml/1.1.1/parse.ts
 function sanitizeInput(input) {
   input = String(input);
   if (input.length > 0) {
@@ -53968,7 +54014,7 @@ var RequestError = class extends Error {
 };
 
 // npm/node_modules/@octokit/core/node_modules/@octokit/request/dist-bundle/index.js
-var VERSION2 = "10.0.9";
+var VERSION2 = "10.0.10";
 var defaults_default = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION2} ${getUserAgent()}`
@@ -54501,7 +54547,7 @@ var RequestError2 = class extends Error {
 };
 
 // npm/node_modules/@octokit/graphql/node_modules/@octokit/request/dist-bundle/index.js
-var VERSION4 = "10.0.9";
+var VERSION4 = "10.0.10";
 var defaults_default2 = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION4} ${getUserAgent()}`
