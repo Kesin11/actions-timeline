@@ -1,7 +1,7 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@cliffy/command@^1.1.1": "1.2.1",
+    "jsr:@cliffy/command@^1.2.1": "1.2.1",
     "jsr:@cliffy/flags@1.2.1": "1.2.1",
     "jsr:@cliffy/internal@1.2.1": "1.2.1",
     "jsr:@cliffy/table@1.2.1": "1.2.1",
@@ -734,7 +734,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@cliffy/command@^1.1.1",
+      "jsr:@cliffy/command@^1.2.1",
       "jsr:@deno/dnt@0.42.3",
       "jsr:@std/assert@^1.0.19",
       "jsr:@std/collections@^1.2.0",
