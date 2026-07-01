@@ -2,43 +2,39 @@ name-template: "v$RESOLVED_VERSION"
 tag-template: "v$RESOLVED_VERSION"
 categories:
   - title: "BREAKING CHANGES"
-    labels:
-      - "BREAKING CHANGES"
+    semver-increment: "major"
+    when:
+      label: "BREAKING CHANGES"
   - title: "Features"
-    labels:
-      - "feature"
-      - "enhancement"
+    semver-increment: "minor"
+    when:
+      labels:
+        - "feature"
+        - "enhancement"
   - title: "Fixes"
-    labels:
-      - "fix"
-      - "bug"
-      - "security"
+    semver-increment: "patch"
+    when:
+      labels:
+        - "fix"
+        - "bug"
+        - "security"
   - title: "Dependencies"
     collapse-after: 3
-    labels:
-      - "dependencies"
-      - "renovate"
+    when:
+      labels:
+        - "dependencies"
+        - "renovate"
   - title: "Documentation"
-    labels:
-      - "document"
-      - "documentation"
+    when:
+      labels:
+        - "document"
+        - "documentation"
   - title: "Internal improvement"
-    labels:
-      - "ci"
+    when:
+      label: "ci"
 change-template: "- $TITLE @$AUTHOR (#$NUMBER)"
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
-  major:
-    labels:
-      - "BREAKING CHANGES"
-  minor:
-    labels:
-      - "feature"
-      - "enhancement"
-  patch:
-    labels:
-      - "bug"
-      - "security"
   default: patch
 template: |
   ## [v$RESOLVED_VERSION](https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION)
