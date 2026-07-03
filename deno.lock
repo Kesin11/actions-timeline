@@ -9,7 +9,7 @@
     "jsr:@deno/dnt@0.42.3": "0.42.3",
     "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/collections@^1.2.0": "1.2.0",
-    "jsr:@std/encoding@^1.0.10": "1.0.10",
+    "jsr:@std/encoding@^1.0.11": "1.0.11",
     "jsr:@std/fmt@1": "1.0.10",
     "jsr:@std/fmt@^1.0.10": "1.0.10",
     "jsr:@std/fs@1": "1.0.24",
@@ -82,8 +82,8 @@
     "@std/collections@1.2.0": {
       "integrity": "47627a21d3a13138b77fd0e4d790ba9d2e603c3510b686cde6b132fe9aa98a88"
     },
-    "@std/encoding@1.0.10": {
-      "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
+    "@std/encoding@1.0.11": {
+      "integrity": "e7cef2f0b3153bccc17431e7c864a1de03a4b6d9647389c43e08aaa775d37385"
     },
     "@std/fmt@1.0.10": {
       "integrity": "90dfba288802ac6de82fb31d0917eb9e4450b9925b954d5e51fc29ac07419db5"
@@ -639,7 +639,7 @@
       "jsr:@deno/dnt@0.42.3",
       "jsr:@std/assert@^1.0.19",
       "jsr:@std/collections@^1.2.0",
-      "jsr:@std/encoding@^1.0.10",
+      "jsr:@std/encoding@^1.0.11",
       "jsr:@std/yaml@^1.1.1",
       "npm:@actions/core@3.0.1",
       "npm:@actions/github@9.1.1",
