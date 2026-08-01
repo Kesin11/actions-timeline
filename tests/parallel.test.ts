@@ -118,6 +118,37 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
     );
   });
 
+  await t.step("excludes a preceding fast step from parallel children", () => {
+    const fastStep = {
+      ...nuxtJobs[0].steps![0],
+      number: 3,
+      name: "Fast top-level step",
+      started_at: "2026-07-31T21:55:20Z",
+      completed_at: "2026-07-31T21:55:20Z",
+    };
+    const steps = [
+      ...nuxtJobs[0].steps!.slice(0, 2),
+      fastStep,
+      ...nuxtJobs[0].steps!.slice(2),
+    ];
+
+    const result = expandParallelJobSteps(steps, nuxtLog);
+
+    assertEquals(result.warning, undefined);
+    assertEquals(
+      result.steps.map((step) => step.name),
+      [
+        "Set up job",
+        "Run voidzero-dev/setup-vp@250f29ce",
+        "Fast top-level step",
+        "Parallel group",
+        "(bg) Test (types)",
+        "(bg) Typecheck (docs)",
+        "Cancel workflow on failure",
+      ],
+    );
+  });
+
   await t.step("styles only a failed child as critical", () => {
     const failedSteps = nuxtJobs[0].steps!.map((step) =>
       step.name === "Test (types)" || step.name === "Parallel group"

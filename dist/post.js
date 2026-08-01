@@ -35434,17 +35434,33 @@ var PARALLEL_GROUP_NAME = "Parallel group";
 var WAITING_MESSAGE = "Waiting for background step(s) to complete:";
 var LOG_TIMESTAMP_PATTERN = String.raw`(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)`;
 var hasTimestamps = (step) => step.started_at !== null && step.completed_at !== null;
-function identifyParallelGroups(steps) {
+function findParallelCandidateIndexes(steps, parentIndex) {
+  const parent = steps[parentIndex];
+  if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) return [];
+  const precedingSteps = steps.slice(0, parentIndex);
+  const lastNonChildIndex = precedingSteps.findLastIndex(
+    (step) => !hasTimestamps(step) || step.started_at !== parent.started_at || new Date(step.completed_at).getTime() > new Date(parent.completed_at).getTime()
+  );
+  return precedingSteps.slice(lastNonChildIndex + 1).map((_step, index) => lastNonChildIndex + 1 + index);
+}
+function identifyParallelGroups(steps, markers) {
   return steps.flatMap((parent, parentIndex) => {
     if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) {
       return [];
     }
-    const precedingSteps = steps.slice(0, parentIndex);
-    const lastNonChildIndex = precedingSteps.findLastIndex(
-      (step) => !hasTimestamps(step) || step.started_at !== parent.started_at || new Date(step.completed_at).getTime() > new Date(parent.completed_at).getTime()
-    );
-    const childIndexes = precedingSteps.slice(lastNonChildIndex + 1).map((_step, index) => lastNonChildIndex + 1 + index);
-    return childIndexes.length > 0 ? [{ parentIndex, childIndexes }] : [];
+    const candidateIndexes = findParallelCandidateIndexes(steps, parentIndex);
+    const parentStart = new Date(parent.started_at).getTime();
+    const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
+    const childIndexes = markers.filter(
+      (marker) => marker.startedAt.getTime() >= parentStart && marker.startedAt.getTime() <= parentEnd
+    ).flatMap(
+      (marker) => candidateIndexes.flatMap((_index, offset) => {
+        const suffix = candidateIndexes.slice(offset);
+        const names = suffix.map((index) => steps[index].name).join(", ");
+        return names === marker.childNames ? [suffix] : [];
+      })
+    ).at(0);
+    return childIndexes !== void 0 ? [{ parentIndex, childIndexes }] : [];
   });
 }
 function parseWaitingMarkers(logText) {
@@ -35476,9 +35492,12 @@ function validateParallelGroups(steps, groups2, logText) {
   return invalidGroup === void 0 ? void 0 : `Could not match API steps for parallel group at step ${invalidGroup.parentIndex + 1} with the job log`;
 }
 function expandParallelJobSteps(steps, logText) {
-  const groups2 = identifyParallelGroups(steps);
   const markers = parseWaitingMarkers(logText);
-  if (groups2.length !== markers.length) {
+  const groups2 = identifyParallelGroups(steps, markers);
+  const apiCandidateCount = steps.filter(
+    (_step, index) => findParallelCandidateIndexes(steps, index).length > 0
+  ).length;
+  if (groups2.length !== markers.length || groups2.length !== apiCandidateCount) {
     return {
       steps,
       warning: "Could not correlate parallel groups between API steps and logs"

@@ -12,6 +12,11 @@ type ParallelGroup = {
   childIndexes: number[];
 };
 
+type WaitingMarker = {
+  startedAt: Date;
+  childNames: string;
+};
+
 type JobLogResult =
   | { jobId: number; logText: string }
   | { jobId: number; error: string };
@@ -34,32 +39,58 @@ const hasTimestamps = (
   completed_at: string;
 } => step.started_at !== null && step.completed_at !== null;
 
+function findParallelCandidateIndexes(
+  steps: NonNullable<WorkflowJobs[number]["steps"]>,
+  parentIndex: number,
+): number[] {
+  const parent = steps[parentIndex];
+  if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) return [];
+
+  const precedingSteps = steps.slice(0, parentIndex);
+  const lastNonChildIndex = precedingSteps.findLastIndex((step) =>
+    !hasTimestamps(step) ||
+    step.started_at !== parent.started_at ||
+    new Date(step.completed_at).getTime() >
+      new Date(parent.completed_at).getTime()
+  );
+  return precedingSteps
+    .slice(lastNonChildIndex + 1)
+    .map((_step, index) => lastNonChildIndex + 1 + index);
+}
+
 function identifyParallelGroups(
   steps: NonNullable<WorkflowJobs[number]["steps"]>,
+  markers: WaitingMarker[],
 ): ParallelGroup[] {
   return steps.flatMap((parent, parentIndex): ParallelGroup[] => {
     if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) {
       return [];
     }
 
-    const precedingSteps = steps.slice(0, parentIndex);
-    const lastNonChildIndex = precedingSteps.findLastIndex((step) =>
-      !hasTimestamps(step) ||
-      step.started_at !== parent.started_at ||
-      new Date(step.completed_at).getTime() >
-        new Date(parent.completed_at).getTime()
-    );
-    const childIndexes = precedingSteps
-      .slice(lastNonChildIndex + 1)
-      .map((_step, index) => lastNonChildIndex + 1 + index);
+    const candidateIndexes = findParallelCandidateIndexes(steps, parentIndex);
+    const parentStart = new Date(parent.started_at).getTime();
+    const parentEnd = new Date(parent.completed_at).getTime() + 1000;
+    const childIndexes = markers
+      .filter((marker) =>
+        marker.startedAt.getTime() >= parentStart &&
+        marker.startedAt.getTime() <= parentEnd
+      )
+      .flatMap((marker) =>
+        candidateIndexes.flatMap((_index, offset) => {
+          const suffix = candidateIndexes.slice(offset);
+          const names = suffix.map((index) => steps[index].name).join(", ");
+          return names === marker.childNames ? [suffix] : [];
+        })
+      )
+      .at(0);
 
-    return childIndexes.length > 0 ? [{ parentIndex, childIndexes }] : [];
+    return childIndexes !== undefined ? [{ parentIndex, childIndexes }] : [];
   });
 }
 
 function parseWaitingMarkers(
   logText: string,
-): Array<{ startedAt: Date; childNames: string }> {
+): WaitingMarker[] {
   const markerRegex = new RegExp(
     `${LOG_TIMESTAMP_PATTERN}.*${
       WAITING_MESSAGE.replace(/[()]/g, String.raw`\$&`)
@@ -112,9 +143,16 @@ export function expandParallelJobSteps(
   steps: NonNullable<WorkflowJobs[number]["steps"]>,
   logText: string,
 ): { steps: TimelineStep[]; warning?: string } {
-  const groups = identifyParallelGroups(steps);
   const markers = parseWaitingMarkers(logText);
-  if (groups.length !== markers.length) {
+  const groups = identifyParallelGroups(steps, markers);
+  const apiCandidateCount =
+    steps.filter((_step, index) =>
+      findParallelCandidateIndexes(steps, index).length > 0
+    ).length;
+  if (
+    groups.length !== markers.length ||
+    groups.length !== apiCandidateCount
+  ) {
     return {
       steps,
       warning: "Could not correlate parallel groups between API steps and logs",
