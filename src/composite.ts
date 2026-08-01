@@ -234,13 +234,18 @@ export function extractSubSteps(
   const compositeEnd = new Date(compositeCompletedAt).getTime() + 1000;
 
   const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
+  const matchesCompositeHeader = (name: string): boolean => {
+    if (!name.startsWith("Run ")) return false;
+    const loggedPath = name.slice("Run ".length).replace(/^\/\.\//, "./");
+    return loggedPath === compositeUsesPath ||
+      loggedPath === pathWithoutPrefix;
+  };
   const headerGlobalIndex = logBlocks
     .map((block, index) => ({ block, index }))
     .filter(({ block }) =>
       block.startedAt.getTime() >= compositeStart &&
       block.startedAt.getTime() <= compositeEnd &&
-      (block.name.includes(compositeUsesPath) ||
-        block.name.includes(pathWithoutPrefix))
+      matchesCompositeHeader(block.name)
     )
     .at(logHeaderOccurrence)?.index ?? -1;
 

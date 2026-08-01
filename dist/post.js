@@ -34749,8 +34749,13 @@ function extractSubSteps(logBlocks, compositeStartedAt, compositeCompletedAt, co
   const compositeStart = new Date(compositeStartedAt).getTime();
   const compositeEnd = new Date(compositeCompletedAt).getTime() + 1e3;
   const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
+  const matchesCompositeHeader = (name) => {
+    if (!name.startsWith("Run ")) return false;
+    const loggedPath = name.slice("Run ".length).replace(/^\/\.\//, "./");
+    return loggedPath === compositeUsesPath || loggedPath === pathWithoutPrefix;
+  };
   const headerGlobalIndex = logBlocks.map((block, index) => ({ block, index })).filter(
-    ({ block }) => block.startedAt.getTime() >= compositeStart && block.startedAt.getTime() <= compositeEnd && (block.name.includes(compositeUsesPath) || block.name.includes(pathWithoutPrefix))
+    ({ block }) => block.startedAt.getTime() >= compositeStart && block.startedAt.getTime() <= compositeEnd && matchesCompositeHeader(block.name)
   ).at(logHeaderOccurrence)?.index ?? -1;
   if (headerGlobalIndex < 0) {
     return [];
@@ -35472,11 +35477,11 @@ function validateParallelGroups(steps, groups2, logText) {
 }
 function expandParallelJobSteps(steps, logText) {
   const groups2 = identifyParallelGroups(steps);
-  const parallelGroupCount = steps.filter((step) => step.name === PARALLEL_GROUP_NAME).length;
-  if (groups2.length !== parallelGroupCount) {
+  const markers = parseWaitingMarkers(logText);
+  if (groups2.length !== markers.length) {
     return {
       steps,
-      warning: "Could not identify parallel child steps from API timestamps"
+      warning: "Could not correlate parallel groups between API steps and logs"
     };
   }
   const warning2 = validateParallelGroups(steps, groups2, logText);

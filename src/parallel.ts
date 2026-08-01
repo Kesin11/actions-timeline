@@ -113,12 +113,11 @@ export function expandParallelJobSteps(
   logText: string,
 ): { steps: TimelineStep[]; warning?: string } {
   const groups = identifyParallelGroups(steps);
-  const parallelGroupCount =
-    steps.filter((step) => step.name === PARALLEL_GROUP_NAME).length;
-  if (groups.length !== parallelGroupCount) {
+  const markers = parseWaitingMarkers(logText);
+  if (groups.length !== markers.length) {
     return {
       steps,
-      warning: "Could not identify parallel child steps from API timestamps",
+      warning: "Could not correlate parallel groups between API steps and logs",
     };
   }
 

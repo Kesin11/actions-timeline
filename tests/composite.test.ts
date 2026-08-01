@@ -422,6 +422,45 @@ Deno.test(extractSubSteps.name, async (t) => {
     }]);
   });
 
+  await t.step("does not match a composite path prefix", () => {
+    const prefixBlocks = [
+      {
+        name: "Run ./.github/actions/setup-node",
+        startedAt: new Date("2024-01-15T10:00:05.100Z"),
+      },
+      {
+        name: "Run echo node",
+        startedAt: new Date("2024-01-15T10:00:06Z"),
+      },
+      {
+        name: "Run ./.github/actions/setup",
+        startedAt: new Date("2024-01-15T10:00:05.200Z"),
+      },
+      {
+        name: "Run echo setup",
+        startedAt: new Date("2024-01-15T10:00:07Z"),
+      },
+    ];
+
+    const subSteps = extractSubSteps(
+      prefixBlocks,
+      "2024-01-15T10:00:05Z",
+      "2024-01-15T10:00:15Z",
+      "completed",
+      "success",
+      "./.github/actions/setup",
+      1,
+    );
+
+    assertEquals(subSteps, [{
+      name: "echo setup",
+      started_at: "2024-01-15T10:00:07.000Z",
+      completed_at: "2024-01-15T10:00:15Z",
+      status: "completed",
+      conclusion: "success",
+    }]);
+  });
+
   await t.step(
     "includes auxiliary blocks from uses actions (e.g. Environment details)",
     () => {

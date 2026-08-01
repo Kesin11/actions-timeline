@@ -83,9 +83,38 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
   await t.step("keeps the original steps when the log does not match", () => {
     const result = expandParallelJobSteps(nuxtJobs[0].steps!, "");
     assertEquals(result.steps, nuxtJobs[0].steps);
-    assertStringIncludes(
-      result.warning!,
-      "Could not match API steps for parallel group",
+    assertEquals(
+      result.warning,
+      "Could not correlate parallel groups between API steps and logs",
+    );
+  });
+
+  await t.step("ignores a user step named Parallel group", () => {
+    const userStep = {
+      ...nuxtJobs[0].steps![0],
+      name: "Parallel group",
+      started_at: "2026-07-31T21:57:31Z",
+      completed_at: "2026-07-31T21:57:32Z",
+    };
+    const steps = [...nuxtJobs[0].steps!, userStep];
+
+    const result = expandParallelJobSteps(steps, nuxtLog);
+
+    assertEquals(result.warning, undefined);
+    assertEquals(result.steps.at(-1), userStep);
+  });
+
+  await t.step("falls back when a logged group has no API candidate", () => {
+    const steps = nuxtJobs[0].steps!.filter((step) =>
+      step.name !== "Parallel group"
+    );
+
+    const result = expandParallelJobSteps(steps, nuxtLog);
+
+    assertEquals(result.steps, steps);
+    assertEquals(
+      result.warning,
+      "Could not correlate parallel groups between API steps and logs",
     );
   });
 
