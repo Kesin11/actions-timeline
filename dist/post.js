@@ -34570,7 +34570,9 @@ var JobModel = class {
     this.raw = obj;
   }
   get steps() {
-    return (this.raw.steps ?? []).map((step) => new StepModel(step));
+    return (this.raw.steps ?? []).flatMap(
+      (step) => (step.parallel ?? [step]).map((child) => new StepModel(child))
+    );
   }
   static match(jobModels, rawName) {
     if (jobModels === void 0) return void 0;

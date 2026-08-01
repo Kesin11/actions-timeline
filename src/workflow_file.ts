@@ -60,7 +60,9 @@ export class JobModel {
   }
 
   get steps(): StepModel[] {
-    return (this.raw.steps ?? []).map((step) => new StepModel(step));
+    return (this.raw.steps ?? []).flatMap((step) =>
+      (step.parallel ?? [step]).map((child) => new StepModel(child))
+    );
   }
 
   static match(
@@ -103,6 +105,7 @@ export type Step = {
   uses?: string;
   name?: string;
   run?: string;
+  parallel?: Step[];
   with?: Record<string, unknown>;
   [key: string]: unknown;
 };

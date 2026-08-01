@@ -119,6 +119,16 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
   });
 
   await t.step("matches a parallel child by its original API name", () => {
+    const parallelWorkflowModel = makeWorkflowModel(`
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - parallel:
+          - uses: ./.github/actions/setup
+          - run: echo hello
+`);
     const workflowJobs = makeWorkflowJobs(
       "2024-01-15T10:00:00Z",
       "2024-01-15T10:00:30Z",
@@ -132,7 +142,7 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
 
     const result = identifyCompositeSteps(
       workflowJobs,
-      workflowModel,
+      parallelWorkflowModel,
       thresholdSec,
     );
 
