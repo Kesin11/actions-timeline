@@ -177,8 +177,6 @@ tools to visualize mermaid diagrams.
 
 - Online editor:
   [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/)
-- VSCode extension:
-  [Markdown Preview Mermaid Support](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-mermaid)
 - Local terminal: [mermaid-cli](https://github.com/mermaid-js/mermaid-cli)
 
 # DEVELOPMENT
