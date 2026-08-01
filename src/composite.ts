@@ -96,6 +96,7 @@ export function identifyCompositeSteps(
     const occurrenceCounts = new Map<string, number>();
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
+      if (apiStep.timelineRowKind === "parallel-parent") continue;
       const matchingName = apiStep.timelineOriginalName ?? apiStep.name;
       // Skip Pre/Post steps - only expand the main "Run" execution step
       if (/^(Pre Run |Post Run |Pre |Post )/.test(matchingName)) continue;

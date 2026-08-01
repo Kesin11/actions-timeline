@@ -34661,6 +34661,7 @@ function identifyCompositeSteps(workflowJobs, workflowModel, thresholdSec) {
     const occurrenceCounts = /* @__PURE__ */ new Map();
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
+      if (apiStep.timelineRowKind === "parallel-parent") continue;
       const matchingName = apiStep.timelineOriginalName ?? apiStep.name;
       if (/^(Pre Run |Post Run |Pre |Post )/.test(matchingName)) continue;
       const stepModel = StepModel.match(jobModel.steps, matchingName);
