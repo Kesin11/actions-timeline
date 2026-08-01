@@ -26097,6 +26097,42 @@ var require_light = __commonJS({
 });
 
 // npm/src/_dnt.polyfills.ts
+function findLastIndex(self2, callbackfn, that) {
+  const boundFunc = that === void 0 ? callbackfn : callbackfn.bind(that);
+  let index = self2.length - 1;
+  while (index >= 0) {
+    const result = boundFunc(self2[index], index, self2);
+    if (result) {
+      return index;
+    }
+    index--;
+  }
+  return -1;
+}
+function findLast(self2, callbackfn, that) {
+  const index = self2.findLastIndex(callbackfn, that);
+  return index === -1 ? void 0 : self2[index];
+}
+if (!Array.prototype.findLastIndex) {
+  Array.prototype.findLastIndex = function(callbackfn, that) {
+    return findLastIndex(this, callbackfn, that);
+  };
+}
+if (!Array.prototype.findLast) {
+  Array.prototype.findLast = function(callbackfn, that) {
+    return findLast(this, callbackfn, that);
+  };
+}
+if (!Uint8Array.prototype.findLastIndex) {
+  Uint8Array.prototype.findLastIndex = function(callbackfn, that) {
+    return findLastIndex(this, callbackfn, that);
+  };
+}
+if (!Uint8Array.prototype.findLast) {
+  Uint8Array.prototype.findLast = function(callbackfn, that) {
+    return findLast(this, callbackfn, that);
+  };
+}
 if (!Object.hasOwn) {
   Object.defineProperty(Object, "hasOwn", {
     value: function(object, property) {
@@ -26126,6 +26162,19 @@ function toCommandValue(input) {
     return input;
   }
   return JSON.stringify(input);
+}
+function toCommandProperties(annotationProperties) {
+  if (!Object.keys(annotationProperties).length) {
+    return {};
+  }
+  return {
+    title: annotationProperties.title,
+    file: annotationProperties.file,
+    line: annotationProperties.startLine,
+    endLine: annotationProperties.endLine,
+    col: annotationProperties.startColumn,
+    endColumn: annotationProperties.endColumn
+  };
 }
 
 // npm/node_modules/@actions/core/lib/command.js
@@ -26561,6 +26610,9 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
 }
 function debug(message2) {
   issueCommand("debug", {}, message2);
+}
+function warning(message2, properties = {}) {
+  issueCommand("warning", toCommandProperties(properties), message2 instanceof Error ? message2.toString() : message2);
 }
 function info(message2) {
   process.stdout.write(message2 + os3.EOL);
@@ -32181,6 +32233,9 @@ var createCompositeChildPosition = (workflow, step, compositeChildAnchorId, prev
   }
   return `after ${anchorId}`;
 };
+var createParallelStepPosition = (workflow, step) => {
+  return formatElapsedTime(diffSec(workflow.run_started_at, step.started_at));
+};
 var createWaitingRunnerStep = (workflow, job, jobIndex) => {
   const status = "active";
   if (!isString(job.created_at) || !isString(job.started_at)) {
@@ -32233,7 +32288,7 @@ var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
           step,
           compositeChildAnchorId,
           previousCompositeChildId
-        ) : createTopLevelStepPosition(
+        ) : step.timelineRowKind === "parallel-parent" || step.timelineRowKind === "parallel-child" ? createParallelStepPosition(workflow, step) : createTopLevelStepPosition(
           workflow,
           jobStartedAt,
           previousTopLevelStepId
@@ -32241,12 +32296,17 @@ var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
         steps.push({
           name: formatName(step.name, stepElapsedSec),
           id,
-          status: convertStepToStatus(step.conclusion),
+          status: step.timelineRowKind === "parallel-parent" ? "" : convertStepToStatus(step.conclusion),
           position,
           sec: stepElapsedSec
         });
         if (step.timelineRowKind === "composite-child") {
           previousCompositeChildId = id;
+          return;
+        }
+        if (step.timelineRowKind === "parallel-child") {
+          compositeChildAnchorId = void 0;
+          previousCompositeChildId = void 0;
           return;
         }
         compositeChildAnchorId = nextStep?.timelineRowKind === "composite-child" ? previousTopLevelStepId : void 0;
@@ -34510,7 +34570,9 @@ var JobModel = class {
     this.raw = obj;
   }
   get steps() {
-    return (this.raw.steps ?? []).map((step) => new StepModel(step));
+    return (this.raw.steps ?? []).flatMap(
+      (step) => (step.parallel ?? [step]).map((child) => new StepModel(child))
+    );
   }
   static match(jobModels, rawName) {
     if (jobModels === void 0) return void 0;
@@ -34596,11 +34658,16 @@ function identifyCompositeSteps(workflowJobs, workflowModel, thresholdSec) {
     const jobModel = JobModel.match(workflowModel.jobs, job.name);
     if (!jobModel) continue;
     const compositeSteps = [];
+    const occurrenceCounts = /* @__PURE__ */ new Map();
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
-      if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
-      const stepModel = StepModel.match(jobModel.steps, apiStep.name);
+      const matchingName = apiStep.timelineOriginalName ?? apiStep.name;
+      if (/^(Pre Run |Post Run |Pre |Post )/.test(matchingName)) continue;
+      const stepModel = StepModel.match(jobModel.steps, matchingName);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
+        const occurrenceKey = `${apiStep.started_at}\0${stepModel.raw.uses}`;
+        const logHeaderOccurrence = occurrenceCounts.get(occurrenceKey) ?? 0;
+        occurrenceCounts.set(occurrenceKey, logHeaderOccurrence + 1);
         if (diffSec(apiStep.started_at, apiStep.completed_at) < thresholdSec) {
           continue;
         }
@@ -34608,6 +34675,7 @@ function identifyCompositeSteps(workflowJobs, workflowModel, thresholdSec) {
           apiStepIndex: i,
           apiStepName: apiStep.name,
           usesPath: stepModel.raw.uses,
+          logHeaderOccurrence,
           status: apiStep.status,
           conclusion: apiStep.conclusion
         });
@@ -34654,12 +34722,7 @@ async function fetchCompositeActionStepCount(client, owner, repo, ref, usesPath)
 }
 async function fetchJobLog(client, owner, repo, jobId) {
   try {
-    const res = await client.octokit.actions.downloadJobLogsForWorkflowRun({
-      owner,
-      repo,
-      job_id: jobId
-    });
-    return res.data;
+    return await client.fetchJobLog(owner, repo, jobId);
   } catch (error) {
     console.warn(`Error fetching job log for job ${jobId}:`, error);
     return void 0;
@@ -34679,16 +34742,21 @@ function parseLogBlocks(logText) {
   }
   return blocks;
 }
-function extractSubSteps(logBlocks, compositeStartedAt, compositeCompletedAt, compositeStatus, compositeConclusion, compositeUsesPath, expectedStepCount) {
+function extractSubSteps(logBlocks, compositeStartedAt, compositeCompletedAt, compositeStatus, compositeConclusion, compositeUsesPath, expectedStepCount, logHeaderOccurrence = 0) {
   if (expectedStepCount <= 0) {
     return [];
   }
   const compositeStart = new Date(compositeStartedAt).getTime();
   const compositeEnd = new Date(compositeCompletedAt).getTime() + 1e3;
   const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
-  const headerGlobalIndex = logBlocks.findIndex(
-    (block) => block.startedAt.getTime() >= compositeStart && block.startedAt.getTime() <= compositeEnd && (block.name.includes(compositeUsesPath) || block.name.includes(pathWithoutPrefix))
-  );
+  const matchesCompositeHeader = (name) => {
+    if (!name.startsWith("Run ")) return false;
+    const loggedPath = name.slice("Run ".length).replace(/^\/\.\//, "./");
+    return loggedPath === compositeUsesPath || loggedPath === pathWithoutPrefix;
+  };
+  const headerGlobalIndex = logBlocks.map((block, index) => ({ block, index })).filter(
+    ({ block }) => block.startedAt.getTime() >= compositeStart && block.startedAt.getTime() <= compositeEnd && matchesCompositeHeader(block.name)
+  ).at(logHeaderOccurrence)?.index ?? -1;
   if (headerGlobalIndex < 0) {
     return [];
   }
@@ -34748,7 +34816,8 @@ function expandJobSteps(steps, compositeInfos, compositeStepCounts, logBlocks) {
       apiStep.status,
       apiStep.conclusion,
       compositeInfo.usesPath,
-      expectedStepCount
+      expectedStepCount,
+      compositeInfo.logHeaderOccurrence
     );
     newSteps.push(apiStep);
     if (subSteps.length === 0) {
@@ -35237,6 +35306,7 @@ var FileContent = class {
 };
 var Github = class _Github {
   octokitClient;
+  jobLogCache = /* @__PURE__ */ new Map();
   token;
   baseUrl;
   isGHES;
@@ -35289,6 +35359,20 @@ var Github = class _Github {
       per_page: 100
     });
     return res.data.jobs;
+  }
+  fetchJobLog(owner, repo, jobId) {
+    const cached = this.jobLogCache.get(jobId);
+    if (cached) return cached;
+    const log = this.octokitClient.actions.downloadJobLogsForWorkflowRun({
+      owner,
+      repo,
+      job_id: jobId
+    }).then((res) => res.data).catch((error) => {
+      this.jobLogCache.delete(jobId);
+      throw error;
+    });
+    this.jobLogCache.set(jobId, log);
+    return log;
   }
   async fetchWorkflowRun(owner, repo, runId, runAttempt) {
     if (runAttempt !== void 0 && runAttempt > 1) {
@@ -35345,7 +35429,164 @@ var Github = class _Github {
   }
 };
 
+// npm/src/parallel.ts
+var PARALLEL_GROUP_NAME = "Parallel group";
+var WAITING_MESSAGE = "Waiting for background step(s) to complete:";
+var LOG_TIMESTAMP_PATTERN = String.raw`(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)`;
+var hasTimestamps = (step) => step.started_at !== null && step.completed_at !== null;
+function findParallelCandidateIndexes(steps, parentIndex) {
+  const parent = steps[parentIndex];
+  if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) return [];
+  const precedingSteps = steps.slice(0, parentIndex);
+  const lastNonChildIndex = precedingSteps.findLastIndex(
+    (step) => !hasTimestamps(step) || step.started_at !== parent.started_at || new Date(step.completed_at).getTime() > new Date(parent.completed_at).getTime()
+  );
+  return precedingSteps.slice(lastNonChildIndex + 1).map((_step, index) => lastNonChildIndex + 1 + index);
+}
+function identifyParallelGroups(steps, markers) {
+  return steps.flatMap((parent, parentIndex) => {
+    if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) {
+      return [];
+    }
+    const candidateIndexes = findParallelCandidateIndexes(steps, parentIndex);
+    const parentStart = new Date(parent.started_at).getTime();
+    const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
+    const childIndexes = markers.filter(
+      (marker) => marker.startedAt.getTime() >= parentStart && marker.startedAt.getTime() <= parentEnd
+    ).flatMap(
+      (marker) => candidateIndexes.flatMap((_index, offset) => {
+        const suffix = candidateIndexes.slice(offset);
+        const names = suffix.map((index) => steps[index].name).join(", ");
+        return names === marker.childNames ? [suffix] : [];
+      })
+    ).at(0);
+    return childIndexes !== void 0 ? [{ parentIndex, childIndexes }] : [];
+  });
+}
+function parseWaitingMarkers(logText) {
+  const markerRegex = new RegExp(
+    `${LOG_TIMESTAMP_PATTERN}.*${WAITING_MESSAGE.replace(/[()]/g, String.raw`\$&`)}\\s*(.+)$`
+  );
+  return logText.split(/\r?\n/).flatMap((line) => {
+    const match2 = line.match(markerRegex);
+    return match2 ? [{
+      startedAt: new Date(match2[1]),
+      childNames: match2[2].trim()
+    }] : [];
+  });
+}
+function validateParallelGroups(steps, groups2, logText) {
+  const markers = parseWaitingMarkers(logText);
+  const invalidGroup = groups2.find(({ parentIndex, childIndexes }) => {
+    const parent = steps[parentIndex];
+    if (!hasTimestamps(parent)) return true;
+    const expectedNames = childIndexes.map((index) => steps[index].name).join(
+      ", "
+    );
+    const parentStart = new Date(parent.started_at).getTime();
+    const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
+    return !markers.some(
+      (marker) => marker.childNames === expectedNames && marker.startedAt.getTime() >= parentStart && marker.startedAt.getTime() <= parentEnd
+    );
+  });
+  return invalidGroup === void 0 ? void 0 : `Could not match API steps for parallel group at step ${invalidGroup.parentIndex + 1} with the job log`;
+}
+function expandParallelJobSteps(steps, logText) {
+  const markers = parseWaitingMarkers(logText);
+  const groups2 = identifyParallelGroups(steps, markers);
+  const candidateParents = steps.flatMap((_step, parentIndex) => {
+    const childIndexes2 = findParallelCandidateIndexes(steps, parentIndex);
+    return childIndexes2.length > 0 ? [{ parentIndex, childIndexes: childIndexes2 }] : [];
+  });
+  const apiCandidateCount = candidateParents.filter(
+    (candidate) => !candidateParents.some(
+      (other) => other.parentIndex > candidate.parentIndex && other.childIndexes.includes(candidate.parentIndex)
+    )
+  ).length;
+  if (groups2.length !== markers.length || groups2.length !== apiCandidateCount) {
+    return {
+      steps,
+      warning: "Could not correlate parallel groups between API steps and logs"
+    };
+  }
+  const warning2 = validateParallelGroups(steps, groups2, logText);
+  if (warning2) return { steps, warning: warning2 };
+  const childIndexes = new Set(groups2.flatMap((group) => group.childIndexes));
+  const groupsByParentIndex = new Map(
+    groups2.map((group) => [group.parentIndex, group])
+  );
+  return {
+    steps: steps.flatMap((step, index) => {
+      if (childIndexes.has(index)) return [];
+      const group = groupsByParentIndex.get(index);
+      if (!group) return [step];
+      return [
+        { ...step, timelineRowKind: "parallel-parent" },
+        ...group.childIndexes.map((childIndex) => ({
+          ...steps[childIndex],
+          name: `(bg) ${steps[childIndex].name}`,
+          timelineOriginalName: steps[childIndex].name,
+          timelineRowKind: "parallel-child"
+        }))
+      ];
+    })
+  };
+}
+async function expandParallelSteps(client, workflowRun, workflowJobs) {
+  const jobsWithParallelGroups = workflowJobs.filter(
+    (job) => job.steps?.some((step) => step.name === PARALLEL_GROUP_NAME)
+  );
+  if (jobsWithParallelGroups.length === 0) {
+    return { jobs: workflowJobs, warnings: [] };
+  }
+  const owner = workflowRun.repository.owner.login;
+  const repo = workflowRun.repository.name;
+  const logResults = await Promise.all(
+    jobsWithParallelGroups.map(async (job) => {
+      try {
+        return {
+          jobId: job.id,
+          logText: await client.fetchJobLog(owner, repo, job.id)
+        };
+      } catch (error) {
+        return {
+          jobId: job.id,
+          error: error instanceof Error ? error.message : String(error)
+        };
+      }
+    })
+  );
+  const logsByJobId = new Map(
+    logResults.map((result) => [result.jobId, result])
+  );
+  const warnings = [];
+  const jobs = workflowJobs.map((job) => {
+    if (!job.steps || !logsByJobId.has(job.id)) return job;
+    const logResult = logsByJobId.get(job.id);
+    if (!("logText" in logResult)) {
+      warnings.push({
+        jobId: job.id,
+        jobName: job.name,
+        reason: `Could not download the job log: ${logResult.error}`
+      });
+      return job;
+    }
+    const expanded = expandParallelJobSteps(job.steps, logResult.logText);
+    if (expanded.warning) {
+      warnings.push({
+        jobId: job.id,
+        jobName: job.name,
+        reason: expanded.warning
+      });
+      return job;
+    }
+    return { ...job, steps: expanded.steps };
+  });
+  return { jobs, warnings };
+}
+
 // npm/src/post.ts
+var PARALLEL_FALLBACK_SUMMARY = "Parallel steps could not be expanded for one or more jobs. Those jobs use the standard timeline layout.\n\n";
 var main = async () => {
   const token = getInput("github-token", { required: true });
   const showWaitingRunner = getBooleanInput("show-waiting-runner");
@@ -35368,15 +35609,34 @@ var main = async () => {
   info("Fetch workflow_job...");
   const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
   debug(JSON.stringify(workflowJobs, null, 2));
-  let jobs = workflowJobs;
+  info("Expanding parallel steps...");
+  const parallelResult = await expandParallelSteps(
+    client,
+    workflowRun,
+    workflowJobs
+  );
+  parallelResult.warnings.forEach(
+    (item) => warning(
+      `Parallel steps were not expanded for job "${item.jobName}" (${item.jobId}): ${item.reason}`
+    )
+  );
+  let jobs = parallelResult.jobs;
   if (expandCompositeActions) {
     info("Expanding composite action steps...");
-    jobs = await expandCompositeSteps(client, workflowRun, workflowJobs, {
-      thresholdSec: expandCompositeActionsThreshold
-    });
+    jobs = await expandCompositeSteps(
+      client,
+      workflowRun,
+      parallelResult.jobs,
+      {
+        thresholdSec: expandCompositeActionsThreshold
+      }
+    );
   }
   info("Create gantt mermaid diagram...");
   const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });
+  if (parallelResult.warnings.length > 0) {
+    summary.addRaw(PARALLEL_FALLBACK_SUMMARY);
+  }
   await summary.addRaw(gantt).write();
   debug(gantt);
   info("Complete!");

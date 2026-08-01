@@ -2,7 +2,7 @@ import { decodeBase64 } from "@std/encoding";
 import { parse as parseYaml } from "@std/yaml";
 import { diffSec } from "./format_util.ts";
 import type { TimelineJobs, TimelineStep } from "./types.ts";
-import { Github, type WorkflowJobs, type WorkflowRun } from "./github.ts";
+import { Github, type WorkflowRun } from "./github.ts";
 import {
   type CompositeAction,
   JobModel,
@@ -18,6 +18,7 @@ export type CompositeStepInfo = {
   apiStepIndex: number;
   apiStepName: string;
   usesPath: string;
+  logHeaderOccurrence: number;
   status: string;
   conclusion: string | null;
 };
@@ -79,7 +80,7 @@ async function fetchWorkflowModel(
 
 // Identify composite steps in each job by matching API steps against the YAML model.
 export function identifyCompositeSteps(
-  workflowJobs: WorkflowJobs,
+  workflowJobs: TimelineJobs,
   workflowModel: WorkflowModel,
   thresholdSec: number,
 ): Map<number, CompositeStepInfo[]> {
@@ -92,12 +93,18 @@ export function identifyCompositeSteps(
     if (!jobModel) continue;
 
     const compositeSteps: CompositeStepInfo[] = [];
+    const occurrenceCounts = new Map<string, number>();
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
+      const matchingName = apiStep.timelineOriginalName ?? apiStep.name;
       // Skip Pre/Post steps - only expand the main "Run" execution step
-      if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
-      const stepModel = StepModel.match(jobModel.steps, apiStep.name);
+      if (/^(Pre Run |Post Run |Pre |Post )/.test(matchingName)) continue;
+      const stepModel = StepModel.match(jobModel.steps, matchingName);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
+        const occurrenceKey = `${apiStep.started_at}\0${stepModel.raw.uses}`;
+        const logHeaderOccurrence = occurrenceCounts.get(occurrenceKey) ?? 0;
+        occurrenceCounts.set(occurrenceKey, logHeaderOccurrence + 1);
+
         if (
           diffSec(apiStep.started_at, apiStep.completed_at) < thresholdSec
         ) {
@@ -108,6 +115,7 @@ export function identifyCompositeSteps(
           apiStepIndex: i,
           apiStepName: apiStep.name,
           usesPath: stepModel.raw.uses,
+          logHeaderOccurrence,
           status: apiStep.status,
           conclusion: apiStep.conclusion,
         });
@@ -178,12 +186,7 @@ async function fetchJobLog(
   jobId: number,
 ): Promise<string | undefined> {
   try {
-    const res = await client.octokit.actions.downloadJobLogsForWorkflowRun({
-      owner,
-      repo,
-      job_id: jobId,
-    });
-    return res.data as unknown as string;
+    return await client.fetchJobLog(owner, repo, jobId);
   } catch (error) {
     console.warn(`Error fetching job log for job ${jobId}:`, error);
     return undefined;
@@ -220,6 +223,7 @@ export function extractSubSteps(
   compositeConclusion: string | null,
   compositeUsesPath: string,
   expectedStepCount: number,
+  logHeaderOccurrence = 0,
 ): SubStep[] {
   if (expectedStepCount <= 0) {
     return [];
@@ -230,13 +234,20 @@ export function extractSubSteps(
   const compositeEnd = new Date(compositeCompletedAt).getTime() + 1000;
 
   const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
-  const headerGlobalIndex = logBlocks.findIndex(
-    (block) =>
+  const matchesCompositeHeader = (name: string): boolean => {
+    if (!name.startsWith("Run ")) return false;
+    const loggedPath = name.slice("Run ".length).replace(/^\/\.\//, "./");
+    return loggedPath === compositeUsesPath ||
+      loggedPath === pathWithoutPrefix;
+  };
+  const headerGlobalIndex = logBlocks
+    .map((block, index) => ({ block, index }))
+    .filter(({ block }) =>
       block.startedAt.getTime() >= compositeStart &&
       block.startedAt.getTime() <= compositeEnd &&
-      (block.name.includes(compositeUsesPath) ||
-        block.name.includes(pathWithoutPrefix)),
-  );
+      matchesCompositeHeader(block.name)
+    )
+    .at(logHeaderOccurrence)?.index ?? -1;
 
   if (headerGlobalIndex < 0) {
     return [];
@@ -287,7 +298,7 @@ export function extractSubSteps(
 }
 
 export function expandJobSteps(
-  steps: NonNullable<WorkflowJobs[0]["steps"]>,
+  steps: NonNullable<TimelineJobs[0]["steps"]>,
   compositeInfos: CompositeStepInfo[],
   compositeStepCounts: Map<string, number>,
   logBlocks: LogBlock[],
@@ -322,6 +333,7 @@ export function expandJobSteps(
       apiStep.conclusion,
       compositeInfo.usesPath,
       expectedStepCount,
+      compositeInfo.logHeaderOccurrence,
     );
 
     newSteps.push(apiStep);
@@ -355,7 +367,7 @@ export function expandJobSteps(
 export async function expandCompositeSteps(
   client: Github,
   workflowRun: WorkflowRun,
-  workflowJobs: WorkflowJobs,
+  workflowJobs: TimelineJobs,
   options: ExpandCompositeOptions = {},
 ): Promise<TimelineJobs> {
   const thresholdSec = options.thresholdSec ?? 20;

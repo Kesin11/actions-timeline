@@ -7,7 +7,8 @@ jobs and steps that occur during a GitHub Actions workflow. By examining the
 timeline, you can quickly identify any issues or bottlenecks in your workflow,
 and make adjustments as needed to improve performance and efficiency.
 
-![Sample screenshot](https://user-images.githubusercontent.com/1324862/268660777-5ee9fffd-6ef7-4960-9632-3589cb7138e1.png)
+![Sample screenshot workflow](https://github.com/user-attachments/assets/03353645-ec6f-4fd6-80b5-19694439393f)
+![Sample screenshot timeline](https://github.com/user-attachments/assets/d92027fc-ded2-4b6e-9ab0-e3923b698ec3)
 
 ## USAGE
 
@@ -66,6 +67,15 @@ GitHub API, and then generates a timeline with
 [mermaid gantt diagrams](https://mermaid.js.org/syntax/gantt.html). Thanks to
 the GitHub flavored markdown that can visualize mermaid diagrams, the timeline
 is displayed in the run summary page.
+
+Steps declared with the GitHub Actions `parallel` syntax are detected
+automatically. The timeline keeps the `Parallel group` bar and adds `(bg)` rows
+for its child steps at their actual shared start time. Detection is verified
+against the job log.
+
+Repo-local composite actions can also be expanded by setting
+`expand-composite-actions: true`. The original composite bar remains visible,
+with its internal steps shown as `(sub)` rows beneath it. Nested repo-local composite actions are not currently expanded.
 
 This action is run on post-processing of the job, so you should register this
 action before your build step. If you register this action after your build

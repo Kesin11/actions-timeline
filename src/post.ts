@@ -1,10 +1,21 @@
 import { setTimeout } from "node:timers/promises";
 import process from "node:process";
-import { debug, getBooleanInput, getInput, info, summary } from "@actions/core";
+import {
+  debug,
+  getBooleanInput,
+  getInput,
+  info,
+  summary,
+  warning,
+} from "@actions/core";
 import * as github from "@actions/github";
 import { createMermaid } from "./workflow_gantt.ts";
 import { expandCompositeSteps } from "./composite.ts";
 import { Github } from "./github.ts";
+import { expandParallelSteps } from "./parallel.ts";
+
+const PARALLEL_FALLBACK_SUMMARY =
+  "Parallel steps could not be expanded for one or more jobs. Those jobs use the standard timeline layout.\n\n";
 
 const main = async () => {
   const token = getInput("github-token", { required: true });
@@ -36,16 +47,36 @@ const main = async () => {
 
   debug(JSON.stringify(workflowJobs, null, 2));
 
-  let jobs = workflowJobs;
+  info("Expanding parallel steps...");
+  const parallelResult = await expandParallelSteps(
+    client,
+    workflowRun,
+    workflowJobs,
+  );
+  parallelResult.warnings.forEach((item) =>
+    warning(
+      `Parallel steps were not expanded for job "${item.jobName}" (${item.jobId}): ${item.reason}`,
+    )
+  );
+
+  let jobs = parallelResult.jobs;
   if (expandCompositeActions) {
     info("Expanding composite action steps...");
-    jobs = await expandCompositeSteps(client, workflowRun, workflowJobs, {
-      thresholdSec: expandCompositeActionsThreshold,
-    });
+    jobs = await expandCompositeSteps(
+      client,
+      workflowRun,
+      parallelResult.jobs,
+      {
+        thresholdSec: expandCompositeActionsThreshold,
+      },
+    );
   }
 
   info("Create gantt mermaid diagram...");
   const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });
+  if (parallelResult.warnings.length > 0) {
+    summary.addRaw(PARALLEL_FALLBACK_SUMMARY);
+  }
   await summary.addRaw(gantt).write();
   debug(gantt);
 
