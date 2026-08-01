@@ -169,6 +169,52 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
       ],
     );
   });
+
+  await t.step("starts each background composite child independently", () => {
+    const steps = [
+      {
+        ...datafusionJobs[0].steps![4],
+        timelineRowKind: "parallel-parent" as const,
+      },
+      {
+        ...datafusionJobs[0].steps![2],
+        name: "(bg) Run ./.github/actions/setup-one",
+        timelineRowKind: "parallel-child" as const,
+      },
+      {
+        ...datafusionJobs[0].steps![2],
+        name: "(sub) setup one",
+        started_at: "2026-07-31T23:40:20Z",
+        completed_at: "2026-07-31T23:40:21Z",
+        timelineRowKind: "composite-child" as const,
+      },
+      {
+        ...datafusionJobs[0].steps![3],
+        name: "(bg) Run ./.github/actions/setup-two",
+        timelineRowKind: "parallel-child" as const,
+      },
+      {
+        ...datafusionJobs[0].steps![3],
+        name: "(sub) setup two",
+        started_at: "2026-07-31T23:40:20Z",
+        completed_at: "2026-07-31T23:40:22Z",
+        timelineRowKind: "composite-child" as const,
+      },
+    ];
+    const mermaid = createMermaid(datafusionWorkflow, [{
+      ...datafusionJobs[0],
+      steps,
+    }], { showWaitingRunner: false });
+
+    assertStringIncludes(
+      mermaid,
+      "(sub) setup one (1s) :job0-2, 00:00:40, 1s",
+    );
+    assertStringIncludes(
+      mermaid,
+      "(sub) setup two (2s) :job0-4, 00:00:40, 2s",
+    );
+  });
 });
 
 Deno.test(expandParallelSteps.name, async () => {

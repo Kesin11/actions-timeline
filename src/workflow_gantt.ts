@@ -171,7 +171,11 @@ export const createGanttJobs = (
           previousCompositeChildId = id;
           return;
         }
-        if (step.timelineRowKind === "parallel-child") return;
+        if (step.timelineRowKind === "parallel-child") {
+          compositeChildAnchorId = undefined;
+          previousCompositeChildId = undefined;
+          return;
+        }
 
         compositeChildAnchorId = nextStep?.timelineRowKind === "composite-child"
           ? previousTopLevelStepId

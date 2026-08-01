@@ -32304,7 +32304,11 @@ var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
           previousCompositeChildId = id;
           return;
         }
-        if (step.timelineRowKind === "parallel-child") return;
+        if (step.timelineRowKind === "parallel-child") {
+          compositeChildAnchorId = void 0;
+          previousCompositeChildId = void 0;
+          return;
+        }
         compositeChildAnchorId = nextStep?.timelineRowKind === "composite-child" ? previousTopLevelStepId : void 0;
         previousCompositeChildId = void 0;
         previousTopLevelStepId = id;
