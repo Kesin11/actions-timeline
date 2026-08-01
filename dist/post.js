@@ -32478,7 +32478,7 @@ var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_chars.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_chars.ts
 var TAB = 9;
 var LINE_FEED = 10;
 var CARRIAGE_RETURN = 13;
@@ -32519,7 +32519,7 @@ function isFlowIndicator(c) {
   return c === COMMA || c === LEFT_SQUARE_BRACKET || c === RIGHT_SQUARE_BRACKET || c === LEFT_CURLY_BRACKET || c === RIGHT_CURLY_BRACKET;
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/binary.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/binary.ts
 var BASE64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r";
 function resolveYamlBinary(data) {
   if (data === null) return false;
@@ -32607,7 +32607,7 @@ var binary = {
   resolve: resolveYamlBinary
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/bool.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/bool.ts
 var YAML_TRUE_BOOLEANS = ["true", "True", "TRUE"];
 var YAML_FALSE_BOOLEANS = ["false", "False", "FALSE"];
 var YAML_BOOLEANS = [...YAML_TRUE_BOOLEANS, ...YAML_FALSE_BOOLEANS];
@@ -32637,7 +32637,7 @@ var bool = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_utils.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_utils.ts
 function isObject(value) {
   return value !== null && typeof value === "object";
 }
@@ -32648,7 +32648,7 @@ function isPlainObject3(object) {
   return Object.prototype.toString.call(object) === "[object Object]";
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/float.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/float.ts
 var YAML_FLOAT_REGEXP = new RegExp(
   // 2.5e4, 2.5 and integers
   "^(?:[-+]?(?:0|[1-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"
@@ -32725,7 +32725,7 @@ var float = {
   resolve: resolveYamlFloat
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/int.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/int.ts
 function isCharCodeInRange(c, lower, upper) {
   return lower <= c && c <= upper;
 }
@@ -32847,7 +32847,7 @@ var int = {
   resolve: resolveYamlInteger
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/map.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/map.ts
 var map = {
   tag: "tag:yaml.org,2002:map",
   resolve() {
@@ -32859,7 +32859,7 @@ var map = {
   kind: "mapping"
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/merge.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/merge.ts
 var merge2 = {
   tag: "tag:yaml.org,2002:merge",
   kind: "scalar",
@@ -32867,7 +32867,7 @@ var merge2 = {
   construct: (data) => data
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/nil.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/nil.ts
 var nil = {
   tag: "tag:yaml.org,2002:null",
   kind: "scalar",
@@ -32884,7 +32884,7 @@ var nil = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/omap.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/omap.ts
 function resolveYamlOmap(data) {
   const objectKeys = /* @__PURE__ */ new Set();
   for (const object of data) {
@@ -32907,7 +32907,7 @@ var omap = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/pairs.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/pairs.ts
 function resolveYamlPairs(data) {
   if (data === null) return true;
   return data.every((it) => isPlainObject3(it) && Object.keys(it).length === 1);
@@ -32921,7 +32921,7 @@ var pairs = {
   resolve: resolveYamlPairs
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/regexp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/regexp.ts
 var REGEXP = /^\/(?<regexp>[\s\S]+)\/(?<modifiers>[gismuy]*)$/;
 var regexp = {
   tag: "tag:yaml.org,2002:js/regexp",
@@ -32944,7 +32944,7 @@ var regexp = {
   represent: (object) => object.toString()
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/seq.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/seq.ts
 var seq = {
   tag: "tag:yaml.org,2002:seq",
   kind: "sequence",
@@ -32952,7 +32952,7 @@ var seq = {
   construct: (data) => data !== null ? data : []
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/set.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/set.ts
 var set = {
   tag: "tag:yaml.org,2002:set",
   kind: "mapping",
@@ -32963,7 +32963,7 @@ var set = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/str.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/str.ts
 var str = {
   tag: "tag:yaml.org,2002:str",
   kind: "scalar",
@@ -32971,7 +32971,7 @@ var str = {
   construct: (data) => data !== null ? data : ""
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/timestamp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/timestamp.ts
 var YAML_DATE_REGEXP = new RegExp(
   "^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$"
   // [3] day
@@ -33036,7 +33036,7 @@ var timestamp = {
   resolve: resolveYamlTimestamp
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_type/undefined.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/undefined.ts
 var undefinedType = {
   tag: "tag:yaml.org,2002:js/undefined",
   kind: "scalar",
@@ -33054,7 +33054,7 @@ var undefinedType = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_schema.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_schema.ts
 function createTypeMap(implicitTypes, explicitTypes) {
   const result = {
     fallback: /* @__PURE__ */ new Map(),
@@ -33105,7 +33105,90 @@ var SCHEMA_MAP = /* @__PURE__ */ new Map([
   ["extended", EXTENDED_SCHEMA]
 ]);
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/_loader_state.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/types.ts
+var YamlSyntaxError = class extends SyntaxError {
+  /**
+   * The line number where the error occurred (1-indexed).
+   *
+   * @example Usage
+   * ```ts
+   * import { YamlSyntaxError } from "@std/yaml";
+   * import { assertEquals } from "@std/assert";
+   *
+   * const error = new YamlSyntaxError("Test", { line: 5, column: 10, offset: 50 });
+   * assertEquals(error.line, 5);
+   * ```
+   */
+  line;
+  /**
+   * The column number where the error occurred (1-indexed).
+   *
+   * @example Usage
+   * ```ts
+   * import { YamlSyntaxError } from "@std/yaml";
+   * import { assertEquals } from "@std/assert";
+   *
+   * const error = new YamlSyntaxError("Test", { line: 5, column: 10, offset: 50 });
+   * assertEquals(error.column, 10);
+   * ```
+   */
+  column;
+  /**
+   * The character offset where the error occurred (0-indexed).
+   *
+   * @example Usage
+   * ```ts
+   * import { YamlSyntaxError } from "@std/yaml";
+   * import { assertEquals } from "@std/assert";
+   *
+   * const error = new YamlSyntaxError("Test", { line: 5, column: 10, offset: 50 });
+   * assertEquals(error.offset, 50);
+   * ```
+   */
+  offset;
+  /**
+   * A formatted snippet of the source around the error, including a caret
+   * line indicating the column. Undefined when the source is empty.
+   *
+   * @example Usage
+   * ```ts
+   * import { YamlSyntaxError } from "@std/yaml";
+   * import { assertEquals } from "@std/assert";
+   *
+   * const snippet = "    foo: bar\n         ^";
+   * const error = new YamlSyntaxError(
+   *   "Test",
+   *   { line: 1, column: 6, offset: 5 },
+   *   snippet,
+   * );
+   * assertEquals(error.snippet, snippet);
+   * ```
+   */
+  snippet;
+  /**
+   * Constructs a new YamlSyntaxError.
+   *
+   * The constructed `message` is `${message} at line ${line}, column ${column}`,
+   * with `:\n${snippet}` appended when a snippet is provided.
+   *
+   * @param message The error message describing the syntax issue.
+   * @param position The position in the YAML source where the error occurred.
+   * @param snippet Optional formatted snippet of the source around the error.
+   */
+  constructor(message2, position, snippet) {
+    let fullMessage = `${message2} at line ${position.line}, column ${position.column}`;
+    if (snippet) fullMessage += `:
+${snippet}`;
+    super(fullMessage);
+    this.name = "YamlSyntaxError";
+    this.line = position.line;
+    this.column = position.column;
+    this.offset = position.offset;
+    if (snippet !== void 0) this.snippet = snippet;
+  }
+};
+
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/_loader_state.ts
 var CONTEXT_FLOW_IN = 1;
 var CONTEXT_FLOW_OUT = 2;
 var CONTEXT_BLOCK_IN = 3;
@@ -33217,13 +33300,6 @@ function getSnippet(buffer, position) {
   return `${indent + head + snippet + tail}
 ${caretIndent}^`;
 }
-function markToString(buffer, position, line, column) {
-  let where = `at line ${line + 1}, column ${column + 1}`;
-  const snippet = getSnippet(buffer, position);
-  if (snippet) where += `:
-${snippet}`;
-  return where;
-}
 function getIndentStatus(lineIndent, parentIndent) {
   if (lineIndent > parentIndent) return 1;
   if (lineIndent < parentIndent) return -1;
@@ -33303,13 +33379,13 @@ var LoaderState = class {
     }
   }
   #createError(message2) {
-    const mark = markToString(
-      this.#scanner.source,
-      this.#scanner.position,
-      this.line,
-      this.#scanner.position - this.lineStart
-    );
-    return new SyntaxError(`${message2} ${mark}`);
+    const offset = this.#scanner.position;
+    const snippet = getSnippet(this.#scanner.source, offset) ?? void 0;
+    return new YamlSyntaxError(message2, {
+      line: this.line + 1,
+      column: offset - this.lineStart + 1,
+      offset
+    }, snippet);
   }
   dispatchWarning(message2) {
     const error = this.#createError(message2);
@@ -34504,14 +34580,22 @@ var LoaderState = class {
     }
     return result;
   }
-  *readDocuments() {
+  *readDocuments(options = {}) {
+    const { singleDocument = false } = options;
+    let yielded = 0;
     while (!this.#scanner.eof()) {
+      if (singleDocument && yielded > 0) {
+        throw this.#createError(
+          "Found more than 1 document in the stream: expected a single document"
+        );
+      }
       yield this.readDocument();
+      yielded++;
     }
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.1.2/parse.ts
+// npm/src/deps/jsr.io/@std/yaml/1.2.0/parse.ts
 function sanitizeInput(input) {
   input = String(input);
   if (input.length > 0) {
@@ -34526,13 +34610,9 @@ function parse3(content, options = {}) {
     ...options,
     schema: SCHEMA_MAP.get(options.schema)
   });
-  const documentGenerator = state.readDocuments();
-  const document = documentGenerator.next().value;
-  if (!documentGenerator.next().done) {
-    throw new SyntaxError(
-      "Found more than 1 document in the stream: expected a single document"
-    );
-  }
+  const documents = state.readDocuments({ singleDocument: true });
+  const document = documents.next().value;
+  documents.next();
   return document ?? null;
 }
 
