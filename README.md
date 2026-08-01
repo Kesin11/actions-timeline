@@ -1,5 +1,7 @@
 # actions-timeline
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Kesin11/actions-timeline)
+
 An Action shows timeline of a GitHub Action workflow in the run summary page.
 
 `actions-timeline` is a tool that allows developers to visualize the sequence of
