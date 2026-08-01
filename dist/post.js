@@ -35494,8 +35494,14 @@ function validateParallelGroups(steps, groups2, logText) {
 function expandParallelJobSteps(steps, logText) {
   const markers = parseWaitingMarkers(logText);
   const groups2 = identifyParallelGroups(steps, markers);
-  const apiCandidateCount = steps.filter(
-    (_step, index) => findParallelCandidateIndexes(steps, index).length > 0
+  const candidateParents = steps.flatMap((_step, parentIndex) => {
+    const childIndexes2 = findParallelCandidateIndexes(steps, parentIndex);
+    return childIndexes2.length > 0 ? [{ parentIndex, childIndexes: childIndexes2 }] : [];
+  });
+  const apiCandidateCount = candidateParents.filter(
+    (candidate) => !candidateParents.some(
+      (other) => other.parentIndex > candidate.parentIndex && other.childIndexes.includes(candidate.parentIndex)
+    )
   ).length;
   if (groups2.length !== markers.length || groups2.length !== apiCandidateCount) {
     return {

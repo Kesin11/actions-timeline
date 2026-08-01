@@ -145,9 +145,16 @@ export function expandParallelJobSteps(
 ): { steps: TimelineStep[]; warning?: string } {
   const markers = parseWaitingMarkers(logText);
   const groups = identifyParallelGroups(steps, markers);
+  const candidateParents = steps.flatMap((_step, parentIndex) => {
+    const childIndexes = findParallelCandidateIndexes(steps, parentIndex);
+    return childIndexes.length > 0 ? [{ parentIndex, childIndexes }] : [];
+  });
   const apiCandidateCount =
-    steps.filter((_step, index) =>
-      findParallelCandidateIndexes(steps, index).length > 0
+    candidateParents.filter((candidate) =>
+      !candidateParents.some((other) =>
+        other.parentIndex > candidate.parentIndex &&
+        other.childIndexes.includes(candidate.parentIndex)
+      )
     ).length;
   if (
     groups.length !== markers.length ||

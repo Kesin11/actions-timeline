@@ -149,6 +149,33 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
     );
   });
 
+  await t.step("allows a parallel child named Parallel group", () => {
+    const steps = nuxtJobs[0].steps!.map((step) =>
+      step.name === "Typecheck (docs)"
+        ? { ...step, name: "Parallel group" }
+        : step
+    );
+    const log = nuxtLog.replace(
+      /Test \(types\), Typecheck \(docs\)/,
+      "Test (types), Parallel group",
+    );
+
+    const result = expandParallelJobSteps(steps, log);
+
+    assertEquals(result.warning, undefined);
+    assertEquals(
+      result.steps.map((step) => step.name),
+      [
+        "Set up job",
+        "Run voidzero-dev/setup-vp@250f29ce",
+        "Parallel group",
+        "(bg) Test (types)",
+        "(bg) Parallel group",
+        "Cancel workflow on failure",
+      ],
+    );
+  });
+
   await t.step("styles only a failed child as critical", () => {
     const failedSteps = nuxtJobs[0].steps!.map((step) =>
       step.name === "Test (types)" || step.name === "Parallel group"
