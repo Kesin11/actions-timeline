@@ -177,6 +177,9 @@ tools to visualize mermaid diagrams.
 
 - Online editor:
   [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/)
+- VSCode natively supports Mermaid diagrams in Markdown preview and notebooks
+  since 1.121:
+  [release notes](https://code.visualstudio.com/updates/v1_121#_mermaid-diagrams-in-markdown-preview-and-notebooks)
 - Local terminal: [mermaid-cli](https://github.com/mermaid-js/mermaid-cli)
 
 # DEVELOPMENT
