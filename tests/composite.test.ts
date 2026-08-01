@@ -13,7 +13,7 @@ import {
   identifyCompositeSteps,
   parseLogBlocks,
 } from "../src/composite.ts";
-import type { TimelineStep } from "../src/types.ts";
+import type { TimelineJobs, TimelineStep } from "../src/types.ts";
 
 function makeWorkflowModel(yamlContent: string): WorkflowModel {
   const fileContentResponse: FileContentResponse = {
@@ -116,6 +116,52 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
       result.get(1)?.map((step) => step.logHeaderOccurrence),
       [0, 1],
     );
+  });
+
+  await t.step("matches a parallel child by its original API name", () => {
+    const workflowJobs = makeWorkflowJobs(
+      "2024-01-15T10:00:00Z",
+      "2024-01-15T10:00:30Z",
+    ) as TimelineJobs;
+    workflowJobs[0].steps![0] = {
+      ...workflowJobs[0].steps![0],
+      name: "(bg) Run ./.github/actions/setup",
+      timelineOriginalName: "Run ./.github/actions/setup",
+      timelineRowKind: "parallel-child",
+    };
+
+    const result = identifyCompositeSteps(
+      workflowJobs,
+      workflowModel,
+      thresholdSec,
+    );
+
+    assertEquals(result.get(1)?.[0].usesPath, "./.github/actions/setup");
+  });
+
+  await t.step("preserves a user-defined name beginning with (bg)", () => {
+    const namedWorkflowModel = makeWorkflowModel(`
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: (bg) setup
+        uses: ./.github/actions/setup
+`);
+    const workflowJobs = makeWorkflowJobs(
+      "2024-01-15T10:00:00Z",
+      "2024-01-15T10:00:30Z",
+    );
+    workflowJobs[0].steps![0].name = "(bg) setup";
+
+    const result = identifyCompositeSteps(
+      workflowJobs,
+      namedWorkflowModel,
+      thresholdSec,
+    );
+
+    assertEquals(result.get(1)?.[0].usesPath, "./.github/actions/setup");
   });
 
   await t.step("excludes step with duration below threshold", () => {

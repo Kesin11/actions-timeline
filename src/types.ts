@@ -3,6 +3,7 @@ import type { WorkflowJobs } from "./github.ts";
 export type TimelineStep =
   & NonNullable<WorkflowJobs[number]["steps"]>[number]
   & {
+    timelineOriginalName?: string;
     timelineRowKind?:
       | "composite-child"
       | "parallel-parent"

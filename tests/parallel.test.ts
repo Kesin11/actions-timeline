@@ -15,7 +15,6 @@ import {
   log as nuxtLog,
   workflow as nuxtWorkflow,
 } from "./fixture/parallel_nuxt.ts";
-import { StepModel } from "../src/workflow_file.ts";
 
 Deno.test(expandParallelJobSteps.name, async (t) => {
   await t.step("renders the Nuxt typecheck steps in parallel", () => {
@@ -126,11 +125,8 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
         compositeName,
       ),
     );
-    const compositeIndex = parallelResult.steps.findIndex((step) =>
-      StepModel.match(
-        [new StepModel({ uses: "./.github/actions/setup" })],
-        step.name,
-      )?.isComposite()
+    const compositeIndex = parallelResult.steps.findIndex(
+      (step) => step.timelineOriginalName === compositeName,
     );
     const compositeStep = parallelResult.steps[compositeIndex];
 

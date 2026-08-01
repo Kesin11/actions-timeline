@@ -34604,7 +34604,7 @@ var StepModel = class {
     if (rawName === "Set up job" || rawName === "Complete job") {
       return void 0;
     }
-    const name = rawName.replace(/^\(bg\) /, "").replace(/^(Pre Run |Post Run |Pre |Run |Post )/, "");
+    const name = rawName.replace(/^(Pre Run |Post Run |Pre |Run |Post )/, "");
     const normalizedName = name.replace(/^\/\.\//, "./");
     const action = normalizedName.split("@")[0];
     for (const stepModel of stepModels) {
@@ -34659,8 +34659,9 @@ function identifyCompositeSteps(workflowJobs, workflowModel, thresholdSec) {
     const occurrenceCounts = /* @__PURE__ */ new Map();
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
-      if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
-      const stepModel = StepModel.match(jobModel.steps, apiStep.name);
+      const matchingName = apiStep.timelineOriginalName ?? apiStep.name;
+      if (/^(Pre Run |Post Run |Pre |Post )/.test(matchingName)) continue;
+      const stepModel = StepModel.match(jobModel.steps, matchingName);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
         const occurrenceKey = `${apiStep.started_at}\0${stepModel.raw.uses}`;
         const logHeaderOccurrence = occurrenceCounts.get(occurrenceKey) ?? 0;
@@ -35492,6 +35493,7 @@ function expandParallelJobSteps(steps, logText) {
         ...group.childIndexes.map((childIndex) => ({
           ...steps[childIndex],
           name: `(bg) ${steps[childIndex].name}`,
+          timelineOriginalName: steps[childIndex].name,
           timelineRowKind: "parallel-child"
         }))
       ];

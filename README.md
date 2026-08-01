@@ -67,6 +67,18 @@ GitHub API, and then generates a timeline with
 the GitHub flavored markdown that can visualize mermaid diagrams, the timeline
 is displayed in the run summary page.
 
+Steps declared with the GitHub Actions `parallel` syntax are detected
+automatically. The timeline keeps the `Parallel group` bar and adds `(bg)` rows
+for its child steps at their actual shared start time. Detection is verified
+against the job log; if a log cannot be fetched or matched, that job uses the
+standard timeline layout and emits a warning.
+
+Repo-local composite actions can also be expanded by setting
+`expand-composite-actions: true`. The original composite bar remains visible,
+with its internal steps shown as `(sub)` rows beneath it. Use
+`expand-composite-actions-threshold` to control the minimum duration to expand.
+Nested repo-local composite actions are not currently expanded.
+
 This action is run on post-processing of the job, so you should register this
 action before your build step. If you register this action after your build
 step, the timeline will not include other post-processing steps.

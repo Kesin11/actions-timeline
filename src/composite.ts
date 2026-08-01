@@ -96,9 +96,10 @@ export function identifyCompositeSteps(
     const occurrenceCounts = new Map<string, number>();
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
+      const matchingName = apiStep.timelineOriginalName ?? apiStep.name;
       // Skip Pre/Post steps - only expand the main "Run" execution step
-      if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
-      const stepModel = StepModel.match(jobModel.steps, apiStep.name);
+      if (/^(Pre Run |Post Run |Pre |Post )/.test(matchingName)) continue;
+      const stepModel = StepModel.match(jobModel.steps, matchingName);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
         const occurrenceKey = `${apiStep.started_at}\0${stepModel.raw.uses}`;
         const logHeaderOccurrence = occurrenceCounts.get(occurrenceKey) ?? 0;

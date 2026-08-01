@@ -142,6 +142,7 @@ export function expandParallelJobSteps(
         ...group.childIndexes.map((childIndex) => ({
           ...steps[childIndex],
           name: `(bg) ${steps[childIndex].name}`,
+          timelineOriginalName: steps[childIndex].name,
           timelineRowKind: "parallel-child" as const,
         })),
       ];
