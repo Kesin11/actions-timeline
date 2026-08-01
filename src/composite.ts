@@ -2,7 +2,7 @@ import { decodeBase64 } from "@std/encoding";
 import { parse as parseYaml } from "@std/yaml";
 import { diffSec } from "./format_util.ts";
 import type { TimelineJobs, TimelineStep } from "./types.ts";
-import { Github, type WorkflowJobs, type WorkflowRun } from "./github.ts";
+import { Github, type WorkflowRun } from "./github.ts";
 import {
   type CompositeAction,
   JobModel,
@@ -79,7 +79,7 @@ async function fetchWorkflowModel(
 
 // Identify composite steps in each job by matching API steps against the YAML model.
 export function identifyCompositeSteps(
-  workflowJobs: WorkflowJobs,
+  workflowJobs: TimelineJobs,
   workflowModel: WorkflowModel,
   thresholdSec: number,
 ): Map<number, CompositeStepInfo[]> {
@@ -178,12 +178,7 @@ async function fetchJobLog(
   jobId: number,
 ): Promise<string | undefined> {
   try {
-    const res = await client.octokit.actions.downloadJobLogsForWorkflowRun({
-      owner,
-      repo,
-      job_id: jobId,
-    });
-    return res.data as unknown as string;
+    return await client.fetchJobLog(owner, repo, jobId);
   } catch (error) {
     console.warn(`Error fetching job log for job ${jobId}:`, error);
     return undefined;
@@ -287,7 +282,7 @@ export function extractSubSteps(
 }
 
 export function expandJobSteps(
-  steps: NonNullable<WorkflowJobs[0]["steps"]>,
+  steps: NonNullable<TimelineJobs[0]["steps"]>,
   compositeInfos: CompositeStepInfo[],
   compositeStepCounts: Map<string, number>,
   logBlocks: LogBlock[],
@@ -355,7 +350,7 @@ export function expandJobSteps(
 export async function expandCompositeSteps(
   client: Github,
   workflowRun: WorkflowRun,
-  workflowJobs: WorkflowJobs,
+  workflowJobs: TimelineJobs,
   options: ExpandCompositeOptions = {},
 ): Promise<TimelineJobs> {
   const thresholdSec = options.thresholdSec ?? 20;

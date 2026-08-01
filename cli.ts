@@ -2,6 +2,7 @@ import { Command } from "@cliffy/command";
 import { createMermaid } from "./src/workflow_gantt.ts";
 import { expandCompositeSteps } from "./src/composite.ts";
 import { Github, parseWorkflowRunUrl } from "./src/github.ts";
+import { expandParallelSteps } from "./src/parallel.ts";
 
 const { options, args } = await new Command()
   .name("actions-timeline-cli")
@@ -45,11 +46,22 @@ const workflowRun = await client.fetchWorkflowRun(
 );
 const workflowJobs = await client.fetchWorkflowRunJobs(workflowRun);
 
+const parallelResult = await expandParallelSteps(
+  client,
+  workflowRun,
+  workflowJobs,
+);
+parallelResult.warnings.forEach((warning) =>
+  console.warn(
+    `Warning: Parallel steps were not expanded for job "${warning.jobName}" (${warning.jobId}): ${warning.reason}`,
+  )
+);
+
 const jobs = options.expandCompositeActions
-  ? await expandCompositeSteps(client, workflowRun, workflowJobs, {
+  ? await expandCompositeSteps(client, workflowRun, parallelResult.jobs, {
     thresholdSec: options.expandCompositeActionsThreshold,
   })
-  : workflowJobs;
+  : parallelResult.jobs;
 
 const gantt = createMermaid(workflowRun, jobs, {
   showWaitingRunner: options.showWaitingRunner,

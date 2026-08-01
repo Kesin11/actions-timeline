@@ -3,10 +3,13 @@ import type { WorkflowJobs } from "./github.ts";
 export type TimelineStep =
   & NonNullable<WorkflowJobs[number]["steps"]>[number]
   & {
-    timelineRowKind?: "composite-child";
+    timelineRowKind?:
+      | "composite-child"
+      | "parallel-parent"
+      | "parallel-child";
   };
 
-export type TimelineJob = Omit<WorkflowJobs[number], "steps"> & {
+export type TimelineJob = WorkflowJobs[number] & {
   steps?: TimelineStep[];
 };
 

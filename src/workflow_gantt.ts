@@ -65,6 +65,13 @@ const createCompositeChildPosition = (
   return `after ${anchorId}`;
 };
 
+const createParallelStepPosition = (
+  workflow: WorkflowRun,
+  step: TimelineStep,
+): string => {
+  return formatElapsedTime(diffSec(workflow.run_started_at, step.started_at));
+};
+
 const createWaitingRunnerStep = (
   workflow: WorkflowRun,
   job: TimelineJobs[0],
@@ -141,6 +148,9 @@ export const createGanttJobs = (
             compositeChildAnchorId,
             previousCompositeChildId,
           )
+          : step.timelineRowKind === "parallel-parent" ||
+              step.timelineRowKind === "parallel-child"
+          ? createParallelStepPosition(workflow, step)
           : createTopLevelStepPosition(
             workflow,
             jobStartedAt,
@@ -150,7 +160,9 @@ export const createGanttJobs = (
         steps.push({
           name: formatName(step.name, stepElapsedSec),
           id,
-          status: convertStepToStatus(step.conclusion as StepConclusion),
+          status: step.timelineRowKind === "parallel-parent"
+            ? ""
+            : convertStepToStatus(step.conclusion as StepConclusion),
           position,
           sec: stepElapsedSec,
         });
@@ -159,6 +171,7 @@ export const createGanttJobs = (
           previousCompositeChildId = id;
           return;
         }
+        if (step.timelineRowKind === "parallel-child") return;
 
         compositeChildAnchorId = nextStep?.timelineRowKind === "composite-child"
           ? previousTopLevelStepId

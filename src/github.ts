@@ -127,6 +127,7 @@ type ThrottleRequestOptions = {
 
 export class Github {
   private readonly octokitClient: Octokit;
+  private readonly jobLogCache = new Map<number, Promise<string>>();
   token?: string;
   baseUrl: string;
   isGHES: boolean;
@@ -196,6 +197,24 @@ export class Github {
         per_page: 100,
       });
     return res.data.jobs as WorkflowJobs;
+  }
+
+  fetchJobLog(owner: string, repo: string, jobId: number): Promise<string> {
+    const cached = this.jobLogCache.get(jobId);
+    if (cached) return cached;
+
+    const log = this.octokitClient.actions.downloadJobLogsForWorkflowRun({
+      owner,
+      repo,
+      job_id: jobId,
+    })
+      .then((res) => res.data as unknown as string)
+      .catch((error) => {
+        this.jobLogCache.delete(jobId);
+        throw error;
+      });
+    this.jobLogCache.set(jobId, log);
+    return log;
   }
 
   async fetchWorkflowRun(
