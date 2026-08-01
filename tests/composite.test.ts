@@ -149,6 +149,55 @@ jobs:
     assertEquals(result.get(1)?.[0].usesPath, "./.github/actions/setup");
   });
 
+  await t.step("does not match a synthetic parallel parent", () => {
+    const parallelWorkflowModel = makeWorkflowModel(`
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - parallel:
+          - name: Parallel group
+            uses: ./.github/actions/setup
+          - run: echo hello
+`);
+    const workflowJobs = makeWorkflowJobs(
+      "2024-01-15T10:00:00Z",
+      "2024-01-15T10:00:30Z",
+    ) as TimelineJobs;
+    const child = workflowJobs[0].steps![0];
+    workflowJobs[0].steps = [
+      {
+        ...child,
+        name: "Parallel group",
+        timelineRowKind: "parallel-parent",
+      },
+      {
+        ...child,
+        name: "(bg) Parallel group",
+        timelineOriginalName: "Parallel group",
+        timelineRowKind: "parallel-child",
+      },
+    ];
+
+    const result = identifyCompositeSteps(
+      workflowJobs,
+      parallelWorkflowModel,
+      thresholdSec,
+    );
+
+    assertEquals(
+      result.get(1)?.map((step) => ({
+        apiStepIndex: step.apiStepIndex,
+        logHeaderOccurrence: step.logHeaderOccurrence,
+      })),
+      [{
+        apiStepIndex: 1,
+        logHeaderOccurrence: 0,
+      }],
+    );
+  });
+
   await t.step("preserves a user-defined name beginning with (bg)", () => {
     const namedWorkflowModel = makeWorkflowModel(`
 on: push
