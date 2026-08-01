@@ -80,6 +80,7 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
     assertEquals(result.size, 1);
     assertEquals(result.get(1)?.length, 1);
     assertEquals(result.get(1)?.[0].usesPath, "./.github/actions/setup");
+    assertEquals(result.get(1)?.[0].logHeaderOccurrence, 0);
   });
 
   await t.step("includes step with duration above threshold", () => {
@@ -93,6 +94,28 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
       thresholdSec,
     );
     assertEquals(result.size, 1);
+  });
+
+  await t.step("numbers concurrent invocations of the same action", () => {
+    const workflowJobs = makeWorkflowJobs(
+      "2024-01-15T10:00:00Z",
+      "2024-01-15T10:00:30Z",
+    );
+    workflowJobs[0].steps!.push({
+      ...workflowJobs[0].steps![0],
+      number: 2,
+    });
+
+    const result = identifyCompositeSteps(
+      workflowJobs,
+      workflowModel,
+      thresholdSec,
+    );
+
+    assertEquals(
+      result.get(1)?.map((step) => step.logHeaderOccurrence),
+      [0, 1],
+    );
   });
 
   await t.step("excludes step with duration below threshold", () => {
@@ -303,6 +326,46 @@ Deno.test(extractSubSteps.name, async (t) => {
     assertEquals(subSteps, []);
   });
 
+  await t.step("selects repeated concurrent headers by occurrence", () => {
+    const repeatedBlocks = [
+      {
+        name: "Run ./.github/actions/setup",
+        startedAt: new Date("2024-01-15T10:00:05.100Z"),
+      },
+      {
+        name: "Run echo first",
+        startedAt: new Date("2024-01-15T10:00:05.150Z"),
+      },
+      {
+        name: "Run ./.github/actions/setup",
+        startedAt: new Date("2024-01-15T10:00:05.200Z"),
+      },
+      {
+        name: "Run echo second",
+        startedAt: new Date("2024-01-15T10:00:07Z"),
+      },
+    ];
+
+    const subSteps = extractSubSteps(
+      repeatedBlocks,
+      "2024-01-15T10:00:05Z",
+      "2024-01-15T10:00:15Z",
+      "completed",
+      "success",
+      "./.github/actions/setup",
+      1,
+      1,
+    );
+
+    assertEquals(subSteps, [{
+      name: "echo second",
+      started_at: "2024-01-15T10:00:07.000Z",
+      completed_at: "2024-01-15T10:00:15Z",
+      status: "completed",
+      conclusion: "success",
+    }]);
+  });
+
   await t.step(
     "includes auxiliary blocks from uses actions (e.g. Environment details)",
     () => {
@@ -394,6 +457,7 @@ Deno.test(expandJobSteps.name, () => {
     apiStepIndex: 0,
     apiStepName: compositeStep.name,
     usesPath: "./.github/actions/setup",
+    logHeaderOccurrence: 0,
     status: compositeStep.status,
     conclusion: compositeStep.conclusion,
   }];

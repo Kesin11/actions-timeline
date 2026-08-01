@@ -18,6 +18,7 @@ export type CompositeStepInfo = {
   apiStepIndex: number;
   apiStepName: string;
   usesPath: string;
+  logHeaderOccurrence: number;
   status: string;
   conclusion: string | null;
 };
@@ -92,12 +93,17 @@ export function identifyCompositeSteps(
     if (!jobModel) continue;
 
     const compositeSteps: CompositeStepInfo[] = [];
+    const occurrenceCounts = new Map<string, number>();
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
       // Skip Pre/Post steps - only expand the main "Run" execution step
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
+        const occurrenceKey = `${apiStep.started_at}\0${stepModel.raw.uses}`;
+        const logHeaderOccurrence = occurrenceCounts.get(occurrenceKey) ?? 0;
+        occurrenceCounts.set(occurrenceKey, logHeaderOccurrence + 1);
+
         if (
           diffSec(apiStep.started_at, apiStep.completed_at) < thresholdSec
         ) {
@@ -108,6 +114,7 @@ export function identifyCompositeSteps(
           apiStepIndex: i,
           apiStepName: apiStep.name,
           usesPath: stepModel.raw.uses,
+          logHeaderOccurrence,
           status: apiStep.status,
           conclusion: apiStep.conclusion,
         });
@@ -215,6 +222,7 @@ export function extractSubSteps(
   compositeConclusion: string | null,
   compositeUsesPath: string,
   expectedStepCount: number,
+  logHeaderOccurrence = 0,
 ): SubStep[] {
   if (expectedStepCount <= 0) {
     return [];
@@ -225,13 +233,15 @@ export function extractSubSteps(
   const compositeEnd = new Date(compositeCompletedAt).getTime() + 1000;
 
   const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
-  const headerGlobalIndex = logBlocks.findIndex(
-    (block) =>
+  const headerGlobalIndex = logBlocks
+    .map((block, index) => ({ block, index }))
+    .filter(({ block }) =>
       block.startedAt.getTime() >= compositeStart &&
       block.startedAt.getTime() <= compositeEnd &&
       (block.name.includes(compositeUsesPath) ||
-        block.name.includes(pathWithoutPrefix)),
-  );
+        block.name.includes(pathWithoutPrefix))
+    )
+    .at(logHeaderOccurrence)?.index ?? -1;
 
   if (headerGlobalIndex < 0) {
     return [];
@@ -317,6 +327,7 @@ export function expandJobSteps(
       apiStep.conclusion,
       compositeInfo.usesPath,
       expectedStepCount,
+      compositeInfo.logHeaderOccurrence,
     );
 
     newSteps.push(apiStep);

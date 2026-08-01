@@ -140,6 +140,7 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
         apiStepIndex: compositeIndex,
         apiStepName: compositeStep.name,
         usesPath: "./.github/actions/setup",
+        logHeaderOccurrence: 0,
         status: compositeStep.status,
         conclusion: compositeStep.conclusion,
       }],

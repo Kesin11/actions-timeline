@@ -34656,11 +34656,15 @@ function identifyCompositeSteps(workflowJobs, workflowModel, thresholdSec) {
     const jobModel = JobModel.match(workflowModel.jobs, job.name);
     if (!jobModel) continue;
     const compositeSteps = [];
+    const occurrenceCounts = /* @__PURE__ */ new Map();
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
       if (/^(Pre Run |Post Run |Pre |Post )/.test(apiStep.name)) continue;
       const stepModel = StepModel.match(jobModel.steps, apiStep.name);
       if (stepModel?.isComposite() && stepModel.raw.uses) {
+        const occurrenceKey = `${apiStep.started_at}\0${stepModel.raw.uses}`;
+        const logHeaderOccurrence = occurrenceCounts.get(occurrenceKey) ?? 0;
+        occurrenceCounts.set(occurrenceKey, logHeaderOccurrence + 1);
         if (diffSec(apiStep.started_at, apiStep.completed_at) < thresholdSec) {
           continue;
         }
@@ -34668,6 +34672,7 @@ function identifyCompositeSteps(workflowJobs, workflowModel, thresholdSec) {
           apiStepIndex: i,
           apiStepName: apiStep.name,
           usesPath: stepModel.raw.uses,
+          logHeaderOccurrence,
           status: apiStep.status,
           conclusion: apiStep.conclusion
         });
@@ -34734,16 +34739,16 @@ function parseLogBlocks(logText) {
   }
   return blocks;
 }
-function extractSubSteps(logBlocks, compositeStartedAt, compositeCompletedAt, compositeStatus, compositeConclusion, compositeUsesPath, expectedStepCount) {
+function extractSubSteps(logBlocks, compositeStartedAt, compositeCompletedAt, compositeStatus, compositeConclusion, compositeUsesPath, expectedStepCount, logHeaderOccurrence = 0) {
   if (expectedStepCount <= 0) {
     return [];
   }
   const compositeStart = new Date(compositeStartedAt).getTime();
   const compositeEnd = new Date(compositeCompletedAt).getTime() + 1e3;
   const pathWithoutPrefix = compositeUsesPath.replace(/^\.\//, "");
-  const headerGlobalIndex = logBlocks.findIndex(
-    (block) => block.startedAt.getTime() >= compositeStart && block.startedAt.getTime() <= compositeEnd && (block.name.includes(compositeUsesPath) || block.name.includes(pathWithoutPrefix))
-  );
+  const headerGlobalIndex = logBlocks.map((block, index) => ({ block, index })).filter(
+    ({ block }) => block.startedAt.getTime() >= compositeStart && block.startedAt.getTime() <= compositeEnd && (block.name.includes(compositeUsesPath) || block.name.includes(pathWithoutPrefix))
+  ).at(logHeaderOccurrence)?.index ?? -1;
   if (headerGlobalIndex < 0) {
     return [];
   }
@@ -34803,7 +34808,8 @@ function expandJobSteps(steps, compositeInfos, compositeStepCounts, logBlocks) {
       apiStep.status,
       apiStep.conclusion,
       compositeInfo.usesPath,
-      expectedStepCount
+      expectedStepCount,
+      compositeInfo.logHeaderOccurrence
     );
     newSteps.push(apiStep);
     if (subSteps.length === 0) {
