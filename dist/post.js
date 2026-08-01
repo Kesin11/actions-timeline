@@ -34600,7 +34600,7 @@ var StepModel = class {
     if (rawName === "Set up job" || rawName === "Complete job") {
       return void 0;
     }
-    const name = rawName.replace(/^(Pre Run |Post Run |Pre |Run |Post )/, "");
+    const name = rawName.replace(/^\(bg\) /, "").replace(/^(Pre Run |Post Run |Pre |Run |Post )/, "");
     const normalizedName = name.replace(/^\/\.\//, "./");
     const action = normalizedName.split("@")[0];
     for (const stepModel of stepModels) {

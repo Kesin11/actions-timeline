@@ -132,7 +132,9 @@ export class StepModel {
       return undefined;
     }
 
-    const name = rawName.replace(/^(Pre Run |Post Run |Pre |Run |Post )/, "");
+    const name = rawName
+      .replace(/^\(bg\) /, "")
+      .replace(/^(Pre Run |Post Run |Pre |Run |Post )/, "");
     // Normalize: GitHub API sometimes adds extra "/" before "./" for local actions
     const normalizedName = name.replace(/^\/\.\//, "./");
     const action = normalizedName.split("@")[0];

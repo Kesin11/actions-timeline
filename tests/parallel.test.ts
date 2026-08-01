@@ -15,6 +15,7 @@ import {
   log as nuxtLog,
   workflow as nuxtWorkflow,
 } from "./fixture/parallel_nuxt.ts";
+import { StepModel } from "../src/workflow_file.ts";
 
 Deno.test(expandParallelJobSteps.name, async (t) => {
   await t.step("renders the Nuxt typecheck steps in parallel", () => {
@@ -112,23 +113,29 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
   });
 
   await t.step("preserves parallel rows during composite expansion", () => {
-    const parallelResult = expandParallelJobSteps(
-      nuxtJobs[0].steps!,
-      nuxtLog,
+    const compositeName = "Run ./.github/actions/setup";
+    const stepsWithComposite = datafusionJobs[0].steps!.map((step) =>
+      step.name === "Run actions/checkout@3d3c42e5"
+        ? { ...step, name: compositeName }
+        : step
     );
-    const compositeStep = {
-      number: 8,
-      name: "Run ./.github/actions/setup",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T21:57:30Z",
-      completed_at: "2026-07-31T21:57:40Z",
-    };
-    const steps = [...parallelResult.steps, compositeStep];
-    const compositeIndex = steps.length - 1;
+    const parallelResult = expandParallelJobSteps(
+      stepsWithComposite,
+      datafusionLog.replace(
+        /Run actions\/checkout@3d3c42e5/g,
+        compositeName,
+      ),
+    );
+    const compositeIndex = parallelResult.steps.findIndex((step) =>
+      StepModel.match(
+        [new StepModel({ uses: "./.github/actions/setup" })],
+        step.name,
+      )?.isComposite()
+    );
+    const compositeStep = parallelResult.steps[compositeIndex];
 
     const expanded = expandJobSteps(
-      steps,
+      parallelResult.steps,
       [{
         apiStepIndex: compositeIndex,
         apiStepName: compositeStep.name,
@@ -140,11 +147,11 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
       [
         {
           name: "Run ./.github/actions/setup",
-          startedAt: new Date("2026-07-31T21:57:30Z"),
+          startedAt: new Date("2026-07-31T23:40:19Z"),
         },
         {
           name: "Run echo setup",
-          startedAt: new Date("2026-07-31T21:57:31Z"),
+          startedAt: new Date("2026-07-31T23:40:20Z"),
         },
       ],
     );
@@ -153,13 +160,12 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
       expanded.map((step) => [step.name, step.timelineRowKind]),
       [
         ["Set up job", undefined],
-        ["Run voidzero-dev/setup-vp@250f29ce", undefined],
+        ["Run runs-on/action@4e5f7239", undefined],
         ["Parallel group", "parallel-parent"],
-        ["(bg) Test (types)", "parallel-child"],
-        ["(bg) Typecheck (docs)", "parallel-child"],
-        ["Cancel workflow on failure", undefined],
-        ["Run ./.github/actions/setup", undefined],
+        ["(bg) Run ./.github/actions/setup", "parallel-child"],
         ["(sub) echo setup", "composite-child"],
+        ["(bg) Install protobuf compiler", "parallel-child"],
+        ["Run sqllogictest", undefined],
       ],
     );
   });
