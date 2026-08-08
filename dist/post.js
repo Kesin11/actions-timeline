@@ -35686,6 +35686,34 @@ async function expandParallelSteps(client, workflowRun, workflowJobs) {
   return { jobs, warnings };
 }
 
+// npm/src/workflow_run.ts
+function isPositiveInteger(value) {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+function resolveWorkflowRunTarget(currentRun, event) {
+  if (event.eventName !== "workflow_run" || event.action !== "completed") {
+    return currentRun;
+  }
+  const runId = event.workflowRun?.id;
+  if (!isPositiveInteger(runId)) {
+    throw new Error(
+      "workflow_run.completed payload is missing a valid workflow run id"
+    );
+  }
+  const runAttempt = event.workflowRun?.runAttempt ?? 1;
+  if (!isPositiveInteger(runAttempt)) {
+    throw new Error(
+      "workflow_run.completed payload has an invalid workflow run attempt"
+    );
+  }
+  return {
+    owner: currentRun.owner,
+    repo: currentRun.repo,
+    runId,
+    runAttempt
+  };
+}
+
 // npm/src/post.ts
 var PARALLEL_FALLBACK_SUMMARY = "Parallel steps could not be expanded for one or more jobs. Those jobs use the standard timeline layout.\n\n";
 var main = async () => {
@@ -35700,11 +35728,27 @@ var main = async () => {
   await (0, import_promises.setTimeout)(1e3);
   info("Fetch workflow...");
   const runAttempt = import_node_process.default.env.GITHUB_RUN_ATTEMPT ? Number(import_node_process.default.env.GITHUB_RUN_ATTEMPT) : 1;
+  const targetRun = resolveWorkflowRunTarget(
+    {
+      owner: context2.repo.owner,
+      repo: context2.repo.repo,
+      runId: context2.runId,
+      runAttempt
+    },
+    {
+      eventName: context2.eventName,
+      action: context2.payload.action,
+      workflowRun: {
+        id: context2.payload.workflow_run?.id,
+        runAttempt: context2.payload.workflow_run?.run_attempt
+      }
+    }
+  );
   const workflowRun = await client.fetchWorkflowRun(
-    context2.repo.owner,
-    context2.repo.repo,
-    context2.runId,
-    runAttempt
+    targetRun.owner,
+    targetRun.repo,
+    targetRun.runId,
+    targetRun.runAttempt
   );
   debug(JSON.stringify(workflowRun, null, 2));
   info("Fetch workflow_job...");
