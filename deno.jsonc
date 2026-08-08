@@ -16,7 +16,7 @@
     "@std/collections": "jsr:@std/collections@^1.3.0",
     "@deno/dnt": "jsr:@deno/dnt@0.42.3",
     "@std/encoding": "jsr:@std/encoding@^1.0.11",
-    "@std/yaml": "jsr:@std/yaml@^1.1.2",
+    "@std/yaml": "jsr:@std/yaml@^1.2.0",
     "esbuild": "npm:esbuild@0.28.0",
     "@actions/core": "npm:@actions/core@3.0.1",
     "@actions/github": "npm:@actions/github@9.1.1",
