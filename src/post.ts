@@ -13,6 +13,7 @@ import { createMermaid } from "./workflow_gantt.ts";
 import { expandCompositeSteps } from "./composite.ts";
 import { Github } from "./github.ts";
 import { expandParallelSteps } from "./parallel.ts";
+import { resolveWorkflowRunTarget } from "./workflow_run.ts";
 
 const PARALLEL_FALLBACK_SUMMARY =
   "Parallel steps could not be expanded for one or more jobs. Those jobs use the standard timeline layout.\n\n";
@@ -35,11 +36,27 @@ const main = async () => {
   const runAttempt = process.env.GITHUB_RUN_ATTEMPT
     ? Number(process.env.GITHUB_RUN_ATTEMPT)
     : 1;
+  const targetRun = resolveWorkflowRunTarget(
+    {
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      runId: github.context.runId,
+      runAttempt,
+    },
+    {
+      eventName: github.context.eventName,
+      action: github.context.payload.action,
+      workflowRun: {
+        id: github.context.payload.workflow_run?.id,
+        runAttempt: github.context.payload.workflow_run?.run_attempt,
+      },
+    },
+  );
   const workflowRun = await client.fetchWorkflowRun(
-    github.context.repo.owner,
-    github.context.repo.repo,
-    github.context.runId,
-    runAttempt,
+    targetRun.owner,
+    targetRun.repo,
+    targetRun.runId,
+    targetRun.runAttempt,
   );
   debug(JSON.stringify(workflowRun, null, 2));
   info("Fetch workflow_job...");
