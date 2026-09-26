@@ -1849,10 +1849,66 @@ var require_request = __commonJS({
           return false;
         }
       }
-      onUpgrade(statusCode, headers, socket) {
+      /**
+       * @param {number|null} statusCode
+       * @param {Buffer[]|null} headers
+       * @param {import('node:stream').Duplex} socket
+       * @param {string} [statusText]
+       */
+      onUpgrade(statusCode, headers, socket, statusText = "") {
+        this.onFinally();
         assert(!this.aborted);
         assert(!this.completed);
-        return this[kHandler].onUpgrade(statusCode, headers, socket);
+        if (statusCode !== null) {
+          this.#publishUpgradeHeaders(statusCode, headers, statusText);
+        }
+        const result = this[kHandler].onUpgrade(statusCode, headers, socket);
+        if (!this.aborted) {
+          this.completed = true;
+          if (statusCode !== null) {
+            this.#publishUpgradeTrailers();
+          }
+        }
+        return result;
+      }
+      /**
+       * @param {number} statusCode
+       * @param {import('node:http2').IncomingHttpHeaders} headers
+       * @param {(headers: import('node:http2').IncomingHttpHeaders) => Buffer[]} parseHeaders
+       * @param {string} [statusText]
+       */
+      onUpgradeResponse(statusCode, headers, parseHeaders, statusText = "") {
+        assert(!this.aborted);
+        assert(this.completed);
+        if (channels.headers.hasSubscribers) {
+          this.#publishUpgradeHeaders(statusCode, parseHeaders(headers), statusText);
+        }
+        this.#publishUpgradeTrailers();
+      }
+      /**
+       * @param {Error} error
+       */
+      onUpgradeError(error) {
+        assert(!this.aborted);
+        assert(this.completed);
+        if (channels.error.hasSubscribers) {
+          channels.error.publish({ request: this, error });
+        }
+      }
+      /**
+       * @param {number} statusCode
+       * @param {Buffer[]} headers
+       * @param {string} statusText
+       */
+      #publishUpgradeHeaders(statusCode, headers, statusText) {
+        if (channels.headers.hasSubscribers) {
+          channels.headers.publish({ request: this, response: { statusCode, headers, statusText } });
+        }
+      }
+      #publishUpgradeTrailers() {
+        if (channels.trailers.hasSubscribers) {
+          channels.trailers.publish({ request: this, trailers: [] });
+        }
       }
       onComplete(trailers) {
         this.onFinally();
@@ -5995,7 +6051,7 @@ var require_client_h1 = __commonJS({
         }
       }
       onUpgrade(head) {
-        const { upgrade, client, socket, headers, statusCode } = this;
+        const { upgrade, client, socket, headers, statusCode, statusText } = this;
         assert(upgrade);
         assert(client[kSocket] === socket);
         assert(!socket.destroyed);
@@ -6020,9 +6076,10 @@ var require_client_h1 = __commonJS({
         client[kQueue][client[kRunningIdx]++] = null;
         client.emit("disconnect", client[kUrl], [client], new InformationalError("upgrade"));
         try {
-          request2.onUpgrade(statusCode, headers, socket);
-        } catch (err) {
-          util.destroy(socket, err);
+          request2.onUpgrade(statusCode, headers, socket, statusText);
+        } catch (error) {
+          util.errorRequest(client, request2, error);
+          util.destroy(socket, error);
         }
         client[kResume]();
       }
@@ -6425,11 +6482,17 @@ var require_client_h1 = __commonJS({
       }
       const socket = client[kSocket];
       clearIdleSocketValidation(socket);
-      const abort = (err) => {
-        if (request2.aborted || request2.completed) {
+      const abort = (error) => {
+        if (request2.aborted) {
           return;
         }
-        util.errorRequest(client, request2, err || new RequestAbortedError());
+        if (request2.completed) {
+          if (request2.upgrade || request2.method === "CONNECT") {
+            util.destroy(socket, new InformationalError("aborted"));
+          }
+          return;
+        }
+        util.errorRequest(client, request2, error || new RequestAbortedError());
         util.destroy(body);
         util.destroy(socket, new InformationalError("aborted"));
       };
@@ -6785,6 +6848,7 @@ var require_client_h2 = __commonJS({
   "npm/node_modules/undici/lib/dispatcher/client-h2.js"(exports2, module2) {
     "use strict";
     var assert = require("node:assert");
+    var { errorMonitor } = require("node:events");
     var { pipeline } = require("node:stream");
     var util = require_util();
     var {
@@ -6844,6 +6908,10 @@ var require_client_h2 = __commonJS({
         }
       }
       return result;
+    }
+    function parseH2ResponseHeaders(headers) {
+      const { [HTTP2_HEADER_STATUS]: _statusCode, ...realHeaders } = headers;
+      return parseH2Headers(realHeaders);
     }
     async function connectH2(client, socket) {
       client[kSocket] = socket;
@@ -7008,16 +7076,22 @@ var require_client_h2 = __commonJS({
       const { hostname, port } = client[kUrl];
       headers[HTTP2_HEADER_AUTHORITY] = host || `${hostname}${port ? `:${port}` : ""}`;
       headers[HTTP2_HEADER_METHOD] = method;
-      const abort = (err) => {
-        if (request2.aborted || request2.completed) {
+      const abort = (error) => {
+        if (request2.aborted) {
           return;
         }
-        err = err || new RequestAbortedError();
-        util.errorRequest(client, request2, err);
-        if (stream != null) {
-          util.destroy(stream, err);
+        if (request2.completed) {
+          if (method === "CONNECT" && stream != null) {
+            util.destroy(stream, error || new RequestAbortedError());
+          }
+          return;
         }
-        util.destroy(body, err);
+        error = error || new RequestAbortedError();
+        util.errorRequest(client, request2, error);
+        if (stream != null) {
+          util.destroy(stream, error);
+        }
+        util.destroy(body, error);
         client[kQueue][client[kRunningIdx]++] = null;
         client[kResume]();
       };
@@ -7032,18 +7106,42 @@ var require_client_h2 = __commonJS({
       if (method === "CONNECT") {
         session.ref();
         stream = session.request(headers, { endStream: false, signal });
-        if (stream.id && !stream.pending) {
-          request2.onUpgrade(null, null, stream);
-          ++session[kOpenStreams];
-          client[kQueue][client[kRunningIdx]++] = null;
-        } else {
-          stream.once("ready", () => {
+        let upgradeResponseFinished = false;
+        const onResponse = (headers2) => {
+          upgradeResponseFinished = true;
+          stream.off(errorMonitor, onUpgradeError);
+          request2.onUpgradeResponse(Number(headers2[HTTP2_HEADER_STATUS]), headers2, parseH2ResponseHeaders);
+        };
+        const onUpgradeError = (error) => {
+          upgradeResponseFinished = true;
+          stream.off("response", onResponse);
+          request2.onUpgradeError(error);
+        };
+        const onReady = () => {
+          try {
             request2.onUpgrade(null, null, stream);
-            ++session[kOpenStreams];
-            client[kQueue][client[kRunningIdx]++] = null;
-          });
-        }
+          } catch (error) {
+            stream.off("response", onResponse);
+            abort(error);
+            return;
+          }
+          if (request2.aborted) {
+            return;
+          }
+          stream.off("error", abort);
+          stream.once(errorMonitor, onUpgradeError);
+          client[kQueue][client[kRunningIdx]++] = null;
+        };
+        stream.once("response", onResponse);
+        stream.once("error", abort);
+        ++session[kOpenStreams];
+        onReady();
         stream.once("close", () => {
+          if (!upgradeResponseFinished && request2.completed) {
+            stream.off("response", onResponse);
+            stream.off(errorMonitor, onUpgradeError);
+            request2.onUpgradeError(new InformationalError(`HTTP/2: "stream error" received - code ${stream.rstCode}`));
+          }
           session[kOpenStreams] -= 1;
           if (session[kOpenStreams] === 0) session.unref();
         });
@@ -9108,7 +9206,7 @@ var require_retry_handler = __commonJS({
         const headers = parseHeaders(rawHeaders);
         this.retryCount += 1;
         if (statusCode >= 300) {
-          if (this.retryOpts.statusCodes.includes(statusCode) === false) {
+          if (!this.headersSent && this.retryOpts.statusCodes.includes(statusCode) === false) {
             this.headersSent = true;
             this.checkpointResponseEnd(headers, resume);
             return this.handler.onHeaders(
@@ -30748,7 +30846,7 @@ var GitHub = Octokit.plugin(restEndpointMethods, paginateRest).defaults(defaults
 // npm/node_modules/@actions/github/lib/github.js
 var context2 = new Context();
 
-// npm/src/deps/jsr.io/@std/collections/1.3.0/sum_of.ts
+// npm/src/deps/jsr.io/@std/collections/1.4.0/sum_of.ts
 function sumOf(array, selector) {
   let sum = 0;
   let index = 0;
@@ -32667,7 +32765,7 @@ var AB = new ArrayBuffer(8);
 var U32_VIEW = new Uint32Array(AB);
 var U64_VIEW = new BigUint64Array(AB);
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_chars.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_chars.ts
 var TAB = 9;
 var LINE_FEED = 10;
 var CARRIAGE_RETURN = 13;
@@ -32708,7 +32806,7 @@ function isFlowIndicator(c) {
   return c === COMMA2 || c === LEFT_SQUARE_BRACKET || c === RIGHT_SQUARE_BRACKET || c === LEFT_CURLY_BRACKET || c === RIGHT_CURLY_BRACKET;
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/binary.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/binary.ts
 var BASE64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r";
 function resolveYamlBinary(data) {
   if (data === null) return false;
@@ -32796,7 +32894,7 @@ var binary = {
   resolve: resolveYamlBinary
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/bool.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/bool.ts
 var YAML_TRUE_BOOLEANS = ["true", "True", "TRUE"];
 var YAML_FALSE_BOOLEANS = ["false", "False", "FALSE"];
 var YAML_BOOLEANS = [...YAML_TRUE_BOOLEANS, ...YAML_FALSE_BOOLEANS];
@@ -32826,7 +32924,7 @@ var bool = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_utils.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_utils.ts
 function isObject(value) {
   return value !== null && typeof value === "object";
 }
@@ -32837,7 +32935,7 @@ function isPlainObject3(object) {
   return Object.prototype.toString.call(object) === "[object Object]";
 }
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/float.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/float.ts
 var YAML_FLOAT_REGEXP = new RegExp(
   // 2.5e4, 2.5 and integers
   "^(?:[-+]?(?:0|[1-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"
@@ -32914,7 +33012,7 @@ var float = {
   resolve: resolveYamlFloat
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/int.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/int.ts
 function isCharCodeInRange(c, lower, upper) {
   return lower <= c && c <= upper;
 }
@@ -33036,7 +33134,7 @@ var int = {
   resolve: resolveYamlInteger
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/map.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/map.ts
 var map = {
   tag: "tag:yaml.org,2002:map",
   resolve() {
@@ -33048,7 +33146,7 @@ var map = {
   kind: "mapping"
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/merge.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/merge.ts
 var merge2 = {
   tag: "tag:yaml.org,2002:merge",
   kind: "scalar",
@@ -33056,7 +33154,7 @@ var merge2 = {
   construct: (data) => data
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/nil.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/nil.ts
 var nil = {
   tag: "tag:yaml.org,2002:null",
   kind: "scalar",
@@ -33073,7 +33171,7 @@ var nil = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/omap.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/omap.ts
 function resolveYamlOmap(data) {
   const objectKeys = /* @__PURE__ */ new Set();
   for (const object of data) {
@@ -33096,7 +33194,7 @@ var omap = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/pairs.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/pairs.ts
 function resolveYamlPairs(data) {
   if (data === null) return true;
   return data.every((it) => isPlainObject3(it) && Object.keys(it).length === 1);
@@ -33110,7 +33208,7 @@ var pairs = {
   resolve: resolveYamlPairs
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/regexp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/regexp.ts
 var REGEXP = /^\/(?<regexp>[\s\S]+)\/(?<modifiers>[gismuy]*)$/;
 var regexp = {
   tag: "tag:yaml.org,2002:js/regexp",
@@ -33133,7 +33231,7 @@ var regexp = {
   represent: (object) => object.toString()
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/seq.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/seq.ts
 var seq = {
   tag: "tag:yaml.org,2002:seq",
   kind: "sequence",
@@ -33141,7 +33239,7 @@ var seq = {
   construct: (data) => data !== null ? data : []
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/set.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/set.ts
 var set = {
   tag: "tag:yaml.org,2002:set",
   kind: "mapping",
@@ -33152,7 +33250,7 @@ var set = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/str.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/str.ts
 var str = {
   tag: "tag:yaml.org,2002:str",
   kind: "scalar",
@@ -33160,7 +33258,7 @@ var str = {
   construct: (data) => data !== null ? data : ""
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/timestamp.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/timestamp.ts
 var YAML_DATE_REGEXP = new RegExp(
   "^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$"
   // [3] day
@@ -33225,7 +33323,7 @@ var timestamp = {
   resolve: resolveYamlTimestamp
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_type/undefined.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_type/undefined.ts
 var undefinedType = {
   tag: "tag:yaml.org,2002:js/undefined",
   kind: "scalar",
@@ -33243,7 +33341,7 @@ var undefinedType = {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_schema.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_schema.ts
 function createTypeMap(implicitTypes, explicitTypes) {
   const result = {
     fallback: /* @__PURE__ */ new Map(),
@@ -33294,7 +33392,7 @@ var SCHEMA_MAP = /* @__PURE__ */ new Map([
   ["extended", EXTENDED_SCHEMA]
 ]);
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/types.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/types.ts
 var YamlSyntaxError = class extends SyntaxError {
   /**
    * The line number where the error occurred (1-indexed).
@@ -33377,7 +33475,7 @@ ${snippet}`;
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/_loader_state.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/_loader_state.ts
 var CONTEXT_FLOW_IN = 1;
 var CONTEXT_FLOW_OUT = 2;
 var CONTEXT_BLOCK_IN = 3;
@@ -34784,7 +34882,7 @@ var LoaderState = class {
   }
 };
 
-// npm/src/deps/jsr.io/@std/yaml/1.2.0/parse.ts
+// npm/src/deps/jsr.io/@std/yaml/1.3.0/parse.ts
 function sanitizeInput(input) {
   input = String(input);
   if (input.length > 0) {
