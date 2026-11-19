@@ -1,5 +1,5 @@
-import { Github, parseWorkflowRunUrl } from "../src/github.ts";
 import type { Octokit } from "@octokit/rest";
+import { Github, parseWorkflowRunUrl } from "../src/github.ts";
 import { assertEquals, assertThrows, test } from "./test_util.ts";
 
 test(parseWorkflowRunUrl.name, async (t) => {
