@@ -10,65 +10,67 @@ export const workflow = {
   },
 } as WorkflowRun;
 
-export const jobs = [{
-  id: 91295892639,
-  name: "Run sqllogictests with the sqlite test suite",
-  status: "completed",
-  conclusion: "success",
-  created_at: "2026-07-31T23:39:41Z",
-  started_at: "2026-07-31T23:40:02Z",
-  completed_at: "2026-07-31T23:41:25Z",
-  steps: [
-    {
-      number: 1,
-      name: "Set up job",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T23:40:02Z",
-      completed_at: "2026-07-31T23:40:03Z",
-    },
-    {
-      number: 4,
-      name: "Run runs-on/action@4e5f7239",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T23:40:03Z",
-      completed_at: "2026-07-31T23:40:19Z",
-    },
-    {
-      number: 5,
-      name: "Run actions/checkout@3d3c42e5",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T23:40:19Z",
-      completed_at: "2026-07-31T23:41:24Z",
-    },
-    {
-      number: 6,
-      name: "Install protobuf compiler",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T23:40:19Z",
-      completed_at: "2026-07-31T23:40:22Z",
-    },
-    {
-      number: 7,
-      name: "Parallel group",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T23:40:19Z",
-      completed_at: "2026-07-31T23:41:24Z",
-    },
-    {
-      number: 8,
-      name: "Run sqllogictest",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T23:41:24Z",
-      completed_at: "2026-07-31T23:41:25Z",
-    },
-  ],
-}] as WorkflowJobs;
+export const jobs = [
+  {
+    id: 91295892639,
+    name: "Run sqllogictests with the sqlite test suite",
+    status: "completed",
+    conclusion: "success",
+    created_at: "2026-07-31T23:39:41Z",
+    started_at: "2026-07-31T23:40:02Z",
+    completed_at: "2026-07-31T23:41:25Z",
+    steps: [
+      {
+        number: 1,
+        name: "Set up job",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T23:40:02Z",
+        completed_at: "2026-07-31T23:40:03Z",
+      },
+      {
+        number: 4,
+        name: "Run runs-on/action@4e5f7239",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T23:40:03Z",
+        completed_at: "2026-07-31T23:40:19Z",
+      },
+      {
+        number: 5,
+        name: "Run actions/checkout@3d3c42e5",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T23:40:19Z",
+        completed_at: "2026-07-31T23:41:24Z",
+      },
+      {
+        number: 6,
+        name: "Install protobuf compiler",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T23:40:19Z",
+        completed_at: "2026-07-31T23:40:22Z",
+      },
+      {
+        number: 7,
+        name: "Parallel group",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T23:40:19Z",
+        completed_at: "2026-07-31T23:41:24Z",
+      },
+      {
+        number: 8,
+        name: "Run sqllogictest",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T23:41:24Z",
+        completed_at: "2026-07-31T23:41:25Z",
+      },
+    ],
+  },
+] as WorkflowJobs;
 
 export const log = `
 2026-07-31T23:40:19.1000000Z ##[group]Run actions/checkout@3d3c42e5

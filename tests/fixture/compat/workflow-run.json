@@ -1,0 +1,15 @@
+{
+  "id": 1001,
+  "name": "Compatibility workflow",
+  "event": "push",
+  "head_sha": "abc123",
+  "path": ".github/workflows/ci.yml",
+  "repository": {
+    "name": "example",
+    "owner": {
+      "login": "owner"
+    }
+  },
+  "run_attempt": 1,
+  "run_started_at": "2024-01-15T10:00:00Z"
+}

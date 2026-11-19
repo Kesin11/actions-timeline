@@ -1,10 +1,9 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
 import { expandJobSteps } from "../src/composite.ts";
-import { createMermaid } from "../src/workflow_gantt.ts";
 import {
   expandParallelJobSteps,
   expandParallelSteps,
 } from "../src/parallel.ts";
+import { createMermaid } from "../src/workflow_gantt.ts";
 import {
   jobs as datafusionJobs,
   log as datafusionLog,
@@ -15,13 +14,13 @@ import {
   log as nuxtLog,
   workflow as nuxtWorkflow,
 } from "./fixture/parallel_nuxt.ts";
+import { assertEquals, assertStringIncludes, test } from "./test_util.ts";
 
-Deno.test(expandParallelJobSteps.name, async (t) => {
-  await t.step("renders the Nuxt typecheck steps in parallel", () => {
+test(expandParallelJobSteps.name, async (t) => {
+  await t.test("renders the Nuxt typecheck steps in parallel", () => {
     const result = expandParallelJobSteps(nuxtJobs[0].steps!, nuxtLog);
     assertEquals(result.warning, undefined);
 
-    // deno-fmt-ignore
     const expected = `
 \`\`\`mermaid
 gantt
@@ -39,22 +38,27 @@ Cancel workflow on failure (0s) :done, job0-6, after job0-3, 0s
 \`\`\``;
 
     assertEquals(
-      createMermaid(nuxtWorkflow, [{
-        ...nuxtJobs[0],
-        steps: result.steps,
-      }], {}),
+      createMermaid(
+        nuxtWorkflow,
+        [
+          {
+            ...nuxtJobs[0],
+            steps: result.steps,
+          },
+        ],
+        {},
+      ),
       expected,
     );
   });
 
-  await t.step("renders action and run children in parallel", () => {
+  await t.test("renders action and run children in parallel", () => {
     const result = expandParallelJobSteps(
       datafusionJobs[0].steps!,
       datafusionLog,
     );
     assertEquals(result.warning, undefined);
 
-    // deno-fmt-ignore
     const expected = `
 \`\`\`mermaid
 gantt
@@ -72,15 +76,21 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
 \`\`\``;
 
     assertEquals(
-      createMermaid(datafusionWorkflow, [{
-        ...datafusionJobs[0],
-        steps: result.steps,
-      }], {}),
+      createMermaid(
+        datafusionWorkflow,
+        [
+          {
+            ...datafusionJobs[0],
+            steps: result.steps,
+          },
+        ],
+        {},
+      ),
       expected,
     );
   });
 
-  await t.step("keeps the original steps when the log does not match", () => {
+  await t.test("keeps the original steps when the log does not match", () => {
     const result = expandParallelJobSteps(nuxtJobs[0].steps!, "");
     assertEquals(result.steps, nuxtJobs[0].steps);
     assertEquals(
@@ -89,7 +99,7 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
     );
   });
 
-  await t.step("ignores a user step named Parallel group", () => {
+  await t.test("ignores a user step named Parallel group", () => {
     const userStep = {
       ...nuxtJobs[0].steps![0],
       name: "Parallel group",
@@ -104,9 +114,9 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
     assertEquals(result.steps.at(-1), userStep);
   });
 
-  await t.step("falls back when a logged group has no API candidate", () => {
-    const steps = nuxtJobs[0].steps!.filter((step) =>
-      step.name !== "Parallel group"
+  await t.test("falls back when a logged group has no API candidate", () => {
+    const steps = nuxtJobs[0].steps!.filter(
+      (step) => step.name !== "Parallel group",
     );
 
     const result = expandParallelJobSteps(steps, nuxtLog);
@@ -118,7 +128,7 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
     );
   });
 
-  await t.step("excludes a preceding fast step from parallel children", () => {
+  await t.test("excludes a preceding fast step from parallel children", () => {
     const fastStep = {
       ...nuxtJobs[0].steps![0],
       number: 3,
@@ -149,11 +159,11 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
     );
   });
 
-  await t.step("allows a parallel child named Parallel group", () => {
+  await t.test("allows a parallel child named Parallel group", () => {
     const steps = nuxtJobs[0].steps!.map((step) =>
       step.name === "Typecheck (docs)"
         ? { ...step, name: "Parallel group" }
-        : step
+        : step,
     );
     const log = nuxtLog.replace(
       /Test \(types\), Typecheck \(docs\)/,
@@ -176,17 +186,23 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
     );
   });
 
-  await t.step("styles only a failed child as critical", () => {
+  await t.test("styles only a failed child as critical", () => {
     const failedSteps = nuxtJobs[0].steps!.map((step) =>
       step.name === "Test (types)" || step.name === "Parallel group"
         ? { ...step, conclusion: "failure" }
-        : step
+        : step,
     );
     const result = expandParallelJobSteps(failedSteps, nuxtLog);
-    const mermaid = createMermaid(nuxtWorkflow, [{
-      ...nuxtJobs[0],
-      steps: result.steps,
-    }], {});
+    const mermaid = createMermaid(
+      nuxtWorkflow,
+      [
+        {
+          ...nuxtJobs[0],
+          steps: result.steps,
+        },
+      ],
+      {},
+    );
 
     assertStringIncludes(
       mermaid,
@@ -198,19 +214,16 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
     );
   });
 
-  await t.step("preserves parallel rows during composite expansion", () => {
+  await t.test("preserves parallel rows during composite expansion", () => {
     const compositeName = "Run ./.github/actions/setup";
     const stepsWithComposite = datafusionJobs[0].steps!.map((step) =>
       step.name === "Run actions/checkout@3d3c42e5"
         ? { ...step, name: compositeName }
-        : step
+        : step,
     );
     const parallelResult = expandParallelJobSteps(
       stepsWithComposite,
-      datafusionLog.replace(
-        /Run actions\/checkout@3d3c42e5/g,
-        compositeName,
-      ),
+      datafusionLog.replace(/Run actions\/checkout@3d3c42e5/g, compositeName),
     );
     const compositeIndex = parallelResult.steps.findIndex(
       (step) => step.timelineOriginalName === compositeName,
@@ -219,14 +232,16 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
 
     const expanded = expandJobSteps(
       parallelResult.steps,
-      [{
-        apiStepIndex: compositeIndex,
-        apiStepName: compositeStep.name,
-        usesPath: "./.github/actions/setup",
-        logHeaderOccurrence: 0,
-        status: compositeStep.status,
-        conclusion: compositeStep.conclusion,
-      }],
+      [
+        {
+          apiStepIndex: compositeIndex,
+          apiStepName: compositeStep.name,
+          usesPath: "./.github/actions/setup",
+          logHeaderOccurrence: 0,
+          status: compositeStep.status,
+          conclusion: compositeStep.conclusion,
+        },
+      ],
       new Map([["./.github/actions/setup", 1]]),
       [
         {
@@ -254,7 +269,7 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
     );
   });
 
-  await t.step("starts each background composite child independently", () => {
+  await t.test("starts each background composite child independently", () => {
     const steps = [
       {
         ...datafusionJobs[0].steps![4],
@@ -285,28 +300,31 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
         timelineRowKind: "composite-child" as const,
       },
     ];
-    const mermaid = createMermaid(datafusionWorkflow, [{
-      ...datafusionJobs[0],
-      steps,
-    }], { showWaitingRunner: false });
+    const mermaid = createMermaid(
+      datafusionWorkflow,
+      [
+        {
+          ...datafusionJobs[0],
+          steps,
+        },
+      ],
+      { showWaitingRunner: false },
+    );
 
-    assertStringIncludes(
-      mermaid,
-      "(sub) setup one (1s) :job0-2, 00:00:40, 1s",
-    );
-    assertStringIncludes(
-      mermaid,
-      "(sub) setup two (2s) :job0-4, 00:00:40, 2s",
-    );
+    assertStringIncludes(mermaid, "(sub) setup one (1s) :job0-2, 00:00:40, 1s");
+    assertStringIncludes(mermaid, "(sub) setup two (2s) :job0-4, 00:00:40, 2s");
   });
 });
 
-Deno.test(expandParallelSteps.name, async () => {
-  const jobs = [...nuxtJobs, {
-    ...datafusionJobs[0],
-    id: 2,
-    name: "log unavailable",
-  }];
+test(expandParallelSteps.name, async () => {
+  const jobs = [
+    ...nuxtJobs,
+    {
+      ...datafusionJobs[0],
+      id: 2,
+      name: "log unavailable",
+    },
+  ];
   const client = {
     fetchJobLog: (_owner: string, _repo: string, jobId: number) =>
       jobId === 2
@@ -317,10 +335,7 @@ Deno.test(expandParallelSteps.name, async () => {
   const result = await expandParallelSteps(client, nuxtWorkflow, jobs);
 
   assertEquals(
-    result.jobs[0].steps?.map((step) => [
-      step.name,
-      step.timelineRowKind,
-    ]),
+    result.jobs[0].steps?.map((step) => [step.name, step.timelineRowKind]),
     [
       ["Set up job", undefined],
       ["Run voidzero-dev/setup-vp@250f29ce", undefined],
@@ -331,9 +346,11 @@ Deno.test(expandParallelSteps.name, async () => {
     ],
   );
   assertEquals(result.jobs[1], jobs[1]);
-  assertEquals(result.warnings, [{
-    jobId: 2,
-    jobName: "log unavailable",
-    reason: "Could not download the job log: HTTP 403",
-  }]);
+  assertEquals(result.warnings, [
+    {
+      jobId: 2,
+      jobName: "log unavailable",
+      reason: "Could not download the job log: HTTP 403",
+    },
+  ]);
 });

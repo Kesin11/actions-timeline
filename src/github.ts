@@ -1,7 +1,7 @@
-import { decodeBase64 } from "@std/encoding";
-import { Octokit } from "@octokit/rest";
-import { throttling } from "@octokit/plugin-throttling";
+import { Buffer } from "node:buffer";
 import { retry } from "@octokit/plugin-retry";
+import { throttling } from "@octokit/plugin-throttling";
+import { Octokit } from "@octokit/rest";
 
 export type FileContentResponse = {
   type: "file";
@@ -67,10 +67,9 @@ export class FileContent {
 
   constructor(getContentResponse: FileContentResponse) {
     this.raw = getContentResponse;
-    const textDecoder = new TextDecoder();
     // GitHub API returns base64 with newlines (RFC 2045), strip them before decoding
     const base64 = getContentResponse.content.replace(/[\r\n]/g, "");
-    this.content = textDecoder.decode(decodeBase64(base64));
+    this.content = Buffer.from(base64, "base64").toString("utf8");
   }
 }
 
@@ -140,7 +139,7 @@ export class Github {
   constructor(options?: { token?: string; host?: string; debug?: boolean }) {
     this.baseUrl = Github.getBaseUrl(options?.host);
     this.isGHES = this.baseUrl !== "https://api.github.com";
-    this.token = options?.token ?? Deno.env.get("GITHUB_TOKEN") ?? undefined;
+    this.token = options?.token ?? process.env.GITHUB_TOKEN;
     const MyOctokit = Octokit.plugin(throttling, retry);
     this.octokitClient = new MyOctokit({
       auth: this.token,
@@ -180,22 +179,21 @@ export class Github {
       return host.startsWith("https://")
         ? `${host}/api/v3`
         : `https://${host}/api/v3`;
-    } else if (Deno.env.get("GITHUB_API_URL")) {
-      return Deno.env.get("GITHUB_API_URL")!;
+    } else if (process.env.GITHUB_API_URL) {
+      return process.env.GITHUB_API_URL;
     } else {
       return "https://api.github.com";
     }
   }
 
   async fetchWorkflowRunJobs(workflowRun: WorkflowRun): Promise<WorkflowJobs> {
-    const res = await this.octokitClient.actions
-      .listJobsForWorkflowRunAttempt({
-        owner: workflowRun.repository.owner.login,
-        repo: workflowRun.repository.name,
-        run_id: workflowRun.id,
-        attempt_number: workflowRun.run_attempt ?? 1,
-        per_page: 100,
-      });
+    const res = await this.octokitClient.actions.listJobsForWorkflowRunAttempt({
+      owner: workflowRun.repository.owner.login,
+      repo: workflowRun.repository.name,
+      run_id: workflowRun.id,
+      attempt_number: workflowRun.run_attempt ?? 1,
+      per_page: 100,
+    });
     return res.data.jobs as WorkflowJobs;
   }
 
@@ -203,11 +201,12 @@ export class Github {
     const cached = this.jobLogCache.get(jobId);
     if (cached) return cached;
 
-    const log = this.octokitClient.actions.downloadJobLogsForWorkflowRun({
-      owner,
-      repo,
-      job_id: jobId,
-    })
+    const log = this.octokitClient.actions
+      .downloadJobLogsForWorkflowRun({
+        owner,
+        repo,
+        job_id: jobId,
+      })
       .then((res) => res.data as unknown as string)
       .catch((error) => {
         this.jobLogCache.delete(jobId);
@@ -244,17 +243,18 @@ export class Github {
   fetchWorkflowFiles(
     workflowRuns: WorkflowRun[],
   ): Promise<(FileContent | undefined)[]> {
-    return Promise.all(workflowRuns.map((workflowRun) =>
-      this.fetchContent({
-        owner: workflowRun.repository.owner.login,
-        repo: workflowRun.repository.name,
-        path: workflowRun.path,
-        ref: workflowRun.head_sha,
-      })
-    ));
+    return Promise.all(
+      workflowRuns.map((workflowRun) =>
+        this.fetchContent({
+          owner: workflowRun.repository.owner.login,
+          repo: workflowRun.repository.name,
+          path: workflowRun.path,
+          ref: workflowRun.head_sha,
+        }),
+      ),
+    );
   }
 
-  // deno-lint-ignore require-await
   async fetchContent(params: {
     owner: string;
     repo: string;
@@ -264,12 +264,13 @@ export class Github {
     const cache = this.contentCache.get(JSON.stringify(params));
     if (cache) return cache;
 
-    return this.octokitClient.repos.getContent({
-      owner: params.owner,
-      repo: params.repo,
-      path: params.path,
-      ref: params.ref,
-    })
+    return this.octokitClient.repos
+      .getContent({
+        owner: params.owner,
+        repo: params.repo,
+        path: params.path,
+        ref: params.ref,
+      })
       .then((res) => {
         if (!Array.isArray(res.data) && res.data.type === "file") {
           const fetchedFileContent = new FileContent(

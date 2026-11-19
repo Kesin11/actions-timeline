@@ -1,44 +1,12 @@
-import { build, emptyDir } from "@deno/dnt";
-import * as esbuild from "esbuild";
+import { rm } from "node:fs/promises";
+import { build } from "esbuild";
 
-console.debug("Start dnt ...");
+const distDir = "./dist";
 
-const outDir = "./npm";
-await emptyDir(outDir);
+await rm(distDir, { force: true, recursive: true });
+
 await build({
   entryPoints: ["./src/main.ts", "./src/post.ts"],
-  outDir,
-  typeCheck: false,
-  test: false,
-  declaration: false,
-  esModule: false,
-  shims: {
-    deno: true,
-  },
-  importMap: "deno.jsonc",
-  package: {
-    // Dummy package.json
-    name: "@kesin11/actions-timeline",
-    version: "0.1.0",
-    description:
-      "An Action shows timeline of a GitHub Action workflow in the run summary page.",
-    license: "MIT",
-    repository: {
-      type: "git",
-      url: "https://github.com/Kesin11/actions-timeline.git",
-    },
-    bugs: {
-      url: "https://github.com/Kesin11/actions-timeline/issues",
-    },
-  },
-});
-
-console.log("Start esbuild ...");
-const distDir = "./dist";
-await emptyDir(distDir);
-
-await esbuild.build({
-  entryPoints: ["./npm/src/main.ts", "./npm/src/post.ts"],
   outdir: distDir,
   bundle: true,
   platform: "node",
@@ -46,7 +14,4 @@ await esbuild.build({
   format: "cjs",
   minify: false,
   sourcemap: false,
-}).finally(() => {
 });
-
-console.log("Complete!");

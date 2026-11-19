@@ -1,4 +1,4 @@
-import { parse } from "@std/yaml";
+import { parse } from "yaml";
 import type { FileContent } from "./github.ts";
 
 export type Workflow = {
@@ -17,9 +17,7 @@ export class WorkflowModel {
     this.fileContent = fileContent;
     const parsed = parse(fileContent.content);
     if (parsed === null || typeof parsed !== "object") {
-      throw new Error(
-        `Failed to parse workflow file: ${fileContent.raw.path}`,
-      );
+      throw new Error(`Failed to parse workflow file: ${fileContent.raw.path}`);
     }
     this.raw = parsed as Workflow;
   }
@@ -61,7 +59,7 @@ export class JobModel {
 
   get steps(): StepModel[] {
     return (this.raw.steps ?? []).flatMap((step) =>
-      (step.parallel ?? [step]).map((child) => new StepModel(child))
+      (step.parallel ?? [step]).map((child) => new StepModel(child)),
     );
   }
 
