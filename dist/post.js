@@ -35542,6 +35542,10 @@ var Github = class _Github {
     this.baseUrl = _Github.getBaseUrl(options?.host);
     this.isGHES = this.baseUrl !== "https://api.github.com";
     this.token = options?.token ?? process.env.GITHUB_TOKEN;
+    if (options?.octokit) {
+      this.octokitClient = options.octokit;
+      return;
+    }
     const MyOctokit = Octokit2.plugin(throttling, retry);
     this.octokitClient = new MyOctokit({
       auth: this.token,
@@ -35599,7 +35603,7 @@ var Github = class _Github {
     return log;
   }
   async fetchWorkflowRun(owner, repo, runId, runAttempt) {
-    if (runAttempt !== void 0 && runAttempt > 1) {
+    if (runAttempt !== void 0) {
       const res = await this.octokitClient.actions.getWorkflowRunAttempt({
         owner,
         repo,

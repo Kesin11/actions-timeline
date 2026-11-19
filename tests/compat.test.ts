@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { runCli } from "../cli.ts";
@@ -32,9 +33,13 @@ async function loadApiFixture(): Promise<{
 function fixtureClient(
   workflowRun: WorkflowRun,
   workflowJobs: WorkflowJobs,
+  calls?: { fetchWorkflowRun?: unknown[][] },
 ): Github {
   return {
-    fetchWorkflowRun: async () => workflowRun,
+    fetchWorkflowRun: async (...args: unknown[]) => {
+      calls?.fetchWorkflowRun?.push(args);
+      return workflowRun;
+    },
     fetchWorkflowRunJobs: async () => workflowJobs,
     fetchJobLog: async () => "",
   } as unknown as Github;
@@ -48,10 +53,15 @@ test("CLI compatibility fixture", async (t) => {
   await t.test("writes Mermaid to stdout without changing bytes", async () => {
     const stdout: string[] = [];
     const stderr: string[] = [];
+    const clientOptions: unknown[] = [];
+    const calls = { fetchWorkflowRun: [] as unknown[][] };
     await runCli(
       ["https://github.com/owner/example/actions/runs/1001/attempts/1"],
       {
-        createClient: () => fixtureClient(workflowRun, workflowJobs),
+        createClient: (options) => {
+          clientOptions.push(options);
+          return fixtureClient(workflowRun, workflowJobs, calls);
+        },
         log: (message) => stdout.push(`${message}\n`),
         warn: (message) => stderr.push(message),
       },
@@ -59,6 +69,8 @@ test("CLI compatibility fixture", async (t) => {
 
     assertEquals(stdout, [`${expectedMermaid}\n`]);
     assertEquals(`${stderr.join("\n")}\n`, expectedStderr);
+    assertEquals(clientOptions, [{ token: undefined, host: undefined }]);
+    assertEquals(calls.fetchWorkflowRun, [["owner", "example", 1001, 1]]);
   });
 
   await t.test("writes the same bytes to the output file", async () => {
@@ -88,6 +100,44 @@ test("CLI compatibility fixture", async (t) => {
       encoding: "utf8",
     });
   });
+
+  await t.test("preserves subprocess streams and exit codes", () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        fixturePath("cli-runner.ts"),
+        "https://github.com/owner/example/actions/runs/1001/attempts/1",
+      ],
+      { encoding: "utf8" },
+    );
+
+    assertEquals(result.status, 0);
+    assertEquals(result.stdout, `${expectedMermaid}\n`);
+    assertEquals(result.stderr, expectedStderr);
+  });
+
+  await t.test("reports invalid option values without a stack trace", () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        fixturePath("cli-runner.ts"),
+        "https://github.com/owner/example/actions/runs/1001",
+        "--show-waiting-runner",
+        "yes",
+      ],
+      { encoding: "utf8" },
+    );
+
+    assertEquals(result.status, 1);
+    assertEquals(result.stdout, "");
+    assertEquals(
+      result.stderr.includes(
+        "error: option '--show-waiting-runner <showWaitingRunner>' argument 'yes' is invalid",
+      ),
+      true,
+    );
+    assertEquals(result.stderr.includes("at parseBoolean"), false);
+  });
 });
 
 test("Action compatibility fixture", async () => {
@@ -97,6 +147,10 @@ test("Action compatibility fixture", async () => {
   const annotations: string[] = [];
   const debugLogs: string[] = [];
   const waits: number[] = [];
+  const getInputCalls: string[] = [];
+  const getBooleanInputCalls: string[] = [];
+  const clientOptions: unknown[] = [];
+  const fetchCalls = { fetchWorkflowRun: [] as unknown[][] };
   let summary = "";
   const summaryWriter = {
     addRaw(markdown: string) {
@@ -109,11 +163,20 @@ test("Action compatibility fixture", async () => {
   };
 
   await runActionPost({
-    createClient: () => fixtureClient(workflowRun, workflowJobs),
+    createClient: (options) => {
+      clientOptions.push(options);
+      return fixtureClient(workflowRun, workflowJobs, fetchCalls);
+    },
     debug: (message) => debugLogs.push(message),
     env: { GITHUB_RUN_ATTEMPT: "1" },
-    getBooleanInput: (name) => (name === "show-waiting-runner" ? true : false),
-    getInput: (name) => (name === "github-token" ? "fixture-token" : "20"),
+    getBooleanInput: (name) => {
+      getBooleanInputCalls.push(name);
+      return name === "show-waiting-runner";
+    },
+    getInput: (name) => {
+      getInputCalls.push(name);
+      return name === "github-token" ? "fixture-token" : "20";
+    },
     info: (message) => logs.push(message),
     repository: { owner: "owner", repo: "example", runId: 1001 },
     summary: summaryWriter,
@@ -131,4 +194,14 @@ test("Action compatibility fixture", async () => {
   );
   assertEquals(waits, [1000]);
   assertEquals(debugLogs.at(-1), expectedMermaid);
+  assertEquals(clientOptions, [{ token: "fixture-token" }]);
+  assertEquals(fetchCalls.fetchWorkflowRun, [["owner", "example", 1001, 1]]);
+  assertEquals(getInputCalls, [
+    "github-token",
+    "expand-composite-actions-threshold",
+  ]);
+  assertEquals(getBooleanInputCalls, [
+    "show-waiting-runner",
+    "expand-composite-actions",
+  ]);
 });

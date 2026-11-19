@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
-import { Command } from "commander";
+import { Command, InvalidArgumentError } from "commander";
 import { expandCompositeSteps } from "./src/composite.ts";
 import { Github, parseWorkflowRunUrl } from "./src/github.ts";
 import { expandParallelSteps } from "./src/parallel.ts";
@@ -16,13 +16,13 @@ type CliDependencies = {
 const parseBoolean = (value: string): boolean => {
   if (value === "true") return true;
   if (value === "false") return false;
-  throw new Error(`Invalid boolean value: ${value}`);
+  throw new InvalidArgumentError(`Invalid boolean value: ${value}`);
 };
 
 const parseNumber = (value: string): number => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
-    throw new Error(`Invalid number value: ${value}`);
+    throw new InvalidArgumentError(`Invalid number value: ${value}`);
   }
   return parsed;
 };

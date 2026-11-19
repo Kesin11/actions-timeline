@@ -136,10 +136,19 @@ export class Github {
     return this.octokitClient;
   }
 
-  constructor(options?: { token?: string; host?: string; debug?: boolean }) {
+  constructor(options?: {
+    token?: string;
+    host?: string;
+    debug?: boolean;
+    octokit?: Octokit;
+  }) {
     this.baseUrl = Github.getBaseUrl(options?.host);
     this.isGHES = this.baseUrl !== "https://api.github.com";
     this.token = options?.token ?? process.env.GITHUB_TOKEN;
+    if (options?.octokit) {
+      this.octokitClient = options.octokit;
+      return;
+    }
     const MyOctokit = Octokit.plugin(throttling, retry);
     this.octokitClient = new MyOctokit({
       auth: this.token,
@@ -222,7 +231,7 @@ export class Github {
     runId: number,
     runAttempt?: number,
   ): Promise<WorkflowRun> {
-    if (runAttempt !== undefined && runAttempt > 1) {
+    if (runAttempt !== undefined) {
       const res = await this.octokitClient.actions.getWorkflowRunAttempt({
         owner,
         repo,

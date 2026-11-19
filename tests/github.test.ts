@@ -1,4 +1,5 @@
-import { parseWorkflowRunUrl } from "../src/github.ts";
+import { Github, parseWorkflowRunUrl } from "../src/github.ts";
+import type { Octokit } from "@octokit/rest";
 import { assertEquals, assertThrows, test } from "./test_util.ts";
 
 test(parseWorkflowRunUrl.name, async (t) => {
@@ -60,5 +61,56 @@ test(parseWorkflowRunUrl.name, async (t) => {
       Error,
       "runId must be a positive integer",
     );
+  });
+});
+
+test("fetchWorkflowRun attempt routing", async (t) => {
+  const workflow = { id: 1 };
+  const calls: Array<{
+    endpoint: "run" | "attempt";
+    params: Record<string, unknown>;
+  }> = [];
+  const octokit = {
+    actions: {
+      getWorkflowRun: async (params: Record<string, unknown>) => {
+        calls.push({ endpoint: "run", params });
+        return { data: workflow };
+      },
+      getWorkflowRunAttempt: async (params: Record<string, unknown>) => {
+        calls.push({ endpoint: "attempt", params });
+        return { data: workflow };
+      },
+    },
+  } as unknown as Octokit;
+  const client = new Github({ octokit });
+
+  await t.test(
+    "uses the run endpoint without an explicit attempt",
+    async () => {
+      calls.length = 0;
+      await client.fetchWorkflowRun("owner", "repo", 123);
+      assertEquals(calls, [
+        {
+          endpoint: "run",
+          params: { owner: "owner", repo: "repo", run_id: 123 },
+        },
+      ]);
+    },
+  );
+
+  await t.test("uses the attempt endpoint for attempt 1", async () => {
+    calls.length = 0;
+    await client.fetchWorkflowRun("owner", "repo", 123, 1);
+    assertEquals(calls, [
+      {
+        endpoint: "attempt",
+        params: {
+          owner: "owner",
+          repo: "repo",
+          run_id: 123,
+          attempt_number: 1,
+        },
+      },
+    ]);
   });
 });

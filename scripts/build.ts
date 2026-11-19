@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
+import { rm, writeFile } from "node:fs/promises";
 import { build } from "esbuild";
 
 const distDir = "./dist";
@@ -15,3 +15,9 @@ await build({
   minify: false,
   sourcemap: false,
 });
+
+await writeFile(
+  `${distDir}/package.json`,
+  `${JSON.stringify({ type: "commonjs" }, null, 2)}\n`,
+  "utf8",
+);
