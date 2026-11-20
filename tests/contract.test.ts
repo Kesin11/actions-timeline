@@ -8,7 +8,7 @@ import { runActionPost } from "../src/action.ts";
 import type { Github, WorkflowJobs, WorkflowRun } from "../src/github.ts";
 
 const fixtureUrl = (name: string): URL =>
-  new URL(`./fixture/compat/${name}`, import.meta.url);
+  new URL(`./fixture/contract/${name}`, import.meta.url);
 const fixturePath = (name: string): string => fileURLToPath(fixtureUrl(name));
 const readFixture = (name: string): Promise<string> =>
   readFile(fixturePath(name), "utf8");
@@ -46,7 +46,7 @@ function fixtureClient(
   } as unknown as Github;
 }
 
-test("CLI compatibility fixture", async (t) => {
+test("CLI behavior contract", async (t) => {
   const { workflowRun, workflowJobs } = await loadApiFixture();
   const expectedMermaid = await readGolden("mermaid.md");
   const expectedStderr = `${await readGolden("cli-stderr.txt")}\n`;
@@ -141,7 +141,7 @@ test("CLI compatibility fixture", async (t) => {
   });
 });
 
-test("Action compatibility fixture", async () => {
+test("Action behavior contract", async () => {
   const { workflowRun, workflowJobs } = await loadApiFixture();
   const expectedMermaid = await readGolden("mermaid.md");
   const logs: string[] = [];

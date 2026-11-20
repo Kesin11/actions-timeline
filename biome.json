@@ -6,7 +6,7 @@
       "!dist",
       "!npm",
       "!tests/fixture/*.json",
-      "!tests/fixture/compat"
+      "!tests/fixture/contract"
     ]
   },
   "formatter": {
