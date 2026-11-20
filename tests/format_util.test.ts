@@ -1,3 +1,5 @@
+import { deepStrictEqual as assertEquals } from "node:assert/strict";
+import { test } from "node:test";
 import {
   escapeName,
   formatShortElapsedTime,
@@ -5,7 +7,6 @@ import {
   truncateName,
 } from "../src/format_util.ts";
 import type { ganttStep } from "../src/types.ts";
-import { assertEquals, test } from "./test_util.ts";
 
 test(formatStep.name, async (t) => {
   const baseStep: ganttStep = {

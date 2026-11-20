@@ -1,6 +1,10 @@
+import {
+  deepStrictEqual as assertEquals,
+  throws as assertThrows,
+} from "node:assert/strict";
+import { test } from "node:test";
 import type { Octokit } from "@octokit/rest";
 import { Github, parseWorkflowRunUrl } from "../src/github.ts";
-import { assertEquals, assertThrows, test } from "./test_util.ts";
 
 test(parseWorkflowRunUrl.name, async (t) => {
   await t.test("Basic", () => {
@@ -47,19 +51,14 @@ test(parseWorkflowRunUrl.name, async (t) => {
 
   await t.test("throws for wrong path segments", () => {
     const url = "https://github.com/Kesin11/actions-timeline/pulls/123";
-    assertThrows(
-      () => parseWorkflowRunUrl(url),
-      Error,
-      "Invalid workflow run URL",
-    );
+    assertThrows(() => parseWorkflowRunUrl(url), /Invalid workflow run URL/);
   });
 
   await t.test("throws for non-numeric runId", () => {
     const url = "https://github.com/Kesin11/actions-timeline/actions/runs/abc";
     assertThrows(
       () => parseWorkflowRunUrl(url),
-      Error,
-      "runId must be a positive integer",
+      /runId must be a positive integer/,
     );
   });
 });

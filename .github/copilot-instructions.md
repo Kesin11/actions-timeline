@@ -53,7 +53,7 @@ This project is a GitHub Action that visualizes GitHub Actions workflow executio
 ### Tests
 
 - Use `functionName.name` instead of string literals in `test()` (e.g., `test(parseLogBlocks.name, ...)`)
-- Compare objects directly with `assertEquals` instead of asserting individual fields
+- Compare objects directly with `assert.deepStrictEqual` instead of asserting individual fields
 - Do not use `for` loops for asserting. Compare the entire expected object directly
 - Extract magic numbers into named variables
 

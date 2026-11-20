@@ -1,3 +1,8 @@
+import {
+  ok as assert,
+  deepStrictEqual as assertEquals,
+} from "node:assert/strict";
+import { test } from "node:test";
 import { expandJobSteps } from "../src/composite.ts";
 import {
   expandParallelJobSteps,
@@ -14,7 +19,6 @@ import {
   log as nuxtLog,
   workflow as nuxtWorkflow,
 } from "./fixture/parallel_nuxt.ts";
-import { assertEquals, assertStringIncludes, test } from "./test_util.ts";
 
 test(expandParallelJobSteps.name, async (t) => {
   await t.test("renders the Nuxt typecheck steps in parallel", () => {
@@ -204,13 +208,9 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
       {},
     );
 
-    assertStringIncludes(
-      mermaid,
-      "Parallel group (2m10s) :job0-3, 00:00:39, 130s",
-    );
-    assertStringIncludes(
-      mermaid,
-      "(bg) Test (types) (1m1s) :crit, job0-4, 00:00:39, 61s",
+    assert(mermaid.includes("Parallel group (2m10s) :job0-3, 00:00:39, 130s"));
+    assert(
+      mermaid.includes("(bg) Test (types) (1m1s) :crit, job0-4, 00:00:39, 61s"),
     );
   });
 
@@ -311,8 +311,8 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
       { showWaitingRunner: false },
     );
 
-    assertStringIncludes(mermaid, "(sub) setup one (1s) :job0-2, 00:00:40, 1s");
-    assertStringIncludes(mermaid, "(sub) setup two (2s) :job0-4, 00:00:40, 2s");
+    assert(mermaid.includes("(sub) setup one (1s) :job0-2, 00:00:40, 1s"));
+    assert(mermaid.includes("(sub) setup two (2s) :job0-4, 00:00:40, 2s"));
   });
 });
 

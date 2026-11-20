@@ -1,3 +1,6 @@
+import { deepStrictEqual as assertEquals } from "node:assert/strict";
+import { Buffer } from "node:buffer";
+import { test } from "node:test";
 import {
   type CompositeStepInfo,
   expandJobSteps,
@@ -12,7 +15,6 @@ import {
 } from "../src/github.ts";
 import type { TimelineJobs, TimelineStep } from "../src/types.ts";
 import { WorkflowModel } from "../src/workflow_file.ts";
-import { assertEquals, encodeBase64, test } from "./test_util.ts";
 
 function makeWorkflowModel(yamlContent: string): WorkflowModel {
   const fileContentResponse: FileContentResponse = {
@@ -20,7 +22,7 @@ function makeWorkflowModel(yamlContent: string): WorkflowModel {
     size: yamlContent.length,
     name: "workflow.yml",
     path: ".github/workflows/workflow.yml",
-    content: encodeBase64(yamlContent),
+    content: Buffer.from(yamlContent, "utf8").toString("base64"),
     sha: "abc123",
     url: "https://api.github.com/repos/owner/repo/contents/.github/workflows/workflow.yml",
     git_url: null,

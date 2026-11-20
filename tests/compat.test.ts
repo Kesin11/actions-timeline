@@ -1,10 +1,11 @@
+import { deepStrictEqual as assertEquals } from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "../cli.ts";
 import { runActionPost } from "../src/action.ts";
 import type { Github, WorkflowJobs, WorkflowRun } from "../src/github.ts";
-import { assertEquals, test } from "./test_util.ts";
 
 const fixtureUrl = (name: string): URL =>
   new URL(`./fixture/compat/${name}`, import.meta.url);
