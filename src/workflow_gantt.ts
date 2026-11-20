@@ -1,5 +1,3 @@
-import { sumOf } from "@std/collections";
-import type { WorkflowRun } from "./github.ts";
 import {
   convertStepToStatus,
   diffSec,
@@ -8,9 +6,10 @@ import {
   formatName,
   formatSection,
 } from "./format_util.ts";
+import type { WorkflowRun } from "./github.ts";
 import type {
-  ganttJob,
   GanttOptions,
+  ganttJob,
   ganttStep,
   StepConclusion,
   TimelineJobs,
@@ -86,10 +85,7 @@ const createWaitingRunnerStep = (
     return undefined;
   } else {
     // >= GHES v3.9 or GitHub.com
-    const startJobElapsedSec = diffSec(
-      workflow.run_started_at,
-      job.created_at,
-    );
+    const startJobElapsedSec = diffSec(workflow.run_started_at, job.created_at);
     const waitingRunnerElapsedSec = diffSec(job.created_at, job.started_at);
     return {
       name: formatName("Waiting for a runner", waitingRunnerElapsedSec),
@@ -106,8 +102,8 @@ export const createGanttJobs = (
   workflowJobs: TimelineJobs,
   showWaitingRunner = true,
 ): ganttJob[] => {
-  return filterJobs(workflowJobs).map(
-    (job, jobIndex, _jobs): ganttJob | undefined => {
+  return filterJobs(workflowJobs)
+    .map((job, jobIndex, _jobs): ganttJob | undefined => {
       if (
         job.steps === undefined ||
         !isString(job.name) ||
@@ -141,28 +137,30 @@ export const createGanttJobs = (
         const stepElapsedSec = diffSec(step.started_at, step.completed_at);
         const id = createGanttStepId(jobIndex, steps.length);
         const nextStep = completedSteps[stepIndex + 1];
-        const position = step.timelineRowKind === "composite-child"
-          ? createCompositeChildPosition(
-            workflow,
-            step,
-            compositeChildAnchorId,
-            previousCompositeChildId,
-          )
-          : step.timelineRowKind === "parallel-parent" ||
-              step.timelineRowKind === "parallel-child"
-          ? createParallelStepPosition(workflow, step)
-          : createTopLevelStepPosition(
-            workflow,
-            jobStartedAt,
-            previousTopLevelStepId,
-          );
+        const position =
+          step.timelineRowKind === "composite-child"
+            ? createCompositeChildPosition(
+                workflow,
+                step,
+                compositeChildAnchorId,
+                previousCompositeChildId,
+              )
+            : step.timelineRowKind === "parallel-parent" ||
+                step.timelineRowKind === "parallel-child"
+              ? createParallelStepPosition(workflow, step)
+              : createTopLevelStepPosition(
+                  workflow,
+                  jobStartedAt,
+                  previousTopLevelStepId,
+                );
 
         steps.push({
           name: formatName(step.name, stepElapsedSec),
           id,
-          status: step.timelineRowKind === "parallel-parent"
-            ? ""
-            : convertStepToStatus(step.conclusion as StepConclusion),
+          status:
+            step.timelineRowKind === "parallel-parent"
+              ? ""
+              : convertStepToStatus(step.conclusion as StepConclusion),
           position,
           sec: stepElapsedSec,
         });
@@ -177,16 +175,17 @@ export const createGanttJobs = (
           return;
         }
 
-        compositeChildAnchorId = nextStep?.timelineRowKind === "composite-child"
-          ? previousTopLevelStepId
-          : undefined;
+        compositeChildAnchorId =
+          nextStep?.timelineRowKind === "composite-child"
+            ? previousTopLevelStepId
+            : undefined;
         previousCompositeChildId = undefined;
         previousTopLevelStepId = id;
       });
 
       return { section, steps };
-    },
-  ).filter((gantJobs): gantJobs is ganttJob => gantJobs !== undefined);
+    })
+    .filter((gantJobs): gantJobs is ganttJob => gantJobs !== undefined);
 };
 
 /**
@@ -213,7 +212,7 @@ title ${escapeName(title)}
 dateFormat  HH:mm:ss
 axisFormat  %H:%M:%S
 `;
-  const footer = "\n\`\`\`";
+  const footer = "\n```";
   const headerFooterLength = header.length + footer.length;
 
   // Split mermaid body by maxChar to avoid exceeding Mermaid.js text size limit
@@ -225,7 +224,8 @@ axisFormat  %H:%M:%S
     // Calculate total length of existing sections including newlines between them
     // sections.join("\n") adds (sections.length - 1) newline characters
     // This fix addresses issue #222 where newlines were not counted in the original calculation
-    const sectionsSumLength = sumOf(sections, (section) => section.length) +
+    const sectionsSumLength =
+      sections.reduce((sum, section) => sum + section.length, 0) +
       Math.max(0, sections.length - 1);
 
     // Check if adding the new section would exceed maxChar limit

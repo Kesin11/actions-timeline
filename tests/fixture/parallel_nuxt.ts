@@ -10,65 +10,67 @@ export const workflow = {
   },
 } as WorkflowRun;
 
-export const jobs = [{
-  id: 91280033726,
-  name: "typecheck (ubuntu-24.04-arm, bundler)",
-  status: "completed",
-  conclusion: "success",
-  created_at: "2026-07-31T21:54:52Z",
-  started_at: "2026-07-31T21:54:56Z",
-  completed_at: "2026-07-31T21:57:31Z",
-  steps: [
-    {
-      number: 1,
-      name: "Set up job",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T21:54:56Z",
-      completed_at: "2026-07-31T21:54:57Z",
-    },
-    {
-      number: 3,
-      name: "Run voidzero-dev/setup-vp@250f29ce",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T21:54:57Z",
-      completed_at: "2026-07-31T21:55:20Z",
-    },
-    {
-      number: 4,
-      name: "Test (types)",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T21:55:20Z",
-      completed_at: "2026-07-31T21:56:21Z",
-    },
-    {
-      number: 5,
-      name: "Typecheck (docs)",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T21:55:20Z",
-      completed_at: "2026-07-31T21:57:30Z",
-    },
-    {
-      number: 6,
-      name: "Parallel group",
-      status: "completed",
-      conclusion: "success",
-      started_at: "2026-07-31T21:55:20Z",
-      completed_at: "2026-07-31T21:57:30Z",
-    },
-    {
-      number: 7,
-      name: "Cancel workflow on failure",
-      status: "completed",
-      conclusion: "skipped",
-      started_at: "2026-07-31T21:57:30Z",
-      completed_at: "2026-07-31T21:57:30Z",
-    },
-  ],
-}] as WorkflowJobs;
+export const jobs = [
+  {
+    id: 91280033726,
+    name: "typecheck (ubuntu-24.04-arm, bundler)",
+    status: "completed",
+    conclusion: "success",
+    created_at: "2026-07-31T21:54:52Z",
+    started_at: "2026-07-31T21:54:56Z",
+    completed_at: "2026-07-31T21:57:31Z",
+    steps: [
+      {
+        number: 1,
+        name: "Set up job",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T21:54:56Z",
+        completed_at: "2026-07-31T21:54:57Z",
+      },
+      {
+        number: 3,
+        name: "Run voidzero-dev/setup-vp@250f29ce",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T21:54:57Z",
+        completed_at: "2026-07-31T21:55:20Z",
+      },
+      {
+        number: 4,
+        name: "Test (types)",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T21:55:20Z",
+        completed_at: "2026-07-31T21:56:21Z",
+      },
+      {
+        number: 5,
+        name: "Typecheck (docs)",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T21:55:20Z",
+        completed_at: "2026-07-31T21:57:30Z",
+      },
+      {
+        number: 6,
+        name: "Parallel group",
+        status: "completed",
+        conclusion: "success",
+        started_at: "2026-07-31T21:55:20Z",
+        completed_at: "2026-07-31T21:57:30Z",
+      },
+      {
+        number: 7,
+        name: "Cancel workflow on failure",
+        status: "completed",
+        conclusion: "skipped",
+        started_at: "2026-07-31T21:57:30Z",
+        completed_at: "2026-07-31T21:57:30Z",
+      },
+    ],
+  },
+] as WorkflowJobs;
 
 export const log = `
 2026-07-31T21:55:20.7598592Z ##[group]Run vp run test:types

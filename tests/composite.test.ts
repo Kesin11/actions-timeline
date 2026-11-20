@@ -1,11 +1,6 @@
-import { encodeBase64 } from "@std/encoding";
-import { assertEquals } from "@std/assert";
-import {
-  FileContent,
-  type FileContentResponse,
-  type WorkflowJobs,
-} from "../src/github.ts";
-import { WorkflowModel } from "../src/workflow_file.ts";
+import { deepStrictEqual as assertEquals } from "node:assert/strict";
+import { Buffer } from "node:buffer";
+import { test } from "node:test";
 import {
   type CompositeStepInfo,
   expandJobSteps,
@@ -13,7 +8,13 @@ import {
   identifyCompositeSteps,
   parseLogBlocks,
 } from "../src/composite.ts";
+import {
+  FileContent,
+  type FileContentResponse,
+  type WorkflowJobs,
+} from "../src/github.ts";
 import type { TimelineJobs, TimelineStep } from "../src/types.ts";
+import { WorkflowModel } from "../src/workflow_file.ts";
 
 function makeWorkflowModel(yamlContent: string): WorkflowModel {
   const fileContentResponse: FileContentResponse = {
@@ -21,10 +22,9 @@ function makeWorkflowModel(yamlContent: string): WorkflowModel {
     size: yamlContent.length,
     name: "workflow.yml",
     path: ".github/workflows/workflow.yml",
-    content: encodeBase64(yamlContent),
+    content: Buffer.from(yamlContent, "utf8").toString("base64"),
     sha: "abc123",
-    url:
-      "https://api.github.com/repos/owner/repo/contents/.github/workflows/workflow.yml",
+    url: "https://api.github.com/repos/owner/repo/contents/.github/workflows/workflow.yml",
     git_url: null,
     html_url: null,
     download_url: null,
@@ -46,25 +46,29 @@ function makeWorkflowJobs(
   startedAt: string | null,
   completedAt: string | null,
 ): WorkflowJobs {
-  return [{
-    id: 1,
-    name: "test",
-    steps: [{
-      name: "Run ./.github/actions/setup",
-      status: "completed",
-      conclusion: "success",
-      number: 1,
-      started_at: startedAt,
-      completed_at: completedAt,
-    }],
-  }] as unknown as WorkflowJobs;
+  return [
+    {
+      id: 1,
+      name: "test",
+      steps: [
+        {
+          name: "Run ./.github/actions/setup",
+          status: "completed",
+          conclusion: "success",
+          number: 1,
+          started_at: startedAt,
+          completed_at: completedAt,
+        },
+      ],
+    },
+  ] as unknown as WorkflowJobs;
 }
 
-Deno.test(identifyCompositeSteps.name, async (t) => {
+test(identifyCompositeSteps.name, async (t) => {
   const workflowModel = makeWorkflowModel(COMPOSITE_WORKFLOW_YAML);
   const thresholdSec = 20;
 
-  await t.step("includes step with duration at threshold", () => {
+  await t.test("includes step with duration at threshold", () => {
     const durationMs = thresholdSec * 1000;
     const startedAt = "2024-01-15T10:00:00.000Z";
     const completedAt = new Date(
@@ -83,7 +87,7 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
     assertEquals(result.get(1)?.[0].logHeaderOccurrence, 0);
   });
 
-  await t.step("includes step with duration above threshold", () => {
+  await t.test("includes step with duration above threshold", () => {
     const startedAt = "2024-01-15T10:00:00.000Z";
     const completedAt = "2024-01-15T10:01:00.000Z"; // 60 seconds
     const workflowJobs = makeWorkflowJobs(startedAt, completedAt);
@@ -96,7 +100,7 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
     assertEquals(result.size, 1);
   });
 
-  await t.step("numbers concurrent invocations of the same action", () => {
+  await t.test("numbers concurrent invocations of the same action", () => {
     const workflowJobs = makeWorkflowJobs(
       "2024-01-15T10:00:00Z",
       "2024-01-15T10:00:30Z",
@@ -118,7 +122,7 @@ Deno.test(identifyCompositeSteps.name, async (t) => {
     );
   });
 
-  await t.step("matches a parallel child by its original API name", () => {
+  await t.test("matches a parallel child by its original API name", () => {
     const parallelWorkflowModel = makeWorkflowModel(`
 on: push
 jobs:
@@ -149,7 +153,7 @@ jobs:
     assertEquals(result.get(1)?.[0].usesPath, "./.github/actions/setup");
   });
 
-  await t.step("does not match a synthetic parallel parent", () => {
+  await t.test("does not match a synthetic parallel parent", () => {
     const parallelWorkflowModel = makeWorkflowModel(`
 on: push
 jobs:
@@ -191,14 +195,16 @@ jobs:
         apiStepIndex: step.apiStepIndex,
         logHeaderOccurrence: step.logHeaderOccurrence,
       })),
-      [{
-        apiStepIndex: 1,
-        logHeaderOccurrence: 0,
-      }],
+      [
+        {
+          apiStepIndex: 1,
+          logHeaderOccurrence: 0,
+        },
+      ],
     );
   });
 
-  await t.step("preserves a user-defined name beginning with (bg)", () => {
+  await t.test("preserves a user-defined name beginning with (bg)", () => {
     const namedWorkflowModel = makeWorkflowModel(`
 on: push
 jobs:
@@ -223,7 +229,7 @@ jobs:
     assertEquals(result.get(1)?.[0].usesPath, "./.github/actions/setup");
   });
 
-  await t.step("excludes step with duration below threshold", () => {
+  await t.test("excludes step with duration below threshold", () => {
     const durationMs = (thresholdSec - 1) * 1000; // 19 seconds
     const startedAt = "2024-01-15T10:00:00.000Z";
     const completedAt = new Date(
@@ -239,7 +245,7 @@ jobs:
     assertEquals(result.size, 0);
   });
 
-  await t.step(
+  await t.test(
     "excludes step with missing timestamps (defaults to 0 duration)",
     () => {
       const workflowJobs = makeWorkflowJobs(null, null);
@@ -254,10 +260,9 @@ jobs:
   );
 });
 
-Deno.test(parseLogBlocks.name, async (t) => {
-  await t.step("extracts ##[group] blocks with timestamps", () => {
-    const logText =
-      `2024-01-15T10:00:00.0000000Z ##[group]Run ./.github/actions/setup
+test(parseLogBlocks.name, async (t) => {
+  await t.test("extracts ##[group] blocks with timestamps", () => {
+    const logText = `2024-01-15T10:00:00.0000000Z ##[group]Run ./.github/actions/setup
 2024-01-15T10:00:00.1000000Z Some log line
 2024-01-15T10:00:01.0000000Z ##[endgroup]
 2024-01-15T10:00:01.0000000Z ##[group]Run echo "hello"
@@ -283,20 +288,20 @@ Deno.test(parseLogBlocks.name, async (t) => {
     ]);
   });
 
-  await t.step("returns empty array for log without groups", () => {
+  await t.test("returns empty array for log without groups", () => {
     const logText = `2024-01-15T10:00:00.0000000Z Some log line
 2024-01-15T10:00:01.0000000Z Another log line`;
     const blocks = parseLogBlocks(logText);
     assertEquals(blocks, []);
   });
 
-  await t.step("returns empty array for empty log", () => {
+  await t.test("returns empty array for empty log", () => {
     const blocks = parseLogBlocks("");
     assertEquals(blocks, []);
   });
 });
 
-Deno.test(extractSubSteps.name, async (t) => {
+test(extractSubSteps.name, async (t) => {
   const logBlocks = [
     // Blocks outside composite range (before)
     {
@@ -316,7 +321,7 @@ Deno.test(extractSubSteps.name, async (t) => {
     { name: "Run echo done", startedAt: new Date("2024-01-15T10:00:20Z") },
   ];
 
-  await t.step("extracts sub-steps using expectedStepCount", () => {
+  await t.test("extracts sub-steps using expectedStepCount", () => {
     const subSteps = extractSubSteps(
       logBlocks,
       "2024-01-15T10:00:05Z",
@@ -352,7 +357,7 @@ Deno.test(extractSubSteps.name, async (t) => {
     ]);
   });
 
-  await t.step("does not include blocks beyond expectedStepCount", () => {
+  await t.test("does not include blocks beyond expectedStepCount", () => {
     // Only request 2 of the 3 available sub-steps
     const subSteps = extractSubSteps(
       logBlocks,
@@ -382,7 +387,7 @@ Deno.test(extractSubSteps.name, async (t) => {
     ]);
   });
 
-  await t.step("inherits status and conclusion from composite step", () => {
+  await t.test("inherits status and conclusion from composite step", () => {
     const subSteps = extractSubSteps(
       logBlocks,
       "2024-01-15T10:00:05Z",
@@ -418,7 +423,7 @@ Deno.test(extractSubSteps.name, async (t) => {
     ]);
   });
 
-  await t.step("returns empty for no header match in range", () => {
+  await t.test("returns empty for no header match in range", () => {
     const subSteps = extractSubSteps(
       logBlocks,
       "2024-01-15T11:00:00Z",
@@ -431,7 +436,7 @@ Deno.test(extractSubSteps.name, async (t) => {
     assertEquals(subSteps, []);
   });
 
-  await t.step("selects repeated concurrent headers by occurrence", () => {
+  await t.test("selects repeated concurrent headers by occurrence", () => {
     const repeatedBlocks = [
       {
         name: "Run ./.github/actions/setup",
@@ -462,16 +467,18 @@ Deno.test(extractSubSteps.name, async (t) => {
       1,
     );
 
-    assertEquals(subSteps, [{
-      name: "echo second",
-      started_at: "2024-01-15T10:00:07.000Z",
-      completed_at: "2024-01-15T10:00:15Z",
-      status: "completed",
-      conclusion: "success",
-    }]);
+    assertEquals(subSteps, [
+      {
+        name: "echo second",
+        started_at: "2024-01-15T10:00:07.000Z",
+        completed_at: "2024-01-15T10:00:15Z",
+        status: "completed",
+        conclusion: "success",
+      },
+    ]);
   });
 
-  await t.step("does not match a composite path prefix", () => {
+  await t.test("does not match a composite path prefix", () => {
     const prefixBlocks = [
       {
         name: "Run ./.github/actions/setup-node",
@@ -501,16 +508,18 @@ Deno.test(extractSubSteps.name, async (t) => {
       1,
     );
 
-    assertEquals(subSteps, [{
-      name: "echo setup",
-      started_at: "2024-01-15T10:00:07.000Z",
-      completed_at: "2024-01-15T10:00:15Z",
-      status: "completed",
-      conclusion: "success",
-    }]);
+    assertEquals(subSteps, [
+      {
+        name: "echo setup",
+        started_at: "2024-01-15T10:00:07.000Z",
+        completed_at: "2024-01-15T10:00:15Z",
+        status: "completed",
+        conclusion: "success",
+      },
+    ]);
   });
 
-  await t.step(
+  await t.test(
     "includes auxiliary blocks from uses actions (e.g. Environment details)",
     () => {
       // Simulates: composite has 2 steps (setup-deno, setup-node),
@@ -577,7 +586,7 @@ Deno.test(extractSubSteps.name, async (t) => {
   );
 });
 
-Deno.test(expandJobSteps.name, () => {
+test(expandJobSteps.name, () => {
   const compositeStep: TimelineStep = {
     name: "Run ./.github/actions/setup",
     status: "completed",
@@ -597,14 +606,16 @@ Deno.test(expandJobSteps.name, () => {
   const steps = [compositeStep, normalStep] as NonNullable<
     WorkflowJobs[0]["steps"]
   >;
-  const compositeInfos: CompositeStepInfo[] = [{
-    apiStepIndex: 0,
-    apiStepName: compositeStep.name,
-    usesPath: "./.github/actions/setup",
-    logHeaderOccurrence: 0,
-    status: compositeStep.status,
-    conclusion: compositeStep.conclusion,
-  }];
+  const compositeInfos: CompositeStepInfo[] = [
+    {
+      apiStepIndex: 0,
+      apiStepName: compositeStep.name,
+      usesPath: "./.github/actions/setup",
+      logHeaderOccurrence: 0,
+      status: compositeStep.status,
+      conclusion: compositeStep.conclusion,
+    },
+  ];
   const compositeStepCounts = new Map([["./.github/actions/setup", 2]]);
   const logBlocks = [
     {

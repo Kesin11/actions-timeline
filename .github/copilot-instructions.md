@@ -6,15 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development
 
-- `deno task bundle` - Build the bundle (outputs to dist/ folder)
-- `deno task bundle:commit` - Bundle and commit changes
-- `deno fmt` - Format code
-- `deno lint` - Lint code
-- `deno test` - Run tests
+- `npm run build` - Build the bundle (outputs to dist/ folder)
+- `npm run format` - Format code
+- `npm run lint` - Lint code
+- `npm test` - Run tests
+- `npm run typecheck` - Type-check TypeScript
 
 ### CLI tool
 
-- `deno run --allow-net --allow-write --allow-env=GITHUB_API_URL cli.ts` - Run CLI version
+- `node cli.ts` - Run the development CLI
 
 ## Architecture
 
@@ -24,7 +24,8 @@ This project is a GitHub Action that visualizes GitHub Actions workflow executio
 
 - **action.yml** - GitHub Action configuration (inputs, runs settings)
 - **src/main.ts** - Main phase (does nothing - dummy file)
-- **src/post.ts** - Post-processing phase with actual logic
+- **src/post.ts** - Post-processing entrypoint
+- **src/action.ts** - Post-processing implementation
 - **src/workflow_gantt.ts** - Mermaid gantt chart generation logic
 - **src/github.ts** - GitHub API client
 - **cli.ts** - CLI version entry point
@@ -38,8 +39,7 @@ This project is a GitHub Action that visualizes GitHub Actions workflow executio
 ### Directory Structure
 
 - `src/` - TypeScript source code
-- `dist/` - Bundled JavaScript for node20
-- `npm/` - npm package build output
+- `dist/` - Self-contained CommonJS bundles for Node.js 24
 - `tests/` - Test files and fixtures
 
 ## Code Conventions
@@ -52,8 +52,8 @@ This project is a GitHub Action that visualizes GitHub Actions workflow executio
 
 ### Tests
 
-- Use `functionName.name` instead of string literals in `Deno.test()` (e.g., `Deno.test(parseLogBlocks.name, ...)`)
-- Compare objects directly with `assertEquals` instead of asserting individual fields
+- Use `functionName.name` instead of string literals in `test()` (e.g., `test(parseLogBlocks.name, ...)`)
+- Compare objects directly with `assert.deepStrictEqual` instead of asserting individual fields
 - Do not use `for` loops for asserting. Compare the entire expected object directly
 - Extract magic numbers into named variables
 
@@ -66,12 +66,13 @@ This project is a GitHub Action that visualizes GitHub Actions workflow executio
 
 Before pushing commits, always run:
 
-1. `deno fmt` - Format code
-2. `deno lint` - Lint code
-3. `deno test` - Run tests
+1. `npm run format` - Format code
+2. `npm run lint` - Lint code
+3. `npm run typecheck` - Type-check TypeScript
+4. `npm test` - Run tests
 
 ## Important Notes
 
 - This Action runs in the **post-processing** phase, so main.ts does nothing
-- The dist/ folder is updated via `deno task bundle`
+- The dist/ folder is updated via `npm run build`
 - Includes a 1-second delay for GitHub API result stability

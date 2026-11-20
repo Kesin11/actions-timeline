@@ -1,8 +1,8 @@
-import { decodeBase64 } from "@std/encoding";
-import { parse as parseYaml } from "@std/yaml";
+import { Buffer } from "node:buffer";
+import { parse as parseYaml } from "yaml";
 import { diffSec } from "./format_util.ts";
+import type { Github, WorkflowRun } from "./github.ts";
 import type { TimelineJobs, TimelineStep } from "./types.ts";
-import { Github, type WorkflowRun } from "./github.ts";
 import {
   type CompositeAction,
   JobModel,
@@ -55,8 +55,7 @@ async function fetchFileContent(
     if (!Array.isArray(res.data) && res.data.type === "file") {
       // GitHub API returns base64 with newlines, strip them before decoding
       const base64 = (res.data.content ?? "").replace(/\n/g, "");
-      const textDecoder = new TextDecoder();
-      return textDecoder.decode(decodeBase64(base64));
+      return Buffer.from(base64, "base64").toString("utf8");
     }
   } catch (error) {
     console.warn(
@@ -106,9 +105,7 @@ export function identifyCompositeSteps(
         const logHeaderOccurrence = occurrenceCounts.get(occurrenceKey) ?? 0;
         occurrenceCounts.set(occurrenceKey, logHeaderOccurrence + 1);
 
-        if (
-          diffSec(apiStep.started_at, apiStep.completed_at) < thresholdSec
-        ) {
+        if (diffSec(apiStep.started_at, apiStep.completed_at) < thresholdSec) {
           continue;
         }
 
@@ -164,7 +161,8 @@ async function fetchCompositeActionStepCount(
   try {
     const parsed = parseYaml(content) as CompositeAction;
     if (
-      parsed?.runs?.using === "composite" && Array.isArray(parsed.runs.steps)
+      parsed?.runs?.using === "composite" &&
+      Array.isArray(parsed.runs.steps)
     ) {
       // Nested local composites make step count unpredictable; skip expansion.
       const hasNestedLocal = parsed.runs.steps.some(
@@ -238,17 +236,18 @@ export function extractSubSteps(
   const matchesCompositeHeader = (name: string): boolean => {
     if (!name.startsWith("Run ")) return false;
     const loggedPath = name.slice("Run ".length).replace(/^\/\.\//, "./");
-    return loggedPath === compositeUsesPath ||
-      loggedPath === pathWithoutPrefix;
+    return loggedPath === compositeUsesPath || loggedPath === pathWithoutPrefix;
   };
-  const headerGlobalIndex = logBlocks
-    .map((block, index) => ({ block, index }))
-    .filter(({ block }) =>
-      block.startedAt.getTime() >= compositeStart &&
-      block.startedAt.getTime() <= compositeEnd &&
-      matchesCompositeHeader(block.name)
-    )
-    .at(logHeaderOccurrence)?.index ?? -1;
+  const headerGlobalIndex =
+    logBlocks
+      .map((block, index) => ({ block, index }))
+      .filter(
+        ({ block }) =>
+          block.startedAt.getTime() >= compositeStart &&
+          block.startedAt.getTime() <= compositeEnd &&
+          matchesCompositeHeader(block.name),
+      )
+      .at(logHeaderOccurrence)?.index ?? -1;
 
   if (headerGlobalIndex < 0) {
     return [];
@@ -281,9 +280,10 @@ export function extractSubSteps(
     } else {
       // Clamp to avoid negative duration when API's truncated timestamp < log's ms timestamp.
       const compositeEndTime = new Date(compositeCompletedAt).getTime();
-      completedAt = block.startedAt.getTime() > compositeEndTime
-        ? startedAt
-        : compositeCompletedAt;
+      completedAt =
+        block.startedAt.getTime() > compositeEndTime
+          ? startedAt
+          : compositeCompletedAt;
     }
 
     const name = block.name.replace(/^Run /, "");
@@ -393,13 +393,13 @@ export async function expandCompositeSteps(
   const ref = workflowRun.head_sha;
 
   const jobsWithComposites = workflowJobs.filter((job) =>
-    compositeMap.has(job.id)
+    compositeMap.has(job.id),
   );
 
   // Collect unique uses paths across all jobs
   const uniqueUsesPaths = new Set(
     [...compositeMap.values()].flatMap((infos) =>
-      infos.map((info) => info.usesPath)
+      infos.map((info) => info.usesPath),
     ),
   );
 

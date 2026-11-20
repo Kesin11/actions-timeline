@@ -1,0 +1,37 @@
+[
+  {
+    "id": 2001,
+    "name": "test",
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2024-01-15T10:00:01Z",
+    "started_at": "2024-01-15T10:00:03Z",
+    "completed_at": "2024-01-15T10:00:07Z",
+    "steps": [
+      {
+        "name": "Set up job",
+        "number": 1,
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2024-01-15T10:00:03Z",
+        "completed_at": "2024-01-15T10:00:04Z"
+      },
+      {
+        "name": "Run background task",
+        "number": 2,
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2024-01-15T10:00:04Z",
+        "completed_at": "2024-01-15T10:00:07Z"
+      },
+      {
+        "name": "Parallel group",
+        "number": 3,
+        "status": "completed",
+        "conclusion": "success",
+        "started_at": "2024-01-15T10:00:04Z",
+        "completed_at": "2024-01-15T10:00:07Z"
+      }
+    ]
+  }
+]

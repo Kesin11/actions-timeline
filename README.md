@@ -128,26 +128,27 @@ job, `actions-timeline` omits `Waiting for a runner` step in the timeline.
 
 # CLI tool
 
-`actions-timeline` is also available as a CLI tool. You can use it with
-`deno run` command.
+`actions-timeline` is also available as a development CLI. Clone this
+repository, install its dependencies with npm, and run it with Node.js 24.
+The CLI is not published to the npm registry.
 
 ```bash
-deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
-  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+git clone https://github.com/Kesin11/actions-timeline.git
+cd actions-timeline
+npm install
+node cli.ts \
   https://github.com/Kesin11/actions-timeline/actions/runs/8021493760/attempts/1 \
   -t $(gh auth token) \
   -o output.md
 
-# Fetch latest attempt if ommit attempts
-deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
-  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+# Fetch the latest attempt when the URL omits /attempts/<number>
+node cli.ts \
   https://github.com/Kesin11/actions-timeline/actions/runs/8021493760/ \
   -t $(gh auth token) \
   -o output.md
 
 # GHES
-deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
-  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+node cli.ts \
   https://YOUR_ENTERPRISE_HOST/OWNER/REPO/actions/runs/RUN_ID/attempts/1 \
   -t $(gh auth token -h YOUR_ENTERPRISE_HOST) \
   -o output.md
@@ -155,8 +156,7 @@ deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
 
 ```bash
 # Expand composite action steps while keeping the parent composite bar
-deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
-  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+node cli.ts \
   https://github.com/OWNER/REPO/actions/runs/RUN_ID \
   -t $(gh auth token) \
   --expand-composite-actions true \
@@ -165,8 +165,7 @@ deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
 
 ```bash
 # Expand composite actions that take more than 10 seconds
-deno run --allow-net --allow-write --allow-env=GITHUB_API_URL \
-  https://raw.githubusercontent.com/Kesin11/actions-timeline/main/cli.ts \
+node cli.ts \
   https://github.com/OWNER/REPO/actions/runs/RUN_ID \
   -t $(gh auth token) \
   --expand-composite-actions true \
@@ -189,8 +188,8 @@ tools to visualize mermaid diagrams.
 ## Setup
 
 ```
-asdf install
-deno task setup:githooks
+mise install
+npm install
 ```
 
 # DEBUG
@@ -200,8 +199,9 @@ action.
 
 ```yaml
 - uses: actions/checkout@v3
-- uses: denoland/setup-deno@v1
-- run: deno task bundle
+- uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+- run: npm ci
+- run: npm run build
 - uses: ./
 ```
 

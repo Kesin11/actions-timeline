@@ -19,18 +19,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-deno-with-cache
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+      - run: npm ci
       - id: fmt
-        run: deno fmt --check
+        run: npm run format:check
       - id: lint
-        run: deno lint
+        run: npm run lint
+      - id: typecheck
+        run: npm run typecheck
   check-dist:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-deno-with-cache
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+      - run: npm ci
       - name: Rebuild the dist/ directory
-        run: deno task bundle
+        run: npm run build
+      - name: Verify dist/ is reproducible
+        run: git diff --exit-code -- dist/
 
       # post processes
       - name: Upload dist for post job
@@ -57,13 +63,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-deno-with-cache
+      - uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+      - run: npm ci
       - parallel:
-          - run: deno test --allow-env
+          - run: npm test
           - name: CLI smoke test
             run: |
               RUN_URL=$(gh run list -L 1 -w release --json url --jq .[].url)
-              deno run --allow-net --allow-write --allow-env=GITHUB_API_URL cli.ts -t "${GITHUB_TOKEN}" -o output.md $RUN_URL
+              node cli.ts -t "${GITHUB_TOKEN}" -o output.md "$RUN_URL"
               cat output.md
             env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

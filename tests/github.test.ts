@@ -1,8 +1,13 @@
-import { assertEquals, assertThrows } from "@std/assert";
-import { parseWorkflowRunUrl } from "../src/github.ts";
+import {
+  deepStrictEqual as assertEquals,
+  throws as assertThrows,
+} from "node:assert/strict";
+import { test } from "node:test";
+import type { Octokit } from "@octokit/rest";
+import { Github, parseWorkflowRunUrl } from "../src/github.ts";
 
-Deno.test(parseWorkflowRunUrl.name, async (t) => {
-  await t.step("Basic", () => {
+test(parseWorkflowRunUrl.name, async (t) => {
+  await t.test("Basic", () => {
     const url =
       "https://github.com/Kesin11/actions-timeline/actions/runs/1000000000/";
     const actual = parseWorkflowRunUrl(url);
@@ -16,7 +21,7 @@ Deno.test(parseWorkflowRunUrl.name, async (t) => {
     assertEquals(actual, expect);
   });
 
-  await t.step("with attempt", () => {
+  await t.test("with attempt", () => {
     const url =
       "https://github.com/Kesin11/actions-timeline/actions/runs/1000000000/attempts/2";
     const actual = parseWorkflowRunUrl(url);
@@ -30,7 +35,7 @@ Deno.test(parseWorkflowRunUrl.name, async (t) => {
     assertEquals(actual, expect);
   });
 
-  await t.step("GHES", () => {
+  await t.test("GHES", () => {
     const url =
       "https://your_host.github.com/Kesin11/actions-timeline/actions/runs/1000000000/attempts/2";
     const actual = parseWorkflowRunUrl(url);
@@ -44,21 +49,67 @@ Deno.test(parseWorkflowRunUrl.name, async (t) => {
     assertEquals(actual, expect);
   });
 
-  await t.step("throws for wrong path segments", () => {
+  await t.test("throws for wrong path segments", () => {
     const url = "https://github.com/Kesin11/actions-timeline/pulls/123";
-    assertThrows(
-      () => parseWorkflowRunUrl(url),
-      Error,
-      "Invalid workflow run URL",
-    );
+    assertThrows(() => parseWorkflowRunUrl(url), /Invalid workflow run URL/);
   });
 
-  await t.step("throws for non-numeric runId", () => {
+  await t.test("throws for non-numeric runId", () => {
     const url = "https://github.com/Kesin11/actions-timeline/actions/runs/abc";
     assertThrows(
       () => parseWorkflowRunUrl(url),
-      Error,
-      "runId must be a positive integer",
+      /runId must be a positive integer/,
     );
+  });
+});
+
+test("fetchWorkflowRun attempt routing", async (t) => {
+  const workflow = { id: 1 };
+  const calls: Array<{
+    endpoint: "run" | "attempt";
+    params: Record<string, unknown>;
+  }> = [];
+  const octokit = {
+    actions: {
+      getWorkflowRun: async (params: Record<string, unknown>) => {
+        calls.push({ endpoint: "run", params });
+        return { data: workflow };
+      },
+      getWorkflowRunAttempt: async (params: Record<string, unknown>) => {
+        calls.push({ endpoint: "attempt", params });
+        return { data: workflow };
+      },
+    },
+  } as unknown as Octokit;
+  const client = new Github({ octokit });
+
+  await t.test(
+    "uses the run endpoint without an explicit attempt",
+    async () => {
+      calls.length = 0;
+      await client.fetchWorkflowRun("owner", "repo", 123);
+      assertEquals(calls, [
+        {
+          endpoint: "run",
+          params: { owner: "owner", repo: "repo", run_id: 123 },
+        },
+      ]);
+    },
+  );
+
+  await t.test("uses the attempt endpoint for attempt 1", async () => {
+    calls.length = 0;
+    await client.fetchWorkflowRun("owner", "repo", 123, 1);
+    assertEquals(calls, [
+      {
+        endpoint: "attempt",
+        params: {
+          owner: "owner",
+          repo: "repo",
+          run_id: 123,
+          attempt_number: 1,
+        },
+      },
+    ]);
   });
 });

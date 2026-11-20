@@ -1,4 +1,5 @@
 ---
+
 name: verify-composite-expansion
 description: Verify composite action expansion output by comparing CLI-generated mermaid charts with actual GitHub Actions logs. Use when testing or debugging the --expand-composite-actions feature, especially to confirm that the original composite bar remains visible while expanded child rows appear beneath it. Triggered by requests like "composite展開を検証", "verify composite expansion", or "compare CLI output with logs".
 ---
@@ -36,13 +37,13 @@ The script performs:
 With composite expansion:
 
 ```bash
-deno run --allow-net --allow-env --allow-write cli.ts --token "$GITHUB_TOKEN" --expand-composite-actions=true "https://github.com/{org}/{repo}/actions/runs/{run_id}" -o {repo}_composite.md
+node cli.ts --token "$GITHUB_TOKEN" --expand-composite-actions=true "https://github.com/{org}/{repo}/actions/runs/{run_id}" -o {repo}_composite.md
 ```
 
 Without composite expansion:
 
 ```bash
-deno run --allow-net --allow-env --allow-write cli.ts --token "$GITHUB_TOKEN" "https://github.com/{org}/{repo}/actions/runs/{run_id}" -o {repo}.md
+node cli.ts --token "$GITHUB_TOKEN" "https://github.com/{org}/{repo}/actions/runs/{run_id}" -o {repo}.md
 ```
 
 List jobs:

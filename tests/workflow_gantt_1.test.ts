@@ -1,102 +1,104 @@
-import { assertEquals } from "@std/assert";
+import { deepStrictEqual as assertEquals } from "node:assert/strict";
+import { test } from "node:test";
+import type { WorkflowJobs, WorkflowRun } from "../src/github.ts";
 import { createMermaid } from "../src/workflow_gantt.ts";
-import { WorkflowJobs, WorkflowRun } from "../src/github.ts";
 
 const commonWorkflow = {
-  "id": 5977929222,
-  "name": "POC",
-  "run_number": 5,
-  "event": "push",
-  "status": "completed",
-  "conclusion": "success",
-  "workflow_id": 66989622,
-  "created_at": "2023-08-25T15:57:51Z",
-  "updated_at": "2023-08-25T15:58:19Z",
-  "run_started_at": "2023-08-25T15:57:51Z",
+  id: 5977929222,
+  name: "POC",
+  run_number: 5,
+  event: "push",
+  status: "completed",
+  conclusion: "success",
+  workflow_id: 66989622,
+  created_at: "2023-08-25T15:57:51Z",
+  updated_at: "2023-08-25T15:58:19Z",
+  run_started_at: "2023-08-25T15:57:51Z",
 } as unknown as WorkflowRun;
 
-Deno.test("1 section gantt", async (t) => {
-  await t.step("all steps are success", () => {
+test("1 section gantt", async (t) => {
+  await t.test("all steps are success", () => {
     const workflow = { ...commonWorkflow };
-    const workflowJobs = [{
-      "id": 16218974194,
-      "run_id": 5977929222,
-      "workflow_name": "POC",
-      "status": "completed",
-      "conclusion": "success",
-      "created_at": "2023-08-25T15:57:52Z",
-      "started_at": "2023-08-25T15:57:59Z",
-      "completed_at": "2023-08-25T15:58:17Z",
-      "name": "run_self",
-      "steps": [
-        {
-          "name": "Set up job",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 1,
-          "started_at": "2023-08-26T00:57:58.000+09:00",
-          "completed_at": "2023-08-26T00:58:00.000+09:00",
-        },
-        {
-          "name": "Run actions/checkout@v3",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 2,
-          "started_at": "2023-08-26T00:58:00.000+09:00",
-          "completed_at": "2023-08-26T00:58:01.000+09:00",
-        },
-        {
-          "name": "Run denoland/setup-deno@v1",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 3,
-          "started_at": "2023-08-26T00:58:02.000+09:00",
-          "completed_at": "2023-08-26T00:58:03.000+09:00",
-        },
-        {
-          "name": "Run deno task bundle",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 4,
-          "started_at": "2023-08-26T00:58:04.000+09:00",
-          "completed_at": "2023-08-26T00:58:15.000+09:00",
-        },
-        {
-          "name": "Run self action",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 5,
-          "started_at": "2023-08-26T00:58:15.000+09:00",
-          "completed_at": "2023-08-26T00:58:15.000+09:00",
-        },
-        {
-          "name": "Post Run self action",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 9,
-          "started_at": "2023-08-26T00:58:15.000+09:00",
-          "completed_at": "2023-08-26T00:58:15.000+09:00",
-        },
-        {
-          "name": "Post Run actions/checkout@v3",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 10,
-          "started_at": "2023-08-26T00:58:15.000+09:00",
-          "completed_at": "2023-08-26T00:58:15.000+09:00",
-        },
-        {
-          "name": "Complete job",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 11,
-          "started_at": "2023-08-26T00:58:15.000+09:00",
-          "completed_at": "2023-08-26T00:58:15.000+09:00",
-        },
-      ],
-    }] as unknown as WorkflowJobs;
+    const workflowJobs = [
+      {
+        id: 16218974194,
+        run_id: 5977929222,
+        workflow_name: "POC",
+        status: "completed",
+        conclusion: "success",
+        created_at: "2023-08-25T15:57:52Z",
+        started_at: "2023-08-25T15:57:59Z",
+        completed_at: "2023-08-25T15:58:17Z",
+        name: "run_self",
+        steps: [
+          {
+            name: "Set up job",
+            status: "completed",
+            conclusion: "success",
+            number: 1,
+            started_at: "2023-08-26T00:57:58.000+09:00",
+            completed_at: "2023-08-26T00:58:00.000+09:00",
+          },
+          {
+            name: "Run actions/checkout@v3",
+            status: "completed",
+            conclusion: "success",
+            number: 2,
+            started_at: "2023-08-26T00:58:00.000+09:00",
+            completed_at: "2023-08-26T00:58:01.000+09:00",
+          },
+          {
+            name: "Run denoland/setup-deno@v1",
+            status: "completed",
+            conclusion: "success",
+            number: 3,
+            started_at: "2023-08-26T00:58:02.000+09:00",
+            completed_at: "2023-08-26T00:58:03.000+09:00",
+          },
+          {
+            name: "Run deno task bundle",
+            status: "completed",
+            conclusion: "success",
+            number: 4,
+            started_at: "2023-08-26T00:58:04.000+09:00",
+            completed_at: "2023-08-26T00:58:15.000+09:00",
+          },
+          {
+            name: "Run self action",
+            status: "completed",
+            conclusion: "success",
+            number: 5,
+            started_at: "2023-08-26T00:58:15.000+09:00",
+            completed_at: "2023-08-26T00:58:15.000+09:00",
+          },
+          {
+            name: "Post Run self action",
+            status: "completed",
+            conclusion: "success",
+            number: 9,
+            started_at: "2023-08-26T00:58:15.000+09:00",
+            completed_at: "2023-08-26T00:58:15.000+09:00",
+          },
+          {
+            name: "Post Run actions/checkout@v3",
+            status: "completed",
+            conclusion: "success",
+            number: 10,
+            started_at: "2023-08-26T00:58:15.000+09:00",
+            completed_at: "2023-08-26T00:58:15.000+09:00",
+          },
+          {
+            name: "Complete job",
+            status: "completed",
+            conclusion: "success",
+            number: 11,
+            started_at: "2023-08-26T00:58:15.000+09:00",
+            completed_at: "2023-08-26T00:58:15.000+09:00",
+          },
+        ],
+      },
+    ] as unknown as WorkflowJobs;
 
-    // deno-fmt-ignore
     const expect = `
 \`\`\`mermaid
 gantt
@@ -118,55 +120,56 @@ ${workflowJobs[0].steps![7].name} (0s) :job0-8, after job0-7, 0s
     assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
   });
 
-  await t.step("job has skipped and failure steps", () => {
+  await t.test("job has skipped and failure steps", () => {
     const workflow = { ...commonWorkflow };
-    const workflowJobs = [{
-      "id": 16218974194,
-      "run_id": 5977929222,
-      "workflow_name": "POC",
-      "status": "completed",
-      "conclusion": "failure",
-      "created_at": "2023-08-25T15:57:52Z",
-      "started_at": "2023-08-25T15:57:59Z",
-      "completed_at": "2023-08-25T15:58:17Z",
-      "name": "run_self",
-      "steps": [
-        {
-          "name": "Set up job",
-          "status": "completed",
-          "conclusion": "skipped",
-          "number": 1,
-          "started_at": "2023-08-26T00:57:58.000+09:00",
-          "completed_at": "2023-08-26T00:58:00.000+09:00",
-        },
-        {
-          "name": "Run actions/checkout@v3",
-          "status": "completed",
-          "conclusion": "failure",
-          "number": 2,
-          "started_at": "2023-08-26T00:58:00.000+09:00",
-          "completed_at": "2023-08-26T00:58:01.000+09:00",
-        },
-        {
-          "name": "Post Run actions/checkout@v3",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 10,
-          "started_at": "2023-08-26T00:58:15.000+09:00",
-          "completed_at": "2023-08-26T00:58:15.000+09:00",
-        },
-        {
-          "name": "Complete job",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 11,
-          "started_at": "2023-08-26T00:58:15.000+09:00",
-          "completed_at": "2023-08-26T00:58:15.000+09:00",
-        },
-      ],
-    }] as unknown as WorkflowJobs;
+    const workflowJobs = [
+      {
+        id: 16218974194,
+        run_id: 5977929222,
+        workflow_name: "POC",
+        status: "completed",
+        conclusion: "failure",
+        created_at: "2023-08-25T15:57:52Z",
+        started_at: "2023-08-25T15:57:59Z",
+        completed_at: "2023-08-25T15:58:17Z",
+        name: "run_self",
+        steps: [
+          {
+            name: "Set up job",
+            status: "completed",
+            conclusion: "skipped",
+            number: 1,
+            started_at: "2023-08-26T00:57:58.000+09:00",
+            completed_at: "2023-08-26T00:58:00.000+09:00",
+          },
+          {
+            name: "Run actions/checkout@v3",
+            status: "completed",
+            conclusion: "failure",
+            number: 2,
+            started_at: "2023-08-26T00:58:00.000+09:00",
+            completed_at: "2023-08-26T00:58:01.000+09:00",
+          },
+          {
+            name: "Post Run actions/checkout@v3",
+            status: "completed",
+            conclusion: "success",
+            number: 10,
+            started_at: "2023-08-26T00:58:15.000+09:00",
+            completed_at: "2023-08-26T00:58:15.000+09:00",
+          },
+          {
+            name: "Complete job",
+            status: "completed",
+            conclusion: "success",
+            number: 11,
+            started_at: "2023-08-26T00:58:15.000+09:00",
+            completed_at: "2023-08-26T00:58:15.000+09:00",
+          },
+        ],
+      },
+    ] as unknown as WorkflowJobs;
 
-    // deno-fmt-ignore
     const expect = `
 \`\`\`mermaid
 gantt
@@ -184,58 +187,59 @@ ${workflowJobs[0].steps![3].name} (0s) :job0-4, after job0-3, 0s
     assertEquals(createMermaid(workflow, workflowJobs, {}), expect);
   });
 
-  await t.step("Hide not completed steps", () => {
+  await t.test("Hide not completed steps", () => {
     const workflow = {
-      "id": 6290960492,
-      "name": "CI",
-      "run_number": 53,
-      "event": "pull_request",
-      "status": "in_progress",
-      "conclusion": null,
-      "created_at": "2023-09-24T15:41:23Z",
-      "updated_at": "2023-09-24T15:46:01Z",
-      "run_started_at": "2023-09-24T15:41:23Z",
+      id: 6290960492,
+      name: "CI",
+      run_number: 53,
+      event: "pull_request",
+      status: "in_progress",
+      conclusion: null,
+      created_at: "2023-09-24T15:41:23Z",
+      updated_at: "2023-09-24T15:46:01Z",
+      run_started_at: "2023-09-24T15:41:23Z",
     } as unknown as WorkflowRun;
 
-    const workflowJobs = [{
-      "id": 17078901763,
-      "run_id": 6290960492,
-      "workflow_name": "CI",
-      "status": "in_progress",
-      "conclusion": null,
-      "created_at": "2023-09-24T15:45:54Z",
-      "started_at": "2023-09-24T15:46:00Z",
-      "completed_at": null,
-      "name": "run_self",
-      "steps": [
-        {
-          "name": "Set up job",
-          "status": "completed",
-          "conclusion": "success",
-          "number": 1,
-          "started_at": "2023-09-24T15:46:00.000Z",
-          "completed_at": "2023-09-24T15:46:01.000Z",
-        },
-        {
-          "name": "Download bundled dist",
-          "status": "in_progress",
-          "conclusion": null,
-          "number": 2,
-          "started_at": "2023-09-24T15:46:01.000Z",
-          "completed_at": null,
-        },
-        {
-          "name": "Run self action",
-          "status": "queued",
-          "conclusion": null,
-          "number": 3,
-          "started_at": null,
-          "completed_at": null,
-        },
-      ],
-    }] as unknown as WorkflowJobs;
+    const workflowJobs = [
+      {
+        id: 17078901763,
+        run_id: 6290960492,
+        workflow_name: "CI",
+        status: "in_progress",
+        conclusion: null,
+        created_at: "2023-09-24T15:45:54Z",
+        started_at: "2023-09-24T15:46:00Z",
+        completed_at: null,
+        name: "run_self",
+        steps: [
+          {
+            name: "Set up job",
+            status: "completed",
+            conclusion: "success",
+            number: 1,
+            started_at: "2023-09-24T15:46:00.000Z",
+            completed_at: "2023-09-24T15:46:01.000Z",
+          },
+          {
+            name: "Download bundled dist",
+            status: "in_progress",
+            conclusion: null,
+            number: 2,
+            started_at: "2023-09-24T15:46:01.000Z",
+            completed_at: null,
+          },
+          {
+            name: "Run self action",
+            status: "queued",
+            conclusion: null,
+            number: 3,
+            started_at: null,
+            completed_at: null,
+          },
+        ],
+      },
+    ] as unknown as WorkflowJobs;
 
-    // deno-fmt-ignore
     const expect = `
 \`\`\`mermaid
 gantt
