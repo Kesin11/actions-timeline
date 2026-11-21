@@ -22,7 +22,7 @@
     "@octokit/plugin-throttling": "^11.0.5",
     "@octokit/rest": "^22.0.1",
     "commander": "^14.0.3",
-    "date-fns": "4.1.0",
+    "date-fns": "4.4.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
