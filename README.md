@@ -1,13 +1,13 @@
 # actions-timeline
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Kesin11/actions-timeline)
-
 An Action that visualizes the timeline of a GitHub Actions workflow run as an **interactive HTML report** and a **Mermaid Gantt diagram** in the run summary page.
 
 `actions-timeline` helps you inspect the sequence and concurrency of jobs and steps in a workflow run so you can quickly spot bottlenecks, critical paths, runner wait times, and failures.
 
-![Sample screenshot workflow](https://github.com/user-attachments/assets/03353645-ec6f-4fd6-80b5-69694439393f)
-![Sample screenshot timeline](https://github.com/user-attachments/assets/d92027fc-ded2-4b6e-9ab0-e3923b698ec3)
+**Interactive HTML timeline**:
+![Sample screenshot HTML timeline](https://github.com/user-attachments/assets/50cb13ab-389d-4a4c-90b5-4c264e137308)
+**Mermaid Gantt timeline**:
+![Sample screenshot mermaid timeline](https://github.com/user-attachments/assets/d92027fc-ded2-4b6e-9ab0-e3923b698ec3)
 
 ## Outputs
 
