@@ -1,7 +1,7 @@
 import { deepStrictEqual as assertEquals } from "node:assert/strict";
 import { test } from "node:test";
-import type { WorkflowJobs, WorkflowRun } from "../src/github.ts";
-import { createMermaid } from "../src/workflow_gantt.ts";
+import type { WorkflowJobs, WorkflowRun } from "../src/github/github.ts";
+import { createMermaid } from "../src/output/mermaid/workflow_gantt.ts";
 
 const commonWorkflow = {
   id: 5833450919,

@@ -1,14 +1,14 @@
 import { Buffer } from "node:buffer";
 import { parse as parseYaml } from "yaml";
-import { diffSec } from "./format_util.ts";
-import type { Github, WorkflowRun } from "./github.ts";
-import type { TimelineJobs, TimelineStep } from "./types.ts";
+import { diffSec } from "../output/format_util.ts";
+import type { Github, WorkflowRun } from "../github/github.ts";
+import type { TimelineJobs, TimelineStep } from "../models/types.ts";
 import {
   type CompositeAction,
   JobModel,
   StepModel,
   WorkflowModel,
-} from "./workflow_file.ts";
+} from "../models/workflow_file.ts";
 
 export type ExpandCompositeOptions = {
   thresholdSec?: number; // default: 20

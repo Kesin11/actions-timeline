@@ -2,11 +2,11 @@ import { deepStrictEqual as assertEquals } from "node:assert/strict";
 import { test } from "node:test";
 import {
   buildArtifactUrl,
-  ensureHtmlExtension,
+  resolveCurrentJobId,
   resolveHtmlArtifactName,
   sanitizeArtifactSegment,
-} from "../src/artifact.ts";
-import type { WorkflowRun } from "../src/github.ts";
+} from "../src/github/artifact.ts";
+import type { WorkflowJobs, WorkflowRun } from "../src/github/github.ts";
 
 test(sanitizeArtifactSegment.name, () => {
   assertEquals(
@@ -18,28 +18,35 @@ test(sanitizeArtifactSegment.name, () => {
   assertEquals(sanitizeArtifactSegment("a---b"), "a-b");
 });
 
-test(ensureHtmlExtension.name, () => {
-  assertEquals(ensureHtmlExtension("report"), "report.html");
-  assertEquals(ensureHtmlExtension("report.html"), "report.html");
-  assertEquals(ensureHtmlExtension("report.HTML"), "report.HTML");
+test(resolveCurrentJobId.name, () => {
+  const workflowJobs = [
+    { id: 101, runner_name: "GitHub Actions 1", status: "completed" },
+    { id: 102, runner_name: "GitHub Actions 2", status: "in_progress" },
+    { id: 103, runner_name: "GitHub Actions 1", status: "in_progress" },
+  ] as unknown as WorkflowJobs;
+
+  assertEquals(resolveCurrentJobId(workflowJobs, "GitHub Actions 2"), 102);
+  assertEquals(resolveCurrentJobId(workflowJobs, "GitHub Actions 1"), 103);
+  assertEquals(resolveCurrentJobId(workflowJobs, "unknown-runner"), undefined);
+  assertEquals(resolveCurrentJobId(workflowJobs, undefined), undefined);
 });
 
 test(resolveHtmlArtifactName.name, () => {
   assertEquals(
-    resolveHtmlArtifactName("", "build / test", 2),
+    resolveHtmlArtifactName("build / test", 2),
     "actions-timeline-build-test-attempt2.html",
   );
   assertEquals(
-    resolveHtmlArtifactName(undefined, undefined, 1),
+    resolveHtmlArtifactName("test", 1, 998877),
+    "actions-timeline-test-998877-attempt1.html",
+  );
+  assertEquals(
+    resolveHtmlArtifactName("test", 1, "GitHub Actions 4"),
+    "actions-timeline-test-GitHub-Actions-4-attempt1.html",
+  );
+  assertEquals(
+    resolveHtmlArtifactName(undefined, 1),
     "actions-timeline-workflow-attempt1.html",
-  );
-  assertEquals(
-    resolveHtmlArtifactName("custom timeline", "build", 1),
-    "custom-timeline.html",
-  );
-  assertEquals(
-    resolveHtmlArtifactName("my-report.html", "build", 1),
-    "my-report.html",
   );
 });
 

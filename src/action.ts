@@ -12,18 +12,23 @@ import * as github from "@actions/github";
 import {
   type ArtifactUploader,
   buildArtifactUrl,
+  resolveCurrentJobId,
   resolveHtmlArtifactName,
   uploadHtmlArtifact,
-} from "./artifact.ts";
-import { expandCompositeSteps } from "./composite.ts";
-import { Github, type WorkflowJobs, type WorkflowRun } from "./github.ts";
-import { createHtmlReport } from "./html_report.ts";
+} from "./github/artifact.ts";
+import {
+  Github,
+  type WorkflowJobs,
+  type WorkflowRun,
+} from "./github/github.ts";
+import { expandCompositeSteps } from "./logic/composite.ts";
 import {
   expandParallelSteps,
   type ParallelExpansionResult,
-} from "./parallel.ts";
-import { WorkflowModel } from "./workflow_file.ts";
-import { createMermaid } from "./workflow_gantt.ts";
+} from "./logic/parallel.ts";
+import { WorkflowModel } from "./models/workflow_file.ts";
+import { createHtmlReport } from "./output/html/report.ts";
+import { createMermaid } from "./output/mermaid/workflow_gantt.ts";
 
 const PARALLEL_FALLBACK_SUMMARY =
   "Parallel steps could not be expanded for one or more jobs. Those jobs use the standard timeline layout.\n\n";
@@ -72,9 +77,6 @@ export async function runActionPost(
     getInput("expand-composite-actions-threshold"),
   );
   const outputHtml = getBooleanInput("output-html");
-  const htmlArtifactNameInput = outputHtml
-    ? getInput("html-artifact-name")
-    : "";
   const client = (
     dependencies.createClient ?? ((options) => new Github(options))
   )({ token });
@@ -119,14 +121,6 @@ export async function runActionPost(
     info,
   );
 
-  info("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });
-  if (parallelResult.warnings.length > 0) {
-    summary.addRaw(PARALLEL_FALLBACK_SUMMARY);
-  }
-  summary.addRaw(gantt);
-  debug(gantt);
-
   if (outputHtml) {
     info("Create HTML timeline report...");
     const workflowModel = await fetchWorkflowModelSafe(client, workflowRun);
@@ -134,10 +128,12 @@ export async function runActionPost(
       showWaitingRunner,
       workflowModel,
     });
+    const uniqueJobKey =
+      resolveCurrentJobId(workflowJobs, env.RUNNER_NAME) ?? env.RUNNER_NAME;
     const artifactName = resolveHtmlArtifactName(
-      htmlArtifactNameInput,
       env.GITHUB_JOB,
       runAttempt,
+      uniqueJobKey,
     );
     try {
       const uploaded = await uploader(html, artifactName);
@@ -148,13 +144,21 @@ export async function runActionPost(
         env.GITHUB_SERVER_URL,
       );
       summary.addRaw(
-        `\n\n[Open interactive HTML timeline (${uploaded.artifactName})](${artifactUrl})\n`,
+        `### Interactive HTML Timeline\n\n[Open interactive HTML timeline (\`${uploaded.artifactName}\`)](${artifactUrl})\n\n`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       warning(`Failed to upload HTML timeline artifact: ${message}`);
     }
   }
+
+  info("Create gantt mermaid diagram...");
+  const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });
+  if (parallelResult.warnings.length > 0) {
+    summary.addRaw(PARALLEL_FALLBACK_SUMMARY);
+  }
+  summary.addRaw(gantt);
+  debug(gantt);
 
   await summary.write();
   info("Complete!");

@@ -1,12 +1,16 @@
 import { writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { Command, InvalidArgumentError } from "commander";
-import { expandCompositeSteps } from "./src/composite.ts";
-import { Github, parseWorkflowRunUrl, type WorkflowRun } from "./src/github.ts";
-import { createHtmlReport } from "./src/html_report.ts";
-import { expandParallelSteps } from "./src/parallel.ts";
-import { WorkflowModel } from "./src/workflow_file.ts";
-import { createMermaid } from "./src/workflow_gantt.ts";
+import { expandCompositeSteps } from "./src/logic/composite.ts";
+import {
+  Github,
+  parseWorkflowRunUrl,
+  type WorkflowRun,
+} from "./src/github/github.ts";
+import { createHtmlReport } from "./src/output/html/report.ts";
+import { expandParallelSteps } from "./src/logic/parallel.ts";
+import { WorkflowModel } from "./src/models/workflow_file.ts";
+import { createMermaid } from "./src/output/mermaid/workflow_gantt.ts";
 
 type OutputFormat = "mermaid" | "html";
 

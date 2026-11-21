@@ -29,12 +29,6 @@ inputs:
       as an unzipped workflow artifact.
     default: true
     required: false
-  html-artifact-name:
-    description: >
-      Custom artifact filename for the HTML timeline report.
-      Defaults to actions-timeline-<job>-attempt<n>.html.
-    default: ""
-    required: false
 runs:
   using: "node24"
   main: "dist/main.js"

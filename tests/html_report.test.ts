@@ -1,12 +1,12 @@
 import { deepStrictEqual as assertEquals } from "node:assert/strict";
 import { test } from "node:test";
-import type { WorkflowRun } from "../src/github.ts";
+import type { WorkflowRun } from "../src/github/github.ts";
 import {
   buildHtmlReportData,
   computeScaleSec,
   createHtmlReport,
-} from "../src/html_report.ts";
-import type { TimelineJobs } from "../src/types.ts";
+} from "../src/output/html/report.ts";
+import type { TimelineJobs } from "../src/models/types.ts";
 
 const baseRun: WorkflowRun = {
   id: 1001,
@@ -189,6 +189,100 @@ test(buildHtmlReportData.name, async (t) => {
       ]);
       assertEquals(data.jobs[1].conclusion, "skipped");
       assertEquals(data.jobs[1].isCp, false);
+    },
+  );
+
+  await t.test(
+    "groups parallel children with nested composite rows and counts actual steps",
+    () => {
+      const jobs: TimelineJobs = [
+        {
+          id: 20,
+          name: "build",
+          status: "completed",
+          conclusion: "success",
+          created_at: "2026-01-01T00:00:00Z",
+          started_at: "2026-01-01T00:00:00Z",
+          completed_at: "2026-01-01T00:00:50Z",
+          html_url: "https://github.com/owner/repo/actions/runs/42/job/20",
+          steps: [
+            {
+              name: "Parallel group",
+              number: 4,
+              status: "completed",
+              conclusion: "success",
+              started_at: "2026-01-01T00:00:00Z",
+              completed_at: "2026-01-01T00:00:50Z",
+              timelineRowKind: "parallel-parent",
+            },
+            {
+              name: "(bg) Setup A",
+              timelineOriginalName: "Setup A",
+              number: 2,
+              status: "completed",
+              conclusion: "success",
+              started_at: "2026-01-01T00:00:00Z",
+              completed_at: "2026-01-01T00:00:20Z",
+              timelineRowKind: "parallel-child",
+            },
+            {
+              name: "(sub) A sub 1",
+              number: 2,
+              status: "completed",
+              conclusion: "success",
+              started_at: "2026-01-01T00:00:00Z",
+              completed_at: "2026-01-01T00:00:10Z",
+              timelineRowKind: "composite-child",
+            },
+            {
+              name: "(sub) A sub 2",
+              number: 2,
+              status: "completed",
+              conclusion: "success",
+              started_at: "2026-01-01T00:00:10Z",
+              completed_at: "2026-01-01T00:00:20Z",
+              timelineRowKind: "composite-child",
+            },
+            {
+              name: "(bg) Slow B",
+              timelineOriginalName: "Slow B",
+              number: 3,
+              status: "completed",
+              conclusion: "success",
+              started_at: "2026-01-01T00:00:00Z",
+              completed_at: "2026-01-01T00:00:50Z",
+              timelineRowKind: "parallel-child",
+            },
+            {
+              name: "Done",
+              number: 5,
+              status: "completed",
+              conclusion: "success",
+              started_at: "2026-01-01T00:00:50Z",
+              completed_at: "2026-01-01T00:00:50Z",
+            },
+          ],
+        },
+      ];
+
+      const data = buildHtmlReportData(baseRun, jobs);
+      const job = data.jobs[0];
+
+      assertEquals(job.rawStepCount, 3);
+      assertEquals(job.items.length, 2);
+
+      const parallel = job.items[0];
+      assertEquals(parallel.kind, "parallel");
+      assertEquals(parallel.children.length, 2);
+      assertEquals(parallel.children[0].name, "Setup A");
+      assertEquals(parallel.children[0].isCp, false);
+      assertEquals(
+        parallel.children[0].children?.map((s) => s.name),
+        ["A sub 1", "A sub 2"],
+      );
+      assertEquals(parallel.children[1].name, "Slow B");
+      assertEquals(parallel.children[1].isCp, true);
+      assertEquals(job.items[1].name, "Done");
     },
   );
 });

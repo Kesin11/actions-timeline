@@ -73703,7 +73703,7 @@ function getOctokit(token, options, ...additionalPlugins) {
   return new GitHubWithPlugins(getOctokitOptions(token, options));
 }
 
-// src/artifact.ts
+// src/github/artifact.ts
 var import_promises4 = require("node:fs/promises");
 var import_node_os3 = __toESM(require("node:os"), 1);
 var import_node_path = __toESM(require("node:path"), 1);
@@ -113462,7 +113462,7 @@ If the error persists, please check whether Actions and API requests are operati
 // node_modules/@actions/artifact/lib/artifact.js
 var client = new DefaultArtifactClient();
 
-// src/artifact.ts
+// src/github/artifact.ts
 var INVALID_ARTIFACT_CHARS = /["<>:|*?/\\\s]+/g;
 var sanitizeArtifactSegment = (value) => {
   const withoutControls = Array.from(
@@ -113472,13 +113472,23 @@ var sanitizeArtifactSegment = (value) => {
   const sanitized = withoutControls.replace(INVALID_ARTIFACT_CHARS, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
   return sanitized.length > 0 ? sanitized : "workflow";
 };
-var ensureHtmlExtension = (name) => name.toLowerCase().endsWith(".html") ? name : `${name}.html`;
-var resolveHtmlArtifactName = (customName, jobName, runAttempt) => {
-  const trimmedCustom = customName?.trim() ?? "";
-  if (trimmedCustom.length > 0) {
-    return ensureHtmlExtension(sanitizeArtifactSegment(trimmedCustom));
-  }
+var resolveCurrentJobId = (workflowJobs, runnerName) => {
+  const targetRunner = runnerName?.trim();
+  if (!targetRunner) return void 0;
+  const matching = workflowJobs.filter(
+    (job) => job.runner_name === targetRunner
+  );
+  if (matching.length === 0) return void 0;
+  const inProgress = matching.findLast((job) => job.status === "in_progress");
+  return (inProgress ?? matching.at(-1))?.id;
+};
+var resolveHtmlArtifactName = (jobName, runAttempt, uniqueJobKey) => {
   const safeJob = sanitizeArtifactSegment(jobName?.trim() || "workflow");
+  const rawUnique = uniqueJobKey !== void 0 ? String(uniqueJobKey).trim() : "";
+  if (rawUnique.length > 0) {
+    const safeUnique = sanitizeArtifactSegment(rawUnique);
+    return `actions-timeline-${safeJob}-${safeUnique}-attempt${runAttempt}.html`;
+  }
   return `actions-timeline-${safeJob}-attempt${runAttempt}.html`;
 };
 var buildArtifactUrl = (workflowRun, repository, artifactId, serverUrl) => {
@@ -113519,8 +113529,391 @@ var uploadHtmlArtifact = async (html, artifactName) => {
   }
 };
 
-// src/composite.ts
+// src/github/github.ts
 var import_node_buffer2 = require("node:buffer");
+
+// node_modules/@octokit/plugin-throttling/dist-bundle/index.js
+var import_light2 = __toESM(require_light(), 1);
+var VERSION9 = "0.0.0-development";
+var noop3 = () => Promise.resolve();
+function wrapRequest2(state3, request2, options) {
+  return state3.retryLimiter.schedule(doRequest, state3, request2, options);
+}
+async function doRequest(state3, request2, options) {
+  const { pathname } = new URL(options.url, "http://github.test");
+  const isAuth = isAuthRequest(options.method, pathname);
+  const isWrite = !isAuth && options.method !== "GET" && options.method !== "HEAD";
+  const isSearch = options.method === "GET" && pathname.startsWith("/search/");
+  const isGraphQL = pathname.startsWith("/graphql");
+  const retryCount = ~~request2.retryCount;
+  const jobOptions = retryCount > 0 ? { priority: 0, weight: 0 } : {};
+  if (state3.clustering) {
+    jobOptions.expiration = 1e3 * 60;
+  }
+  if (isWrite || isGraphQL) {
+    await state3.write.key(state3.id).schedule(jobOptions, noop3);
+  }
+  if (isWrite && state3.triggersNotification(pathname)) {
+    await state3.notifications.key(state3.id).schedule(jobOptions, noop3);
+  }
+  if (isSearch) {
+    await state3.search.key(state3.id).schedule(jobOptions, noop3);
+  }
+  const req = (isAuth ? state3.auth : state3.global).key(state3.id).schedule(jobOptions, request2, options);
+  if (isGraphQL) {
+    const res = await req;
+    if (res.data.errors != null && res.data.errors.some((error2) => error2.type === "RATE_LIMITED")) {
+      const error2 = Object.assign(new Error("GraphQL Rate Limit Exceeded"), {
+        response: res,
+        data: res.data
+      });
+      throw error2;
+    }
+  }
+  return req;
+}
+function isAuthRequest(method, pathname) {
+  return method === "PATCH" && // https://docs.github.com/en/rest/apps/apps?apiVersion=2022-11-28#create-a-scoped-access-token
+  /^\/applications\/[^/]+\/token\/scoped$/.test(pathname) || method === "POST" && // https://docs.github.com/en/rest/apps/oauth-applications?apiVersion=2022-11-28#reset-a-token
+  (/^\/applications\/[^/]+\/token$/.test(pathname) || // https://docs.github.com/en/rest/apps/apps?apiVersion=2022-11-28#create-an-installation-access-token-for-an-app
+  /^\/app\/installations\/[^/]+\/access_tokens$/.test(pathname) || // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+  pathname === "/login/oauth/access_token");
+}
+var triggers_notification_paths_default = [
+  "/orgs/{org}/invitations",
+  "/orgs/{org}/invitations/{invitation_id}",
+  "/orgs/{org}/teams/{team_slug}/discussions",
+  "/orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments",
+  "/repos/{owner}/{repo}/collaborators/{username}",
+  "/repos/{owner}/{repo}/commits/{commit_sha}/comments",
+  "/repos/{owner}/{repo}/issues",
+  "/repos/{owner}/{repo}/issues/{issue_number}/comments",
+  "/repos/{owner}/{repo}/issues/{issue_number}/sub_issue",
+  "/repos/{owner}/{repo}/issues/{issue_number}/sub_issues/priority",
+  "/repos/{owner}/{repo}/pulls",
+  "/repos/{owner}/{repo}/pulls/{pull_number}/comments",
+  "/repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies",
+  "/repos/{owner}/{repo}/pulls/{pull_number}/merge",
+  "/repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers",
+  "/repos/{owner}/{repo}/pulls/{pull_number}/reviews",
+  "/repos/{owner}/{repo}/releases",
+  "/teams/{team_id}/discussions",
+  "/teams/{team_id}/discussions/{discussion_number}/comments"
+];
+function routeMatcher(paths) {
+  const regexes = paths.map(
+    (path5) => path5.split("/").map((c) => c.startsWith("{") ? "(?:.+?)" : c).join("/")
+  );
+  const regex2 = `^(?:${regexes.map((r) => `(?:${r})`).join("|")})[^/]*$`;
+  return new RegExp(regex2, "i");
+}
+var regex = routeMatcher(triggers_notification_paths_default);
+var triggersNotification = regex.test.bind(regex);
+var groups = {};
+var createGroups = function(Bottleneck2, common) {
+  groups.global = new Bottleneck2.Group({
+    id: "octokit-global",
+    maxConcurrent: 10,
+    ...common
+  });
+  groups.auth = new Bottleneck2.Group({
+    id: "octokit-auth",
+    maxConcurrent: 1,
+    ...common
+  });
+  groups.search = new Bottleneck2.Group({
+    id: "octokit-search",
+    maxConcurrent: 1,
+    minTime: 2e3,
+    ...common
+  });
+  groups.write = new Bottleneck2.Group({
+    id: "octokit-write",
+    maxConcurrent: 1,
+    minTime: 1e3,
+    ...common
+  });
+  groups.notifications = new Bottleneck2.Group({
+    id: "octokit-notifications",
+    maxConcurrent: 1,
+    minTime: 3e3,
+    ...common
+  });
+};
+function throttling(octokit, octokitOptions) {
+  const {
+    enabled: enabled2 = true,
+    Bottleneck: Bottleneck2 = import_light2.default,
+    id = "no-id",
+    timeout = 1e3 * 60 * 2,
+    // Redis TTL: 2 minutes
+    connection
+  } = octokitOptions.throttle || {};
+  if (!enabled2) {
+    return {};
+  }
+  const common = { timeout };
+  if (typeof connection !== "undefined") {
+    common.connection = connection;
+  }
+  const state3 = Object.assign(
+    {
+      clustering: connection != null,
+      triggersNotification,
+      fallbackSecondaryRateRetryAfter: 60,
+      retryAfterBaseValue: 1e3,
+      id
+    },
+    octokitOptions.throttle
+  );
+  if (typeof state3.onSecondaryRateLimit !== "function" || typeof state3.onRateLimit !== "function") {
+    throw new Error(`octokit/plugin-throttling error:
+        You must pass the onSecondaryRateLimit and onRateLimit error handlers.
+        See https://octokit.github.io/rest.js/#throttling
+
+        const octokit = new Octokit({
+          throttle: {
+            onSecondaryRateLimit: (retryAfter, options) => {/* ... */},
+            onRateLimit: (retryAfter, options) => {/* ... */}
+          }
+        })
+    `);
+  }
+  let initialized = false;
+  const initializeBottleneck = () => {
+    if (initialized) {
+      return;
+    }
+    initialized = true;
+    if (groups.global == null) {
+      createGroups(Bottleneck2, common);
+    }
+    state3.global = state3.global ?? groups.global;
+    state3.auth = state3.auth ?? groups.auth;
+    state3.search = state3.search ?? groups.search;
+    state3.write = state3.write ?? groups.write;
+    state3.notifications = state3.notifications ?? groups.notifications;
+    state3.retryLimiter = state3.retryLimiter ?? new Bottleneck2();
+    const events = {};
+    const emitter = new Bottleneck2.Events(events);
+    events.on("secondary-limit", state3.onSecondaryRateLimit);
+    events.on("rate-limit", state3.onRateLimit);
+    events.on(
+      "error",
+      (e) => octokit.log.warn("Error in throttling-plugin limit handler", e)
+    );
+    state3.retryLimiter.on("failed", async function(error2, info2) {
+      const [state22, request2, options] = info2.args;
+      const { pathname } = new URL(options.url, "http://github.test");
+      const shouldRetryGraphQL = pathname.startsWith("/graphql") && error2.status !== 401;
+      if (!(shouldRetryGraphQL || error2.status === 403 || error2.status === 429)) {
+        return;
+      }
+      const retryCount = ~~request2.retryCount;
+      request2.retryCount = retryCount;
+      options.request.retryCount = retryCount;
+      const { wantRetry, retryAfter = 0 } = await (async function() {
+        if (/\bsecondary rate\b/i.test(error2.message)) {
+          const retryAfter2 = Number(error2.response.headers["retry-after"]) || state22.fallbackSecondaryRateRetryAfter;
+          const wantRetry2 = await emitter.trigger(
+            "secondary-limit",
+            retryAfter2,
+            options,
+            octokit,
+            retryCount
+          );
+          return { wantRetry: wantRetry2, retryAfter: retryAfter2 };
+        }
+        if (error2.response.headers != null && error2.response.headers["x-ratelimit-remaining"] === "0" || (error2.response.data?.errors ?? []).some(
+          (error22) => error22.type === "RATE_LIMITED"
+        )) {
+          const rateLimitReset = new Date(
+            ~~error2.response.headers["x-ratelimit-reset"] * 1e3
+          ).getTime();
+          const retryAfter2 = Math.max(
+            // Add one second so we retry _after_ the reset time
+            // https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#exceeding-the-rate-limit
+            Math.ceil((rateLimitReset - Date.now()) / 1e3) + 1,
+            0
+          );
+          const wantRetry2 = await emitter.trigger(
+            "rate-limit",
+            retryAfter2,
+            options,
+            octokit,
+            retryCount
+          );
+          return { wantRetry: wantRetry2, retryAfter: retryAfter2 };
+        }
+        return {};
+      })();
+      if (wantRetry) {
+        request2.retryCount++;
+        return retryAfter * state22.retryAfterBaseValue;
+      }
+    });
+  };
+  octokit.hook.wrap("request", (request2, options) => {
+    initializeBottleneck();
+    return wrapRequest2(state3, request2, options);
+  });
+  return {};
+}
+throttling.VERSION = VERSION9;
+throttling.triggersNotification = triggersNotification;
+
+// node_modules/@octokit/rest/dist-src/version.js
+var VERSION10 = "22.0.1";
+
+// node_modules/@octokit/rest/dist-src/index.js
+var Octokit2 = Octokit.plugin(requestLog, legacyRestEndpointMethods, paginateRest).defaults(
+  {
+    userAgent: `octokit-rest.js/${VERSION10}`
+  }
+);
+
+// src/github/github.ts
+var FileContent = class {
+  raw;
+  content;
+  constructor(getContentResponse) {
+    this.raw = getContentResponse;
+    const base64 = getContentResponse.content.replace(/[\r\n]/g, "");
+    this.content = import_node_buffer2.Buffer.from(base64, "base64").toString("utf8");
+  }
+};
+var Github = class _Github {
+  octokitClient;
+  jobLogCache = /* @__PURE__ */ new Map();
+  token;
+  baseUrl;
+  isGHES;
+  contentCache = /* @__PURE__ */ new Map();
+  get octokit() {
+    return this.octokitClient;
+  }
+  constructor(options) {
+    this.baseUrl = _Github.getBaseUrl(options?.host);
+    this.isGHES = this.baseUrl !== "https://api.github.com";
+    this.token = options?.token ?? process.env.GITHUB_TOKEN;
+    if (options?.octokit) {
+      this.octokitClient = options.octokit;
+      return;
+    }
+    const MyOctokit = Octokit2.plugin(throttling, retry);
+    this.octokitClient = new MyOctokit({
+      auth: this.token,
+      baseUrl: this.baseUrl,
+      log: options?.debug ? console : void 0,
+      throttle: {
+        onRateLimit: (retryAfter, options2, _octokit, retryCount) => {
+          console.warn(
+            `Request quota exhausted for request ${options2.method} ${options2.url}`
+          );
+          if (retryCount <= 2) {
+            console.warn(`Retrying after ${retryAfter} seconds!`);
+            return true;
+          }
+        },
+        onSecondaryRateLimit: (_retryAfter, options2, _octokit, _retryCount) => {
+          console.warn(
+            `Abuse detected for request ${options2.method} ${options2.url}`
+          );
+        }
+      }
+    });
+  }
+  static getBaseUrl(host) {
+    if (host) {
+      return host.startsWith("https://") ? `${host}/api/v3` : `https://${host}/api/v3`;
+    } else if (process.env.GITHUB_API_URL) {
+      return process.env.GITHUB_API_URL;
+    } else {
+      return "https://api.github.com";
+    }
+  }
+  async fetchWorkflowRunJobs(workflowRun) {
+    const res = await this.octokitClient.actions.listJobsForWorkflowRunAttempt({
+      owner: workflowRun.repository.owner.login,
+      repo: workflowRun.repository.name,
+      run_id: workflowRun.id,
+      attempt_number: workflowRun.run_attempt ?? 1,
+      per_page: 100
+    });
+    return res.data.jobs;
+  }
+  fetchJobLog(owner, repo, jobId) {
+    const cached = this.jobLogCache.get(jobId);
+    if (cached) return cached;
+    const log2 = this.octokitClient.actions.downloadJobLogsForWorkflowRun({
+      owner,
+      repo,
+      job_id: jobId
+    }).then((res) => res.data).catch((error2) => {
+      this.jobLogCache.delete(jobId);
+      throw error2;
+    });
+    this.jobLogCache.set(jobId, log2);
+    return log2;
+  }
+  async fetchWorkflowRun(owner, repo, runId, runAttempt) {
+    if (runAttempt !== void 0) {
+      const res = await this.octokitClient.actions.getWorkflowRunAttempt({
+        owner,
+        repo,
+        run_id: runId,
+        attempt_number: runAttempt
+      });
+      return res.data;
+    } else {
+      const res = await this.octokitClient.actions.getWorkflowRun({
+        owner,
+        repo,
+        run_id: runId
+      });
+      return res.data;
+    }
+  }
+  fetchWorkflowFiles(workflowRuns) {
+    return Promise.all(
+      workflowRuns.map(
+        (workflowRun) => this.fetchContent({
+          owner: workflowRun.repository.owner.login,
+          repo: workflowRun.repository.name,
+          path: workflowRun.path,
+          ref: workflowRun.head_sha
+        })
+      )
+    );
+  }
+  async fetchContent(params) {
+    const cache = this.contentCache.get(JSON.stringify(params));
+    if (cache) return cache;
+    return this.octokitClient.repos.getContent({
+      owner: params.owner,
+      repo: params.repo,
+      path: params.path,
+      ref: params.ref
+    }).then((res) => {
+      if (!Array.isArray(res.data) && res.data.type === "file") {
+        const fetchedFileContent = new FileContent(
+          res.data
+        );
+        this.contentCache.set(JSON.stringify(params), fetchedFileContent);
+        return fetchedFileContent;
+      }
+    }).catch((error2) => {
+      console.warn(
+        `fetchContent failed: ref: ${params.ref}, path: ${params.owner}/${params.repo}/${params.path}`,
+        error2
+      );
+      return void 0;
+    });
+  }
+};
+
+// src/logic/composite.ts
+var import_node_buffer3 = require("node:buffer");
 var import_yaml2 = __toESM(require_dist5(), 1);
 
 // node_modules/date-fns/constants.js
@@ -115092,7 +115485,7 @@ function cleanEscapedString(input) {
   return matched[1].replace(doubleQuoteRegExp, "'");
 }
 
-// src/format_util.ts
+// src/output/format_util.ts
 var diffSec = (start, end) => {
   if (!start || !end) return 0;
   const startDate = new Date(start);
@@ -115166,7 +115559,7 @@ var convertStepToStatus = (conclusion) => {
   }
 };
 
-// src/workflow_file.ts
+// src/models/workflow_file.ts
 var import_yaml = __toESM(require_dist5(), 1);
 var WorkflowModel = class {
   fileContent;
@@ -115270,7 +115663,7 @@ var StepModel = class {
   }
 };
 
-// src/composite.ts
+// src/logic/composite.ts
 async function fetchFileContent(client2, owner, repo, path5, ref) {
   try {
     const res = await client2.octokit.repos.getContent({
@@ -115281,7 +115674,7 @@ async function fetchFileContent(client2, owner, repo, path5, ref) {
     });
     if (!Array.isArray(res.data) && res.data.type === "file") {
       const base64 = (res.data.content ?? "").replace(/\n/g, "");
-      return import_node_buffer2.Buffer.from(base64, "base64").toString("utf8");
+      return import_node_buffer3.Buffer.from(base64, "base64").toString("utf8");
     }
   } catch (error2) {
     console.warn(
@@ -115552,390 +115945,166 @@ async function expandCompositeSteps(client2, workflowRun, workflowJobs, options 
   return expandedJobs;
 }
 
-// src/github.ts
-var import_node_buffer3 = require("node:buffer");
-
-// node_modules/@octokit/plugin-throttling/dist-bundle/index.js
-var import_light2 = __toESM(require_light(), 1);
-var VERSION9 = "0.0.0-development";
-var noop3 = () => Promise.resolve();
-function wrapRequest2(state3, request2, options) {
-  return state3.retryLimiter.schedule(doRequest, state3, request2, options);
-}
-async function doRequest(state3, request2, options) {
-  const { pathname } = new URL(options.url, "http://github.test");
-  const isAuth = isAuthRequest(options.method, pathname);
-  const isWrite = !isAuth && options.method !== "GET" && options.method !== "HEAD";
-  const isSearch = options.method === "GET" && pathname.startsWith("/search/");
-  const isGraphQL = pathname.startsWith("/graphql");
-  const retryCount = ~~request2.retryCount;
-  const jobOptions = retryCount > 0 ? { priority: 0, weight: 0 } : {};
-  if (state3.clustering) {
-    jobOptions.expiration = 1e3 * 60;
-  }
-  if (isWrite || isGraphQL) {
-    await state3.write.key(state3.id).schedule(jobOptions, noop3);
-  }
-  if (isWrite && state3.triggersNotification(pathname)) {
-    await state3.notifications.key(state3.id).schedule(jobOptions, noop3);
-  }
-  if (isSearch) {
-    await state3.search.key(state3.id).schedule(jobOptions, noop3);
-  }
-  const req = (isAuth ? state3.auth : state3.global).key(state3.id).schedule(jobOptions, request2, options);
-  if (isGraphQL) {
-    const res = await req;
-    if (res.data.errors != null && res.data.errors.some((error2) => error2.type === "RATE_LIMITED")) {
-      const error2 = Object.assign(new Error("GraphQL Rate Limit Exceeded"), {
-        response: res,
-        data: res.data
-      });
-      throw error2;
-    }
-  }
-  return req;
-}
-function isAuthRequest(method, pathname) {
-  return method === "PATCH" && // https://docs.github.com/en/rest/apps/apps?apiVersion=2022-11-28#create-a-scoped-access-token
-  /^\/applications\/[^/]+\/token\/scoped$/.test(pathname) || method === "POST" && // https://docs.github.com/en/rest/apps/oauth-applications?apiVersion=2022-11-28#reset-a-token
-  (/^\/applications\/[^/]+\/token$/.test(pathname) || // https://docs.github.com/en/rest/apps/apps?apiVersion=2022-11-28#create-an-installation-access-token-for-an-app
-  /^\/app\/installations\/[^/]+\/access_tokens$/.test(pathname) || // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
-  pathname === "/login/oauth/access_token");
-}
-var triggers_notification_paths_default = [
-  "/orgs/{org}/invitations",
-  "/orgs/{org}/invitations/{invitation_id}",
-  "/orgs/{org}/teams/{team_slug}/discussions",
-  "/orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments",
-  "/repos/{owner}/{repo}/collaborators/{username}",
-  "/repos/{owner}/{repo}/commits/{commit_sha}/comments",
-  "/repos/{owner}/{repo}/issues",
-  "/repos/{owner}/{repo}/issues/{issue_number}/comments",
-  "/repos/{owner}/{repo}/issues/{issue_number}/sub_issue",
-  "/repos/{owner}/{repo}/issues/{issue_number}/sub_issues/priority",
-  "/repos/{owner}/{repo}/pulls",
-  "/repos/{owner}/{repo}/pulls/{pull_number}/comments",
-  "/repos/{owner}/{repo}/pulls/{pull_number}/comments/{comment_id}/replies",
-  "/repos/{owner}/{repo}/pulls/{pull_number}/merge",
-  "/repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers",
-  "/repos/{owner}/{repo}/pulls/{pull_number}/reviews",
-  "/repos/{owner}/{repo}/releases",
-  "/teams/{team_id}/discussions",
-  "/teams/{team_id}/discussions/{discussion_number}/comments"
-];
-function routeMatcher(paths) {
-  const regexes = paths.map(
-    (path5) => path5.split("/").map((c) => c.startsWith("{") ? "(?:.+?)" : c).join("/")
+// src/logic/parallel.ts
+var PARALLEL_GROUP_NAME = "Parallel group";
+var WAITING_MESSAGE = "Waiting for background step(s) to complete:";
+var LOG_TIMESTAMP_PATTERN = String.raw`(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)`;
+var hasTimestamps = (step) => step.started_at !== null && step.completed_at !== null;
+function findParallelCandidateIndexes(steps, parentIndex) {
+  const parent = steps[parentIndex];
+  if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) return [];
+  const precedingSteps = steps.slice(0, parentIndex);
+  const lastNonChildIndex = precedingSteps.findLastIndex(
+    (step) => !hasTimestamps(step) || step.started_at !== parent.started_at || new Date(step.completed_at).getTime() > new Date(parent.completed_at).getTime()
   );
-  const regex2 = `^(?:${regexes.map((r) => `(?:${r})`).join("|")})[^/]*$`;
-  return new RegExp(regex2, "i");
+  return precedingSteps.slice(lastNonChildIndex + 1).map((_step, index) => lastNonChildIndex + 1 + index);
 }
-var regex = routeMatcher(triggers_notification_paths_default);
-var triggersNotification = regex.test.bind(regex);
-var groups = {};
-var createGroups = function(Bottleneck2, common) {
-  groups.global = new Bottleneck2.Group({
-    id: "octokit-global",
-    maxConcurrent: 10,
-    ...common
+function identifyParallelGroups(steps, markers) {
+  return steps.flatMap((parent, parentIndex) => {
+    if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) {
+      return [];
+    }
+    const candidateIndexes = findParallelCandidateIndexes(steps, parentIndex);
+    const parentStart = new Date(parent.started_at).getTime();
+    const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
+    const childIndexes = markers.filter(
+      (marker2) => marker2.startedAt.getTime() >= parentStart && marker2.startedAt.getTime() <= parentEnd
+    ).flatMap(
+      (marker2) => candidateIndexes.flatMap((_index, offset) => {
+        const suffix = candidateIndexes.slice(offset);
+        const names = suffix.map((index) => steps[index].name).join(", ");
+        return names === marker2.childNames ? [suffix] : [];
+      })
+    ).at(0);
+    return childIndexes !== void 0 ? [{ parentIndex, childIndexes }] : [];
   });
-  groups.auth = new Bottleneck2.Group({
-    id: "octokit-auth",
-    maxConcurrent: 1,
-    ...common
-  });
-  groups.search = new Bottleneck2.Group({
-    id: "octokit-search",
-    maxConcurrent: 1,
-    minTime: 2e3,
-    ...common
-  });
-  groups.write = new Bottleneck2.Group({
-    id: "octokit-write",
-    maxConcurrent: 1,
-    minTime: 1e3,
-    ...common
-  });
-  groups.notifications = new Bottleneck2.Group({
-    id: "octokit-notifications",
-    maxConcurrent: 1,
-    minTime: 3e3,
-    ...common
-  });
-};
-function throttling(octokit, octokitOptions) {
-  const {
-    enabled: enabled2 = true,
-    Bottleneck: Bottleneck2 = import_light2.default,
-    id = "no-id",
-    timeout = 1e3 * 60 * 2,
-    // Redis TTL: 2 minutes
-    connection
-  } = octokitOptions.throttle || {};
-  if (!enabled2) {
-    return {};
-  }
-  const common = { timeout };
-  if (typeof connection !== "undefined") {
-    common.connection = connection;
-  }
-  const state3 = Object.assign(
-    {
-      clustering: connection != null,
-      triggersNotification,
-      fallbackSecondaryRateRetryAfter: 60,
-      retryAfterBaseValue: 1e3,
-      id
-    },
-    octokitOptions.throttle
+}
+function parseWaitingMarkers(logText) {
+  const markerRegex = new RegExp(
+    `${LOG_TIMESTAMP_PATTERN}.*${WAITING_MESSAGE.replace(
+      /[()]/g,
+      String.raw`\$&`
+    )}\\s*(.+)$`
   );
-  if (typeof state3.onSecondaryRateLimit !== "function" || typeof state3.onRateLimit !== "function") {
-    throw new Error(`octokit/plugin-throttling error:
-        You must pass the onSecondaryRateLimit and onRateLimit error handlers.
-        See https://octokit.github.io/rest.js/#throttling
-
-        const octokit = new Octokit({
-          throttle: {
-            onSecondaryRateLimit: (retryAfter, options) => {/* ... */},
-            onRateLimit: (retryAfter, options) => {/* ... */}
-          }
-        })
-    `);
-  }
-  let initialized = false;
-  const initializeBottleneck = () => {
-    if (initialized) {
-      return;
-    }
-    initialized = true;
-    if (groups.global == null) {
-      createGroups(Bottleneck2, common);
-    }
-    state3.global = state3.global ?? groups.global;
-    state3.auth = state3.auth ?? groups.auth;
-    state3.search = state3.search ?? groups.search;
-    state3.write = state3.write ?? groups.write;
-    state3.notifications = state3.notifications ?? groups.notifications;
-    state3.retryLimiter = state3.retryLimiter ?? new Bottleneck2();
-    const events = {};
-    const emitter = new Bottleneck2.Events(events);
-    events.on("secondary-limit", state3.onSecondaryRateLimit);
-    events.on("rate-limit", state3.onRateLimit);
-    events.on(
-      "error",
-      (e) => octokit.log.warn("Error in throttling-plugin limit handler", e)
+  return logText.split(/\r?\n/).flatMap((line) => {
+    const match2 = line.match(markerRegex);
+    return match2 ? [
+      {
+        startedAt: new Date(match2[1]),
+        childNames: match2[2].trim()
+      }
+    ] : [];
+  });
+}
+function validateParallelGroups(steps, groups2, logText) {
+  const markers = parseWaitingMarkers(logText);
+  const invalidGroup = groups2.find(({ parentIndex, childIndexes }) => {
+    const parent = steps[parentIndex];
+    if (!hasTimestamps(parent)) return true;
+    const expectedNames = childIndexes.map((index) => steps[index].name).join(", ");
+    const parentStart = new Date(parent.started_at).getTime();
+    const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
+    return !markers.some(
+      (marker2) => marker2.childNames === expectedNames && marker2.startedAt.getTime() >= parentStart && marker2.startedAt.getTime() <= parentEnd
     );
-    state3.retryLimiter.on("failed", async function(error2, info2) {
-      const [state22, request2, options] = info2.args;
-      const { pathname } = new URL(options.url, "http://github.test");
-      const shouldRetryGraphQL = pathname.startsWith("/graphql") && error2.status !== 401;
-      if (!(shouldRetryGraphQL || error2.status === 403 || error2.status === 429)) {
-        return;
-      }
-      const retryCount = ~~request2.retryCount;
-      request2.retryCount = retryCount;
-      options.request.retryCount = retryCount;
-      const { wantRetry, retryAfter = 0 } = await (async function() {
-        if (/\bsecondary rate\b/i.test(error2.message)) {
-          const retryAfter2 = Number(error2.response.headers["retry-after"]) || state22.fallbackSecondaryRateRetryAfter;
-          const wantRetry2 = await emitter.trigger(
-            "secondary-limit",
-            retryAfter2,
-            options,
-            octokit,
-            retryCount
-          );
-          return { wantRetry: wantRetry2, retryAfter: retryAfter2 };
-        }
-        if (error2.response.headers != null && error2.response.headers["x-ratelimit-remaining"] === "0" || (error2.response.data?.errors ?? []).some(
-          (error22) => error22.type === "RATE_LIMITED"
-        )) {
-          const rateLimitReset = new Date(
-            ~~error2.response.headers["x-ratelimit-reset"] * 1e3
-          ).getTime();
-          const retryAfter2 = Math.max(
-            // Add one second so we retry _after_ the reset time
-            // https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#exceeding-the-rate-limit
-            Math.ceil((rateLimitReset - Date.now()) / 1e3) + 1,
-            0
-          );
-          const wantRetry2 = await emitter.trigger(
-            "rate-limit",
-            retryAfter2,
-            options,
-            octokit,
-            retryCount
-          );
-          return { wantRetry: wantRetry2, retryAfter: retryAfter2 };
-        }
-        return {};
-      })();
-      if (wantRetry) {
-        request2.retryCount++;
-        return retryAfter * state22.retryAfterBaseValue;
-      }
-    });
+  });
+  return invalidGroup === void 0 ? void 0 : `Could not match API steps for parallel group at step ${invalidGroup.parentIndex + 1} with the job log`;
+}
+function expandParallelJobSteps(steps, logText) {
+  const markers = parseWaitingMarkers(logText);
+  const groups2 = identifyParallelGroups(steps, markers);
+  const candidateParents = steps.flatMap((_step, parentIndex) => {
+    const childIndexes2 = findParallelCandidateIndexes(steps, parentIndex);
+    return childIndexes2.length > 0 ? [{ parentIndex, childIndexes: childIndexes2 }] : [];
+  });
+  const apiCandidateCount = candidateParents.filter(
+    (candidate) => !candidateParents.some(
+      (other) => other.parentIndex > candidate.parentIndex && other.childIndexes.includes(candidate.parentIndex)
+    )
+  ).length;
+  if (groups2.length !== markers.length || groups2.length !== apiCandidateCount) {
+    return {
+      steps,
+      warning: "Could not correlate parallel groups between API steps and logs"
+    };
+  }
+  const warning2 = validateParallelGroups(steps, groups2, logText);
+  if (warning2) return { steps, warning: warning2 };
+  const childIndexes = new Set(groups2.flatMap((group) => group.childIndexes));
+  const groupsByParentIndex = new Map(
+    groups2.map((group) => [group.parentIndex, group])
+  );
+  return {
+    steps: steps.flatMap((step, index) => {
+      if (childIndexes.has(index)) return [];
+      const group = groupsByParentIndex.get(index);
+      if (!group) return [step];
+      return [
+        { ...step, timelineRowKind: "parallel-parent" },
+        ...group.childIndexes.map((childIndex) => ({
+          ...steps[childIndex],
+          name: `(bg) ${steps[childIndex].name}`,
+          timelineOriginalName: steps[childIndex].name,
+          timelineRowKind: "parallel-child"
+        }))
+      ];
+    })
   };
-  octokit.hook.wrap("request", (request2, options) => {
-    initializeBottleneck();
-    return wrapRequest2(state3, request2, options);
-  });
-  return {};
 }
-throttling.VERSION = VERSION9;
-throttling.triggersNotification = triggersNotification;
-
-// node_modules/@octokit/rest/dist-src/version.js
-var VERSION10 = "22.0.1";
-
-// node_modules/@octokit/rest/dist-src/index.js
-var Octokit2 = Octokit.plugin(requestLog, legacyRestEndpointMethods, paginateRest).defaults(
-  {
-    userAgent: `octokit-rest.js/${VERSION10}`
+async function expandParallelSteps(client2, workflowRun, workflowJobs) {
+  const jobsWithParallelGroups = workflowJobs.filter(
+    (job) => job.steps?.some((step) => step.name === PARALLEL_GROUP_NAME)
+  );
+  if (jobsWithParallelGroups.length === 0) {
+    return { jobs: workflowJobs, warnings: [] };
   }
-);
-
-// src/github.ts
-var FileContent = class {
-  raw;
-  content;
-  constructor(getContentResponse) {
-    this.raw = getContentResponse;
-    const base64 = getContentResponse.content.replace(/[\r\n]/g, "");
-    this.content = import_node_buffer3.Buffer.from(base64, "base64").toString("utf8");
-  }
-};
-var Github = class _Github {
-  octokitClient;
-  jobLogCache = /* @__PURE__ */ new Map();
-  token;
-  baseUrl;
-  isGHES;
-  contentCache = /* @__PURE__ */ new Map();
-  get octokit() {
-    return this.octokitClient;
-  }
-  constructor(options) {
-    this.baseUrl = _Github.getBaseUrl(options?.host);
-    this.isGHES = this.baseUrl !== "https://api.github.com";
-    this.token = options?.token ?? process.env.GITHUB_TOKEN;
-    if (options?.octokit) {
-      this.octokitClient = options.octokit;
-      return;
-    }
-    const MyOctokit = Octokit2.plugin(throttling, retry);
-    this.octokitClient = new MyOctokit({
-      auth: this.token,
-      baseUrl: this.baseUrl,
-      log: options?.debug ? console : void 0,
-      throttle: {
-        onRateLimit: (retryAfter, options2, _octokit, retryCount) => {
-          console.warn(
-            `Request quota exhausted for request ${options2.method} ${options2.url}`
-          );
-          if (retryCount <= 2) {
-            console.warn(`Retrying after ${retryAfter} seconds!`);
-            return true;
-          }
-        },
-        onSecondaryRateLimit: (_retryAfter, options2, _octokit, _retryCount) => {
-          console.warn(
-            `Abuse detected for request ${options2.method} ${options2.url}`
-          );
-        }
+  const owner = workflowRun.repository.owner.login;
+  const repo = workflowRun.repository.name;
+  const logResults = await Promise.all(
+    jobsWithParallelGroups.map(async (job) => {
+      try {
+        return {
+          jobId: job.id,
+          logText: await client2.fetchJobLog(owner, repo, job.id)
+        };
+      } catch (error2) {
+        return {
+          jobId: job.id,
+          error: error2 instanceof Error ? error2.message : String(error2)
+        };
       }
-    });
-  }
-  static getBaseUrl(host) {
-    if (host) {
-      return host.startsWith("https://") ? `${host}/api/v3` : `https://${host}/api/v3`;
-    } else if (process.env.GITHUB_API_URL) {
-      return process.env.GITHUB_API_URL;
-    } else {
-      return "https://api.github.com";
-    }
-  }
-  async fetchWorkflowRunJobs(workflowRun) {
-    const res = await this.octokitClient.actions.listJobsForWorkflowRunAttempt({
-      owner: workflowRun.repository.owner.login,
-      repo: workflowRun.repository.name,
-      run_id: workflowRun.id,
-      attempt_number: workflowRun.run_attempt ?? 1,
-      per_page: 100
-    });
-    return res.data.jobs;
-  }
-  fetchJobLog(owner, repo, jobId) {
-    const cached = this.jobLogCache.get(jobId);
-    if (cached) return cached;
-    const log2 = this.octokitClient.actions.downloadJobLogsForWorkflowRun({
-      owner,
-      repo,
-      job_id: jobId
-    }).then((res) => res.data).catch((error2) => {
-      this.jobLogCache.delete(jobId);
-      throw error2;
-    });
-    this.jobLogCache.set(jobId, log2);
-    return log2;
-  }
-  async fetchWorkflowRun(owner, repo, runId, runAttempt) {
-    if (runAttempt !== void 0) {
-      const res = await this.octokitClient.actions.getWorkflowRunAttempt({
-        owner,
-        repo,
-        run_id: runId,
-        attempt_number: runAttempt
+    })
+  );
+  const logsByJobId = new Map(
+    logResults.map((result) => [result.jobId, result])
+  );
+  const warnings = [];
+  const jobs = workflowJobs.map((job) => {
+    if (!job.steps || !logsByJobId.has(job.id)) return job;
+    const logResult = logsByJobId.get(job.id);
+    if (!("logText" in logResult)) {
+      warnings.push({
+        jobId: job.id,
+        jobName: job.name,
+        reason: `Could not download the job log: ${logResult.error}`
       });
-      return res.data;
-    } else {
-      const res = await this.octokitClient.actions.getWorkflowRun({
-        owner,
-        repo,
-        run_id: runId
-      });
-      return res.data;
+      return job;
     }
-  }
-  fetchWorkflowFiles(workflowRuns) {
-    return Promise.all(
-      workflowRuns.map(
-        (workflowRun) => this.fetchContent({
-          owner: workflowRun.repository.owner.login,
-          repo: workflowRun.repository.name,
-          path: workflowRun.path,
-          ref: workflowRun.head_sha
-        })
-      )
-    );
-  }
-  async fetchContent(params) {
-    const cache = this.contentCache.get(JSON.stringify(params));
-    if (cache) return cache;
-    return this.octokitClient.repos.getContent({
-      owner: params.owner,
-      repo: params.repo,
-      path: params.path,
-      ref: params.ref
-    }).then((res) => {
-      if (!Array.isArray(res.data) && res.data.type === "file") {
-        const fetchedFileContent = new FileContent(
-          res.data
-        );
-        this.contentCache.set(JSON.stringify(params), fetchedFileContent);
-        return fetchedFileContent;
-      }
-    }).catch((error2) => {
-      console.warn(
-        `fetchContent failed: ref: ${params.ref}, path: ${params.owner}/${params.repo}/${params.path}`,
-        error2
-      );
-      return void 0;
-    });
-  }
-};
+    const expanded = expandParallelJobSteps(job.steps, logResult.logText);
+    if (expanded.warning) {
+      warnings.push({
+        jobId: job.id,
+        jobName: job.name,
+        reason: expanded.warning
+      });
+      return job;
+    }
+    return { ...job, steps: expanded.steps };
+  });
+  return { jobs, warnings };
+}
 
-// src/critical_path.ts
+// src/logic/critical_path.ts
 var parseTimestampMs = (value) => {
   if (typeof value !== "string" || value.length === 0) return null;
   const ms = Date.parse(value);
@@ -116024,7 +116193,7 @@ var pickCriticalParallelChildIndex = (children) => {
   return bestIndex;
 };
 
-// src/html_template.ts
+// src/output/html/template.ts
 var escapeHtml = (value) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 var serializeJsonForScript = (data) => JSON.stringify(data).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 var getRunHeaderBadge = (conclusion) => {
@@ -116065,7 +116234,9 @@ var renderHtmlReport = (data) => {
   const badge = getRunHeaderBadge(data.run.conclusion);
   const shortSha = data.run.head_sha.slice(0, 8);
   const hasComposite = data.jobs.some(
-    (job) => job.items.some((item) => item.kind === "composite")
+    (job) => job.items.some(
+      (item) => item.kind === "composite" || item.kind === "parallel" && item.children.some((ch) => (ch.children?.length ?? 0) > 0)
+    )
   );
   const hasParallel = data.jobs.some(
     (job) => job.items.some((item) => item.kind === "parallel")
@@ -117043,77 +117214,78 @@ var renderHtmlReport = (data) => {
           );
           if (compOpen) {
             entry.children.forEach((ch, cIdx) => {
-              const cBranch = cIdx === entry.children.length - 1 ? '\u2514\u2500' : '\u251C\u2500';
-              const cst = statusMeta(ch.conclusion);
-              const cSkip = ch.conclusion === 'skipped';
-              const cg = !cSkip ? spanGeom(ch.start, ch.end) : null;
-              const cBar = cg ? '<div class="bar b-comp-child" style="left:' + cg.left + ';width:' + cg.width + ';"' +
-                spanAttrs(ch.name, ch.dur) + '></div>' : '';
-              const chUrl = (job.html_url && ch.number != null) ? (job.html_url + '#step:' + ch.number + ':1') : '';
-              parts.push(
-                '<div class="row' + cst.rowCls + (ch.isCp ? ' row-cp' : '') + '" data-row-kind="comp-child" data-job-id="' + job.id + '"' +
-                (ch.start != null ? ' data-start="' + ch.start + '" data-end="' + ch.end + '"' : '') + '>' +
-                '<div class="left-cell">' +
-                  '<div class="col-name i2"><span class="tree">' + cBranch + '</span><span class="name-text" title="' + esc(ch.name) + '">' + esc(ch.name) + '</span>' + linkHtml(chUrl) + '</div>' +
-                  '<div class="col-dur">' + (cSkip ? '\u2014' : fmtDur(ch.dur)) + '</div>' +
-                  '<div class="col-status"><span class="' + cst.cls + '">' + cst.stepText + '</span></div>' +
-                '</div>' +
-                '<div class="timeline-cell"><div class="track">' + cBar + '</div></div>' +
-                '</div>'
-              );
-            });
-          }
-          return;
-        }
-
-        if (entry.kind === 'parallel') {
-          const label = entry.name + ' (' + fmtDur(entry.dur) + ')';
-          const pg = !sSkip ? spanGeom(entry.start, entry.end) : null;
-          let bracket = '';
-          if (pg) {
-            const fits = pg.frac >= 0.15;
-            bracket = '<div class="fork-line" style="left:' + pg.left + ';"></div>' +
-              '<div class="join-line" style="left:' + pg.endPct + ';"></div>' +
-              '<div class="b-par-bracket" style="left:' + pg.left + ';width:' + pg.width + ';"' +
-              spanAttrs(entry.name, entry.dur) + '>' + (fits ? esc(label) : '') + '</div>' +
-              (fits ? '' : '<span class="bracket-side bracket-side-par" style="left:calc(' + pg.endPct + ' + 6px);">' + esc(label) + '</span>');
-          }
-          parts.push(
-            '<div class="row' + sst.rowCls + (entry.isCp ? ' row-cp' : '') + '" data-row-kind="step" data-job-id="' + job.id + '"' +
-            (entry.start != null ? ' data-start="' + entry.start + '" data-end="' + entry.end + '"' : '') + '>' +
-            '<div class="left-cell">' +
-              '<div class="col-name i1"><span class="tree">' + branch + '</span>' + (entry.isCp ? '<span class="cp-tag">CP</span>' : '') + '<span class="kind k-par">Parallel</span><span class="name-text" title="' + esc(entry.name) + '">' + esc(entry.name) + '</span></div>' +
-              '<div class="col-dur">' + (sSkip ? '\u2014' : fmtDur(entry.dur)) + '</div>' +
-              '<div class="col-status"><span class="' + sst.cls + '">' + sst.stepText + '</span></div>' +
-            '</div>' +
-            '<div class="timeline-cell"><div class="track">' + bracket + '</div></div>' +
-            '</div>'
-          );
-          entry.children.forEach((ch, cIdx) => {
-            const cBranch = cIdx === entry.children.length - 1 ? '\u2558\u2550' : '\u255E\u2550';
+            const cBranch = cIdx === entry.children.length - 1 ? '??' : '??';
             const cst = statusMeta(ch.conclusion);
             const cSkip = ch.conclusion === 'skipped';
             const cg = !cSkip ? spanGeom(ch.start, ch.end) : null;
+            const nestedSubs = Array.isArray(ch.children) ? ch.children : [];
+            const hasNestedComp = nestedSubs.length > 0;
+            const nestedCompKey = hasNestedComp ? (job.id + ':' + sIdx + ':' + cIdx) : '';
+            const nestedOpen = hasNestedComp && state.expandedComposites.has(nestedCompKey);
             let cBar = '';
             if (cg) {
               if (pg) {
                 cBar += '<div class="fork-line" style="left:' + pg.left + ';"></div><div class="join-line" style="left:' + pg.endPct + ';"></div>';
               }
-              cBar += '<div class="bar b-par-child" style="left:' + cg.left + ';width:' + cg.width + ';"' +
-                spanAttrs(ch.name, ch.dur) + '></div>';
+              if (hasNestedComp) {
+                const subLabel = ch.name + ' (' + fmtDur(ch.dur) + ')';
+                const fits = cg.frac >= 0.15;
+                cBar += '<div class="b-comp-bracket" style="left:' + cg.left + ';width:' + cg.width + ';"' +
+                  spanAttrs(ch.name, ch.dur) + '>' + (fits ? esc(subLabel) : '') + '</div>' +
+                  (fits ? '' : '<span class="bracket-side bracket-side-comp" style="left:calc(' + cg.endPct + ' + 6px);">' + esc(subLabel) + '</span>');
+              } else {
+                cBar += '<div class="bar b-par-child" style="left:' + cg.left + ';width:' + cg.width + ';"' +
+                  spanAttrs(ch.name, ch.dur) + '></div>';
+              }
             }
             const chUrl = (job.html_url && ch.number != null) ? (job.html_url + '#step:' + ch.number + ':1') : '';
             parts.push(
-              '<div class="row' + cst.rowCls + (ch.isCp ? ' row-cp' : '') + '" data-row-kind="step" data-job-id="' + job.id + '"' +
+              '<div class="row' + (hasNestedComp ? ' row-comp is-toggleable' : '') + cst.rowCls + (ch.isCp ? ' row-cp' : '') + '" data-row-kind="' + (hasNestedComp ? 'comp' : 'step') + '" data-job-id="' + job.id + '"' +
+              (hasNestedComp ? ' data-comp-key="' + esc(nestedCompKey) + '"' : '') +
               (ch.start != null ? ' data-start="' + ch.start + '" data-end="' + ch.end + '"' : '') + '>' +
               '<div class="left-cell">' +
-                '<div class="col-name i2"><span class="tree">' + cBranch + '</span>' + (ch.isCp ? '<span class="cp-tag">CP</span>' : '') + '<span class="name-text" title="' + esc(ch.name) + '">' + esc(ch.name) + '</span>' + linkHtml(chUrl) + '</div>' +
-                '<div class="col-dur">' + (cSkip ? '\u2014' : fmtDur(ch.dur)) + '</div>' +
+                '<div class="col-name i2"><span class="tree">' + cBranch + '</span>' +
+                  (hasNestedComp ? '<span class="chev">' + (nestedOpen ? '?' : '?') + '</span>' : '') +
+                  (ch.isCp ? '<span class="cp-tag">CP</span>' : '') +
+                  (hasNestedComp ? '<span class="kind k-comp">Composite</span>' : '') +
+                  '<span class="name-text" title="' + esc(ch.name) + '">' + esc(ch.name) + '</span>' +
+                  (hasNestedComp ? '<span class="step-count">(' + nestedSubs.length + ')</span>' : '') +
+                  linkHtml(chUrl) +
+                '</div>' +
+                '<div class="col-dur">' + (cSkip ? '?' : fmtDur(ch.dur)) + '</div>' +
                 '<div class="col-status"><span class="' + cst.cls + '">' + cst.stepText + '</span></div>' +
               '</div>' +
               '<div class="timeline-cell"><div class="track">' + cBar + '</div></div>' +
               '</div>'
             );
+            if (nestedOpen) {
+              nestedSubs.forEach((sub, subIdx) => {
+                const subBranch = subIdx === nestedSubs.length - 1 ? '??' : '??';
+                const subSt = statusMeta(sub.conclusion);
+                const subSkip = sub.conclusion === 'skipped';
+                const subG = !subSkip ? spanGeom(sub.start, sub.end) : null;
+                let subBar = '';
+                if (subG) {
+                  if (pg) {
+                    subBar += '<div class="fork-line" style="left:' + pg.left + ';"></div><div class="join-line" style="left:' + pg.endPct + ';"></div>';
+                  }
+                  subBar += '<div class="bar b-comp-child" style="left:' + subG.left + ';width:' + subG.width + ';"' +
+                    spanAttrs(sub.name, sub.dur) + '></div>';
+                }
+                const subUrl = (job.html_url && sub.number != null) ? (job.html_url + '#step:' + sub.number + ':1') : '';
+                parts.push(
+                  '<div class="row' + subSt.rowCls + (sub.isCp ? ' row-cp' : '') + '" data-row-kind="comp-child" data-job-id="' + job.id + '"' +
+                  (sub.start != null ? ' data-start="' + sub.start + '" data-end="' + sub.end + '"' : '') + '>' +
+                  '<div class="left-cell">' +
+                    '<div class="col-name i3"><span class="tree">' + subBranch + '</span><span class="name-text" title="' + esc(sub.name) + '">' + esc(sub.name) + '</span>' + linkHtml(subUrl) + '</div>' +
+                    '<div class="col-dur">' + (subSkip ? '?' : fmtDur(sub.dur)) + '</div>' +
+                    '<div class="col-status"><span class="' + subSt.cls + '">' + subSt.stepText + '</span></div>' +
+                  '</div>' +
+                  '<div class="timeline-cell"><div class="track">' + subBar + '</div></div>' +
+                  '</div>'
+                );
+              });
+            }
           });
           return;
         }
@@ -117321,7 +117493,7 @@ var renderHtmlReport = (data) => {
 `;
 };
 
-// src/html_report.ts
+// src/output/html/report.ts
 var NICE_TICK_STEPS_SEC = [
   1,
   2,
@@ -117393,13 +117565,19 @@ var buildJobItems = (originMs, steps, isJobCp, jobEndSec) => {
   while (idx < steps.length) {
     const step = steps[idx];
     if (step.timelineRowKind === "parallel-parent") {
-      const childSteps = [];
+      const groupedChildren = [];
       let nextIdx = idx + 1;
       while (nextIdx < steps.length && steps[nextIdx].timelineRowKind === "parallel-child") {
-        childSteps.push(steps[nextIdx]);
+        const parallelChild = steps[nextIdx];
         nextIdx += 1;
+        const subSteps = [];
+        while (nextIdx < steps.length && steps[nextIdx].timelineRowKind === "composite-child" && steps[nextIdx].number === parallelChild.number) {
+          subSteps.push(steps[nextIdx]);
+          nextIdx += 1;
+        }
+        groupedChildren.push({ child: parallelChild, subSteps });
       }
-      const rawChildren = childSteps.map((child) => {
+      const rawChildren = groupedChildren.map(({ child, subSteps }) => {
         const timing2 = buildStepTiming(originMs, child, jobEndSec);
         return {
           name: stripBgPrefix(child),
@@ -117408,16 +117586,39 @@ var buildJobItems = (originMs, steps, isJobCp, jobEndSec) => {
           start: timing2.start,
           end: timing2.end,
           dur: timing2.dur,
-          isCp: false
+          isCp: false,
+          subSteps
         };
       });
       const parentTiming = buildStepTiming(originMs, step, jobEndSec);
       const parentIsCp = isJobCp && step.conclusion !== "skipped";
       const cpChildIndex = parentIsCp ? pickCriticalParallelChildIndex(rawChildren) : -1;
-      const children = rawChildren.map((child, childIdx) => ({
-        ...child,
-        isCp: parentIsCp && childIdx === cpChildIndex
-      }));
+      const children = rawChildren.map((child, childIdx) => {
+        const childIsCp = parentIsCp && childIdx === cpChildIndex;
+        const nestedChildren = child.subSteps.map((sub) => {
+          const subTiming = buildStepTiming(originMs, sub, child.end);
+          const subConclusion = resolveConclusion(sub.conclusion, sub.status);
+          return {
+            name: stripSubPrefix(sub.name),
+            number: sub.number,
+            conclusion: subConclusion,
+            start: subTiming.start,
+            end: subTiming.end,
+            dur: subTiming.dur,
+            isCp: childIsCp && subConclusion !== "skipped"
+          };
+        });
+        return {
+          name: child.name,
+          number: child.number,
+          conclusion: child.conclusion,
+          start: child.start,
+          end: child.end,
+          dur: child.dur,
+          isCp: childIsCp,
+          ...nestedChildren.length > 0 ? { children: nestedChildren } : {}
+        };
+      });
       items.push({
         kind: "parallel",
         name: step.name,
@@ -117514,7 +117715,11 @@ var buildHtmlReportData = (workflowRun, workflowJobs, options = {}) => {
     const end = isSkip ? null : completedSec !== null ? start !== null ? Math.max(start, completedSec) : completedSec : stepMaxEnd !== null ? start !== null ? Math.max(start, stepMaxEnd) : stepMaxEnd : start;
     const execDur = start !== null && end !== null ? Math.max(0, end - start) : 0;
     const totalDur = execDur + waitDur;
-    const items = isSkip ? [] : buildJobItems(originMs, job.steps ?? [], isCp, end);
+    const rawSteps = job.steps ?? [];
+    const items = isSkip ? [] : buildJobItems(originMs, rawSteps, isCp, end);
+    const rawStepCount = isSkip ? 0 : rawSteps.filter(
+      (step) => step.timelineRowKind !== "parallel-parent" && step.timelineRowKind !== "composite-child"
+    ).length;
     return {
       id: job.id,
       name: job.name,
@@ -117528,7 +117733,7 @@ var buildHtmlReportData = (workflowRun, workflowJobs, options = {}) => {
       end,
       execDur,
       totalDur,
-      rawStepCount: items.length,
+      rawStepCount,
       items
     };
   });
@@ -117570,166 +117775,7 @@ var createHtmlReport = (workflowRun, workflowJobs, options = {}) => {
   return renderHtmlReport(data);
 };
 
-// src/parallel.ts
-var PARALLEL_GROUP_NAME = "Parallel group";
-var WAITING_MESSAGE = "Waiting for background step(s) to complete:";
-var LOG_TIMESTAMP_PATTERN = String.raw`(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)`;
-var hasTimestamps = (step) => step.started_at !== null && step.completed_at !== null;
-function findParallelCandidateIndexes(steps, parentIndex) {
-  const parent = steps[parentIndex];
-  if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) return [];
-  const precedingSteps = steps.slice(0, parentIndex);
-  const lastNonChildIndex = precedingSteps.findLastIndex(
-    (step) => !hasTimestamps(step) || step.started_at !== parent.started_at || new Date(step.completed_at).getTime() > new Date(parent.completed_at).getTime()
-  );
-  return precedingSteps.slice(lastNonChildIndex + 1).map((_step, index) => lastNonChildIndex + 1 + index);
-}
-function identifyParallelGroups(steps, markers) {
-  return steps.flatMap((parent, parentIndex) => {
-    if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) {
-      return [];
-    }
-    const candidateIndexes = findParallelCandidateIndexes(steps, parentIndex);
-    const parentStart = new Date(parent.started_at).getTime();
-    const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
-    const childIndexes = markers.filter(
-      (marker2) => marker2.startedAt.getTime() >= parentStart && marker2.startedAt.getTime() <= parentEnd
-    ).flatMap(
-      (marker2) => candidateIndexes.flatMap((_index, offset) => {
-        const suffix = candidateIndexes.slice(offset);
-        const names = suffix.map((index) => steps[index].name).join(", ");
-        return names === marker2.childNames ? [suffix] : [];
-      })
-    ).at(0);
-    return childIndexes !== void 0 ? [{ parentIndex, childIndexes }] : [];
-  });
-}
-function parseWaitingMarkers(logText) {
-  const markerRegex = new RegExp(
-    `${LOG_TIMESTAMP_PATTERN}.*${WAITING_MESSAGE.replace(
-      /[()]/g,
-      String.raw`\$&`
-    )}\\s*(.+)$`
-  );
-  return logText.split(/\r?\n/).flatMap((line) => {
-    const match2 = line.match(markerRegex);
-    return match2 ? [
-      {
-        startedAt: new Date(match2[1]),
-        childNames: match2[2].trim()
-      }
-    ] : [];
-  });
-}
-function validateParallelGroups(steps, groups2, logText) {
-  const markers = parseWaitingMarkers(logText);
-  const invalidGroup = groups2.find(({ parentIndex, childIndexes }) => {
-    const parent = steps[parentIndex];
-    if (!hasTimestamps(parent)) return true;
-    const expectedNames = childIndexes.map((index) => steps[index].name).join(", ");
-    const parentStart = new Date(parent.started_at).getTime();
-    const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
-    return !markers.some(
-      (marker2) => marker2.childNames === expectedNames && marker2.startedAt.getTime() >= parentStart && marker2.startedAt.getTime() <= parentEnd
-    );
-  });
-  return invalidGroup === void 0 ? void 0 : `Could not match API steps for parallel group at step ${invalidGroup.parentIndex + 1} with the job log`;
-}
-function expandParallelJobSteps(steps, logText) {
-  const markers = parseWaitingMarkers(logText);
-  const groups2 = identifyParallelGroups(steps, markers);
-  const candidateParents = steps.flatMap((_step, parentIndex) => {
-    const childIndexes2 = findParallelCandidateIndexes(steps, parentIndex);
-    return childIndexes2.length > 0 ? [{ parentIndex, childIndexes: childIndexes2 }] : [];
-  });
-  const apiCandidateCount = candidateParents.filter(
-    (candidate) => !candidateParents.some(
-      (other) => other.parentIndex > candidate.parentIndex && other.childIndexes.includes(candidate.parentIndex)
-    )
-  ).length;
-  if (groups2.length !== markers.length || groups2.length !== apiCandidateCount) {
-    return {
-      steps,
-      warning: "Could not correlate parallel groups between API steps and logs"
-    };
-  }
-  const warning2 = validateParallelGroups(steps, groups2, logText);
-  if (warning2) return { steps, warning: warning2 };
-  const childIndexes = new Set(groups2.flatMap((group) => group.childIndexes));
-  const groupsByParentIndex = new Map(
-    groups2.map((group) => [group.parentIndex, group])
-  );
-  return {
-    steps: steps.flatMap((step, index) => {
-      if (childIndexes.has(index)) return [];
-      const group = groupsByParentIndex.get(index);
-      if (!group) return [step];
-      return [
-        { ...step, timelineRowKind: "parallel-parent" },
-        ...group.childIndexes.map((childIndex) => ({
-          ...steps[childIndex],
-          name: `(bg) ${steps[childIndex].name}`,
-          timelineOriginalName: steps[childIndex].name,
-          timelineRowKind: "parallel-child"
-        }))
-      ];
-    })
-  };
-}
-async function expandParallelSteps(client2, workflowRun, workflowJobs) {
-  const jobsWithParallelGroups = workflowJobs.filter(
-    (job) => job.steps?.some((step) => step.name === PARALLEL_GROUP_NAME)
-  );
-  if (jobsWithParallelGroups.length === 0) {
-    return { jobs: workflowJobs, warnings: [] };
-  }
-  const owner = workflowRun.repository.owner.login;
-  const repo = workflowRun.repository.name;
-  const logResults = await Promise.all(
-    jobsWithParallelGroups.map(async (job) => {
-      try {
-        return {
-          jobId: job.id,
-          logText: await client2.fetchJobLog(owner, repo, job.id)
-        };
-      } catch (error2) {
-        return {
-          jobId: job.id,
-          error: error2 instanceof Error ? error2.message : String(error2)
-        };
-      }
-    })
-  );
-  const logsByJobId = new Map(
-    logResults.map((result) => [result.jobId, result])
-  );
-  const warnings = [];
-  const jobs = workflowJobs.map((job) => {
-    if (!job.steps || !logsByJobId.has(job.id)) return job;
-    const logResult = logsByJobId.get(job.id);
-    if (!("logText" in logResult)) {
-      warnings.push({
-        jobId: job.id,
-        jobName: job.name,
-        reason: `Could not download the job log: ${logResult.error}`
-      });
-      return job;
-    }
-    const expanded = expandParallelJobSteps(job.steps, logResult.logText);
-    if (expanded.warning) {
-      warnings.push({
-        jobId: job.id,
-        jobName: job.name,
-        reason: expanded.warning
-      });
-      return job;
-    }
-    return { ...job, steps: expanded.steps };
-  });
-  return { jobs, warnings };
-}
-
-// src/workflow_gantt.ts
+// src/output/mermaid/workflow_gantt.ts
 var MERMAID_MAX_CHAR = 5e4;
 var isString = (value) => typeof value === "string";
 var createGanttStepId = (jobIndex, stepIndex) => `job${jobIndex}-${stepIndex}`;
@@ -117890,7 +117936,6 @@ async function runActionPost(dependencies = {}) {
     getInput2("expand-composite-actions-threshold")
   );
   const outputHtml = getBooleanInput2("output-html");
-  const htmlArtifactNameInput = outputHtml ? getInput2("html-artifact-name") : "";
   const client2 = (dependencies.createClient ?? ((options) => new Github(options)))({ token });
   info2("Wait for workflow API result stability...");
   await wait(1e3);
@@ -117925,13 +117970,6 @@ async function runActionPost(dependencies = {}) {
     expandCompositeActionsThreshold,
     info2
   );
-  info2("Create gantt mermaid diagram...");
-  const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });
-  if (parallelResult.warnings.length > 0) {
-    summary2.addRaw(PARALLEL_FALLBACK_SUMMARY);
-  }
-  summary2.addRaw(gantt);
-  debug2(gantt);
   if (outputHtml) {
     info2("Create HTML timeline report...");
     const workflowModel = await fetchWorkflowModelSafe(client2, workflowRun);
@@ -117939,10 +117977,11 @@ async function runActionPost(dependencies = {}) {
       showWaitingRunner,
       workflowModel
     });
+    const uniqueJobKey = resolveCurrentJobId(workflowJobs, env.RUNNER_NAME) ?? env.RUNNER_NAME;
     const artifactName = resolveHtmlArtifactName(
-      htmlArtifactNameInput,
       env.GITHUB_JOB,
-      runAttempt
+      runAttempt,
+      uniqueJobKey
     );
     try {
       const uploaded = await uploader(html, artifactName);
@@ -117953,9 +117992,10 @@ async function runActionPost(dependencies = {}) {
         env.GITHUB_SERVER_URL
       );
       summary2.addRaw(
-        `
+        `### Interactive HTML Timeline
 
-[Open interactive HTML timeline (${uploaded.artifactName})](${artifactUrl})
+[Open interactive HTML timeline (\`${uploaded.artifactName}\`)](${artifactUrl})
+
 `
       );
     } catch (error2) {
@@ -117963,6 +118003,13 @@ async function runActionPost(dependencies = {}) {
       warning2(`Failed to upload HTML timeline artifact: ${message2}`);
     }
   }
+  info2("Create gantt mermaid diagram...");
+  const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });
+  if (parallelResult.warnings.length > 0) {
+    summary2.addRaw(PARALLEL_FALLBACK_SUMMARY);
+  }
+  summary2.addRaw(gantt);
+  debug2(gantt);
   await summary2.write();
   info2("Complete!");
 }

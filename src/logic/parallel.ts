@@ -3,8 +3,8 @@ import type {
   WorkflowJobStep,
   WorkflowJobs,
   WorkflowRun,
-} from "./github.ts";
-import type { TimelineJobs, TimelineStep } from "./types.ts";
+} from "../github/github.ts";
+import type { TimelineJobs, TimelineStep } from "../models/types.ts";
 
 const PARALLEL_GROUP_NAME = "Parallel group";
 const WAITING_MESSAGE = "Waiting for background step(s) to complete:";

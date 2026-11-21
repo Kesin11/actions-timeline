@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { runCli } from "../../../cli.ts";
-import type { Github, WorkflowJobs, WorkflowRun } from "../../../src/github.ts";
+import type { Github, WorkflowJobs, WorkflowRun } from "../../../src/github/github.ts";
 
 const [workflowRunJson, workflowJobsJson] = await Promise.all([
   readFile(new URL("./workflow-run.json", import.meta.url), "utf8"),

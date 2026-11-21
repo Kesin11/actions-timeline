@@ -1,4 +1,4 @@
-import type { HtmlReportData } from "./html_report.ts";
+import type { HtmlReportData } from "./report.ts";
 
 const escapeHtml = (value: string): string =>
   value
@@ -55,7 +55,12 @@ export const renderHtmlReport = (data: HtmlReportData): string => {
   const badge = getRunHeaderBadge(data.run.conclusion);
   const shortSha = data.run.head_sha.slice(0, 8);
   const hasComposite = data.jobs.some((job) =>
-    job.items.some((item) => item.kind === "composite"),
+    job.items.some(
+      (item) =>
+        item.kind === "composite" ||
+        (item.kind === "parallel" &&
+          item.children.some((ch) => (ch.children?.length ?? 0) > 0)),
+    ),
   );
   const hasParallel = data.jobs.some((job) =>
     job.items.some((item) => item.kind === "parallel"),
@@ -1042,77 +1047,78 @@ export const renderHtmlReport = (data: HtmlReportData): string => {
           );
           if (compOpen) {
             entry.children.forEach((ch, cIdx) => {
-              const cBranch = cIdx === entry.children.length - 1 ? '└─' : '├─';
-              const cst = statusMeta(ch.conclusion);
-              const cSkip = ch.conclusion === 'skipped';
-              const cg = !cSkip ? spanGeom(ch.start, ch.end) : null;
-              const cBar = cg ? '<div class="bar b-comp-child" style="left:' + cg.left + ';width:' + cg.width + ';"' +
-                spanAttrs(ch.name, ch.dur) + '></div>' : '';
-              const chUrl = (job.html_url && ch.number != null) ? (job.html_url + '#step:' + ch.number + ':1') : '';
-              parts.push(
-                '<div class="row' + cst.rowCls + (ch.isCp ? ' row-cp' : '') + '" data-row-kind="comp-child" data-job-id="' + job.id + '"' +
-                (ch.start != null ? ' data-start="' + ch.start + '" data-end="' + ch.end + '"' : '') + '>' +
-                '<div class="left-cell">' +
-                  '<div class="col-name i2"><span class="tree">' + cBranch + '</span><span class="name-text" title="' + esc(ch.name) + '">' + esc(ch.name) + '</span>' + linkHtml(chUrl) + '</div>' +
-                  '<div class="col-dur">' + (cSkip ? '—' : fmtDur(ch.dur)) + '</div>' +
-                  '<div class="col-status"><span class="' + cst.cls + '">' + cst.stepText + '</span></div>' +
-                '</div>' +
-                '<div class="timeline-cell"><div class="track">' + cBar + '</div></div>' +
-                '</div>'
-              );
-            });
-          }
-          return;
-        }
-
-        if (entry.kind === 'parallel') {
-          const label = entry.name + ' (' + fmtDur(entry.dur) + ')';
-          const pg = !sSkip ? spanGeom(entry.start, entry.end) : null;
-          let bracket = '';
-          if (pg) {
-            const fits = pg.frac >= 0.15;
-            bracket = '<div class="fork-line" style="left:' + pg.left + ';"></div>' +
-              '<div class="join-line" style="left:' + pg.endPct + ';"></div>' +
-              '<div class="b-par-bracket" style="left:' + pg.left + ';width:' + pg.width + ';"' +
-              spanAttrs(entry.name, entry.dur) + '>' + (fits ? esc(label) : '') + '</div>' +
-              (fits ? '' : '<span class="bracket-side bracket-side-par" style="left:calc(' + pg.endPct + ' + 6px);">' + esc(label) + '</span>');
-          }
-          parts.push(
-            '<div class="row' + sst.rowCls + (entry.isCp ? ' row-cp' : '') + '" data-row-kind="step" data-job-id="' + job.id + '"' +
-            (entry.start != null ? ' data-start="' + entry.start + '" data-end="' + entry.end + '"' : '') + '>' +
-            '<div class="left-cell">' +
-              '<div class="col-name i1"><span class="tree">' + branch + '</span>' + (entry.isCp ? '<span class="cp-tag">CP</span>' : '') + '<span class="kind k-par">Parallel</span><span class="name-text" title="' + esc(entry.name) + '">' + esc(entry.name) + '</span></div>' +
-              '<div class="col-dur">' + (sSkip ? '—' : fmtDur(entry.dur)) + '</div>' +
-              '<div class="col-status"><span class="' + sst.cls + '">' + sst.stepText + '</span></div>' +
-            '</div>' +
-            '<div class="timeline-cell"><div class="track">' + bracket + '</div></div>' +
-            '</div>'
-          );
-          entry.children.forEach((ch, cIdx) => {
-            const cBranch = cIdx === entry.children.length - 1 ? '╘═' : '╞═';
+            const cBranch = cIdx === entry.children.length - 1 ? '??' : '??';
             const cst = statusMeta(ch.conclusion);
             const cSkip = ch.conclusion === 'skipped';
             const cg = !cSkip ? spanGeom(ch.start, ch.end) : null;
+            const nestedSubs = Array.isArray(ch.children) ? ch.children : [];
+            const hasNestedComp = nestedSubs.length > 0;
+            const nestedCompKey = hasNestedComp ? (job.id + ':' + sIdx + ':' + cIdx) : '';
+            const nestedOpen = hasNestedComp && state.expandedComposites.has(nestedCompKey);
             let cBar = '';
             if (cg) {
               if (pg) {
                 cBar += '<div class="fork-line" style="left:' + pg.left + ';"></div><div class="join-line" style="left:' + pg.endPct + ';"></div>';
               }
-              cBar += '<div class="bar b-par-child" style="left:' + cg.left + ';width:' + cg.width + ';"' +
-                spanAttrs(ch.name, ch.dur) + '></div>';
+              if (hasNestedComp) {
+                const subLabel = ch.name + ' (' + fmtDur(ch.dur) + ')';
+                const fits = cg.frac >= 0.15;
+                cBar += '<div class="b-comp-bracket" style="left:' + cg.left + ';width:' + cg.width + ';"' +
+                  spanAttrs(ch.name, ch.dur) + '>' + (fits ? esc(subLabel) : '') + '</div>' +
+                  (fits ? '' : '<span class="bracket-side bracket-side-comp" style="left:calc(' + cg.endPct + ' + 6px);">' + esc(subLabel) + '</span>');
+              } else {
+                cBar += '<div class="bar b-par-child" style="left:' + cg.left + ';width:' + cg.width + ';"' +
+                  spanAttrs(ch.name, ch.dur) + '></div>';
+              }
             }
             const chUrl = (job.html_url && ch.number != null) ? (job.html_url + '#step:' + ch.number + ':1') : '';
             parts.push(
-              '<div class="row' + cst.rowCls + (ch.isCp ? ' row-cp' : '') + '" data-row-kind="step" data-job-id="' + job.id + '"' +
+              '<div class="row' + (hasNestedComp ? ' row-comp is-toggleable' : '') + cst.rowCls + (ch.isCp ? ' row-cp' : '') + '" data-row-kind="' + (hasNestedComp ? 'comp' : 'step') + '" data-job-id="' + job.id + '"' +
+              (hasNestedComp ? ' data-comp-key="' + esc(nestedCompKey) + '"' : '') +
               (ch.start != null ? ' data-start="' + ch.start + '" data-end="' + ch.end + '"' : '') + '>' +
               '<div class="left-cell">' +
-                '<div class="col-name i2"><span class="tree">' + cBranch + '</span>' + (ch.isCp ? '<span class="cp-tag">CP</span>' : '') + '<span class="name-text" title="' + esc(ch.name) + '">' + esc(ch.name) + '</span>' + linkHtml(chUrl) + '</div>' +
-                '<div class="col-dur">' + (cSkip ? '—' : fmtDur(ch.dur)) + '</div>' +
+                '<div class="col-name i2"><span class="tree">' + cBranch + '</span>' +
+                  (hasNestedComp ? '<span class="chev">' + (nestedOpen ? '?' : '?') + '</span>' : '') +
+                  (ch.isCp ? '<span class="cp-tag">CP</span>' : '') +
+                  (hasNestedComp ? '<span class="kind k-comp">Composite</span>' : '') +
+                  '<span class="name-text" title="' + esc(ch.name) + '">' + esc(ch.name) + '</span>' +
+                  (hasNestedComp ? '<span class="step-count">(' + nestedSubs.length + ')</span>' : '') +
+                  linkHtml(chUrl) +
+                '</div>' +
+                '<div class="col-dur">' + (cSkip ? '?' : fmtDur(ch.dur)) + '</div>' +
                 '<div class="col-status"><span class="' + cst.cls + '">' + cst.stepText + '</span></div>' +
               '</div>' +
               '<div class="timeline-cell"><div class="track">' + cBar + '</div></div>' +
               '</div>'
             );
+            if (nestedOpen) {
+              nestedSubs.forEach((sub, subIdx) => {
+                const subBranch = subIdx === nestedSubs.length - 1 ? '??' : '??';
+                const subSt = statusMeta(sub.conclusion);
+                const subSkip = sub.conclusion === 'skipped';
+                const subG = !subSkip ? spanGeom(sub.start, sub.end) : null;
+                let subBar = '';
+                if (subG) {
+                  if (pg) {
+                    subBar += '<div class="fork-line" style="left:' + pg.left + ';"></div><div class="join-line" style="left:' + pg.endPct + ';"></div>';
+                  }
+                  subBar += '<div class="bar b-comp-child" style="left:' + subG.left + ';width:' + subG.width + ';"' +
+                    spanAttrs(sub.name, sub.dur) + '></div>';
+                }
+                const subUrl = (job.html_url && sub.number != null) ? (job.html_url + '#step:' + sub.number + ':1') : '';
+                parts.push(
+                  '<div class="row' + subSt.rowCls + (sub.isCp ? ' row-cp' : '') + '" data-row-kind="comp-child" data-job-id="' + job.id + '"' +
+                  (sub.start != null ? ' data-start="' + sub.start + '" data-end="' + sub.end + '"' : '') + '>' +
+                  '<div class="left-cell">' +
+                    '<div class="col-name i3"><span class="tree">' + subBranch + '</span><span class="name-text" title="' + esc(sub.name) + '">' + esc(sub.name) + '</span>' + linkHtml(subUrl) + '</div>' +
+                    '<div class="col-dur">' + (subSkip ? '?' : fmtDur(sub.dur)) + '</div>' +
+                    '<div class="col-status"><span class="' + subSt.cls + '">' + subSt.stepText + '</span></div>' +
+                  '</div>' +
+                  '<div class="timeline-cell"><div class="track">' + subBar + '</div></div>' +
+                  '</div>'
+                );
+              });
+            }
           });
           return;
         }

@@ -1,11 +1,15 @@
 import {
   computeCriticalPathJobIds,
   pickCriticalParallelChildIndex,
-} from "./critical_path.ts";
-import type { WorkflowRun } from "./github.ts";
-import { renderHtmlReport } from "./html_template.ts";
-import type { TimelineJob, TimelineJobs, TimelineStep } from "./types.ts";
-import type { WorkflowModel } from "./workflow_file.ts";
+} from "../../logic/critical_path.ts";
+import type { WorkflowRun } from "../../github/github.ts";
+import { renderHtmlReport } from "./template.ts";
+import type {
+  TimelineJob,
+  TimelineJobs,
+  TimelineStep,
+} from "../../models/types.ts";
+import type { WorkflowModel } from "../../models/workflow_file.ts";
 
 export type HtmlReportOptions = {
   showWaitingRunner?: boolean;
@@ -20,6 +24,7 @@ export type HtmlStepChild = {
   end: number | null;
   dur: number;
   isCp: boolean;
+  children?: HtmlStepChild[];
 };
 
 export type HtmlStepItem = {
@@ -154,17 +159,30 @@ const buildJobItems = (
     const step = steps[idx];
 
     if (step.timelineRowKind === "parallel-parent") {
-      const childSteps: TimelineStep[] = [];
+      const groupedChildren: {
+        child: TimelineStep;
+        subSteps: TimelineStep[];
+      }[] = [];
       let nextIdx = idx + 1;
       while (
         nextIdx < steps.length &&
         steps[nextIdx].timelineRowKind === "parallel-child"
       ) {
-        childSteps.push(steps[nextIdx]);
+        const parallelChild = steps[nextIdx];
         nextIdx += 1;
+        const subSteps: TimelineStep[] = [];
+        while (
+          nextIdx < steps.length &&
+          steps[nextIdx].timelineRowKind === "composite-child" &&
+          steps[nextIdx].number === parallelChild.number
+        ) {
+          subSteps.push(steps[nextIdx]);
+          nextIdx += 1;
+        }
+        groupedChildren.push({ child: parallelChild, subSteps });
       }
 
-      const rawChildren = childSteps.map((child) => {
+      const rawChildren = groupedChildren.map(({ child, subSteps }) => {
         const timing = buildStepTiming(originMs, child, jobEndSec);
         return {
           name: stripBgPrefix(child),
@@ -174,6 +192,7 @@ const buildJobItems = (
           end: timing.end,
           dur: timing.dur,
           isCp: false,
+          subSteps,
         };
       });
 
@@ -182,10 +201,32 @@ const buildJobItems = (
       const cpChildIndex = parentIsCp
         ? pickCriticalParallelChildIndex(rawChildren)
         : -1;
-      const children = rawChildren.map((child, childIdx) => ({
-        ...child,
-        isCp: parentIsCp && childIdx === cpChildIndex,
-      }));
+      const children: HtmlStepChild[] = rawChildren.map((child, childIdx) => {
+        const childIsCp = parentIsCp && childIdx === cpChildIndex;
+        const nestedChildren: HtmlStepChild[] = child.subSteps.map((sub) => {
+          const subTiming = buildStepTiming(originMs, sub, child.end);
+          const subConclusion = resolveConclusion(sub.conclusion, sub.status);
+          return {
+            name: stripSubPrefix(sub.name),
+            number: sub.number,
+            conclusion: subConclusion,
+            start: subTiming.start,
+            end: subTiming.end,
+            dur: subTiming.dur,
+            isCp: childIsCp && subConclusion !== "skipped",
+          };
+        });
+        return {
+          name: child.name,
+          number: child.number,
+          conclusion: child.conclusion,
+          start: child.start,
+          end: child.end,
+          dur: child.dur,
+          isCp: childIsCp,
+          ...(nestedChildren.length > 0 ? { children: nestedChildren } : {}),
+        };
+      });
 
       items.push({
         kind: "parallel",
@@ -332,9 +373,15 @@ export const buildHtmlReportData = (
     const execDur =
       start !== null && end !== null ? Math.max(0, end - start) : 0;
     const totalDur = execDur + waitDur;
-    const items = isSkip
-      ? []
-      : buildJobItems(originMs, job.steps ?? [], isCp, end);
+    const rawSteps = job.steps ?? [];
+    const items = isSkip ? [] : buildJobItems(originMs, rawSteps, isCp, end);
+    const rawStepCount = isSkip
+      ? 0
+      : rawSteps.filter(
+          (step) =>
+            step.timelineRowKind !== "parallel-parent" &&
+            step.timelineRowKind !== "composite-child",
+        ).length;
 
     return {
       id: job.id,
@@ -349,7 +396,7 @@ export const buildHtmlReportData = (
       end,
       execDur,
       totalDur,
-      rawStepCount: items.length,
+      rawStepCount,
       items,
     };
   });

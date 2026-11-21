@@ -1,5 +1,5 @@
 import { parse } from "yaml";
-import type { FileContent } from "./github.ts";
+import type { FileContent } from "../github/github.ts";
 
 export type Workflow = {
   name?: string;

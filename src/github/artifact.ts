@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { DefaultArtifactClient } from "@actions/artifact";
-import type { WorkflowRun } from "./github.ts";
+import type { WorkflowJobs, WorkflowRun } from "./github.ts";
 
 export type ArtifactUploadResult = {
   artifactName: string;
@@ -28,19 +28,34 @@ export const sanitizeArtifactSegment = (value: string): string => {
   return sanitized.length > 0 ? sanitized : "workflow";
 };
 
-export const ensureHtmlExtension = (name: string): string =>
-  name.toLowerCase().endsWith(".html") ? name : `${name}.html`;
+export const resolveCurrentJobId = (
+  workflowJobs: WorkflowJobs,
+  runnerName: string | undefined,
+): number | undefined => {
+  const targetRunner = runnerName?.trim();
+  if (!targetRunner) return undefined;
+
+  const matching = workflowJobs.filter(
+    (job) => job.runner_name === targetRunner,
+  );
+  if (matching.length === 0) return undefined;
+
+  const inProgress = matching.findLast((job) => job.status === "in_progress");
+  return (inProgress ?? matching.at(-1))?.id;
+};
 
 export const resolveHtmlArtifactName = (
-  customName: string | undefined,
   jobName: string | undefined,
   runAttempt: number,
+  uniqueJobKey?: string | number,
 ): string => {
-  const trimmedCustom = customName?.trim() ?? "";
-  if (trimmedCustom.length > 0) {
-    return ensureHtmlExtension(sanitizeArtifactSegment(trimmedCustom));
-  }
   const safeJob = sanitizeArtifactSegment(jobName?.trim() || "workflow");
+  const rawUnique =
+    uniqueJobKey !== undefined ? String(uniqueJobKey).trim() : "";
+  if (rawUnique.length > 0) {
+    const safeUnique = sanitizeArtifactSegment(rawUnique);
+    return `actions-timeline-${safeJob}-${safeUnique}-attempt${runAttempt}.html`;
+  }
   return `actions-timeline-${safeJob}-attempt${runAttempt}.html`;
 };
 

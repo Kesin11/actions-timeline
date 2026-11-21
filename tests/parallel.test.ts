@@ -3,12 +3,12 @@ import {
   deepStrictEqual as assertEquals,
 } from "node:assert/strict";
 import { test } from "node:test";
-import { expandJobSteps } from "../src/composite.ts";
+import { expandJobSteps } from "../src/logic/composite.ts";
 import {
   expandParallelJobSteps,
   expandParallelSteps,
-} from "../src/parallel.ts";
-import { createMermaid } from "../src/workflow_gantt.ts";
+} from "../src/logic/parallel.ts";
+import { createMermaid } from "../src/output/mermaid/workflow_gantt.ts";
 import {
   jobs as datafusionJobs,
   log as datafusionLog,

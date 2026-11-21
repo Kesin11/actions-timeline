@@ -5,7 +5,11 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runCli } from "../cli.ts";
 import { runActionPost } from "../src/action.ts";
-import type { Github, WorkflowJobs, WorkflowRun } from "../src/github.ts";
+import type {
+  Github,
+  WorkflowJobs,
+  WorkflowRun,
+} from "../src/github/github.ts";
 
 const fixtureUrl = (name: string): URL =>
   new URL(`./fixture/contract/${name}`, import.meta.url);
@@ -246,7 +250,7 @@ test("Action behavior contract", async (t) => {
   );
 
   await t.test(
-    "uploads HTML artifact and appends link to summary when output-html is true",
+    "uploads HTML artifact and prepends link above Mermaid when output-html is true",
     async () => {
       const uploaded: { html: string; artifactName: string }[] = [];
       let summary = "";
@@ -263,14 +267,14 @@ test("Action behavior contract", async (t) => {
       await runActionPost({
         createClient: () => fixtureClient(workflowRun, workflowJobs),
         debug: () => {},
-        env: { GITHUB_JOB: "build_job", GITHUB_RUN_ATTEMPT: "2" },
+        env: {
+          GITHUB_JOB: "build_job",
+          GITHUB_RUN_ATTEMPT: "2",
+          RUNNER_NAME: "GitHub Actions 4",
+        },
         getBooleanInput: (name) =>
           name === "show-waiting-runner" || name === "output-html",
-        getInput: (name) => {
-          if (name === "github-token") return "fixture-token";
-          if (name === "html-artifact-name") return "";
-          return "20";
-        },
+        getInput: (name) => (name === "github-token" ? "fixture-token" : "20"),
         info: () => {},
         repository: { owner: "owner", repo: "example", runId: 1001 },
         summary: summaryWriter,
@@ -282,21 +286,15 @@ test("Action behavior contract", async (t) => {
         warning: () => {},
       });
 
+      const expectedArtifactName =
+        "actions-timeline-build_job-GitHub-Actions-4-attempt2.html";
       assertEquals(uploaded.length, 1);
-      assertEquals(
-        uploaded[0]?.artifactName,
-        "actions-timeline-build_job-attempt2.html",
-      );
+      assertEquals(uploaded[0]?.artifactName, expectedArtifactName);
       assertEquals(uploaded[0]?.html.startsWith("<!DOCTYPE html>"), true);
+      const expectedPrefix = `### Interactive HTML Timeline\n\n[Open interactive HTML timeline (\`${expectedArtifactName}\`)](https://github.com/owner/example/actions/runs/1001/artifacts/98765)\n\n`;
       assertEquals(
-        summary.startsWith(await readGolden("action-summary.md")),
-        true,
-      );
-      assertEquals(
-        summary.includes(
-          "[Open interactive HTML timeline (actions-timeline-build_job-attempt2.html)](https://github.com/owner/example/actions/runs/1001/artifacts/98765)",
-        ),
-        true,
+        summary,
+        `${expectedPrefix}${await readGolden("action-summary.md")}`,
       );
     },
   );
@@ -323,11 +321,7 @@ test("Action behavior contract", async (t) => {
         env: { GITHUB_JOB: "build", GITHUB_RUN_ATTEMPT: "1" },
         getBooleanInput: (name) =>
           name === "show-waiting-runner" || name === "output-html",
-        getInput: (name) => {
-          if (name === "github-token") return "fixture-token";
-          if (name === "html-artifact-name") return "custom-report";
-          return "20";
-        },
+        getInput: (name) => (name === "github-token" ? "fixture-token" : "20"),
         info: () => {},
         repository: { owner: "owner", repo: "example", runId: 1001 },
         summary: summaryWriter,

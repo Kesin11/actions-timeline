@@ -3,10 +3,10 @@ import { test } from "node:test";
 import {
   computeCriticalPathJobIds,
   pickCriticalParallelChildIndex,
-} from "../src/critical_path.ts";
-import { FileContent } from "../src/github.ts";
-import type { TimelineJob } from "../src/types.ts";
-import { WorkflowModel } from "../src/workflow_file.ts";
+} from "../src/logic/critical_path.ts";
+import { FileContent } from "../src/github/github.ts";
+import type { TimelineJob } from "../src/models/types.ts";
+import { WorkflowModel } from "../src/models/workflow_file.ts";
 
 const makeWorkflowModel = (yamlContent: string): WorkflowModel => {
   const fileContent = new FileContent({

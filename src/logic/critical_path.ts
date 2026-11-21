@@ -1,5 +1,5 @@
-import type { TimelineJob, TimelineJobs } from "./types.ts";
-import { JobModel, type WorkflowModel } from "./workflow_file.ts";
+import type { TimelineJob, TimelineJobs } from "../models/types.ts";
+import { JobModel, type WorkflowModel } from "../models/workflow_file.ts";
 
 export type TimedSpan = {
   start: number | null;

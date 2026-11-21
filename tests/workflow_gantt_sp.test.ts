@@ -1,13 +1,13 @@
 import { deepStrictEqual as assertEquals } from "node:assert/strict";
 import { test } from "node:test";
-import { formatSection } from "../src/format_util.ts";
-import type { WorkflowJobs, WorkflowRun } from "../src/github.ts";
-import type { TimelineJobs } from "../src/types.ts";
+import { formatSection } from "../src/output/format_util.ts";
+import type { WorkflowJobs, WorkflowRun } from "../src/github/github.ts";
+import type { TimelineJobs } from "../src/models/types.ts";
 import {
   createGanttDiagrams,
   createGanttJobs,
   createMermaid,
-} from "../src/workflow_gantt.ts";
+} from "../src/output/mermaid/workflow_gantt.ts";
 
 const commonWorkflow = {
   id: 5833450919,
