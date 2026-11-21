@@ -1,10 +1,18 @@
 import { writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { Command, InvalidArgumentError } from "commander";
-import { expandCompositeSteps } from "./src/composite.ts";
-import { Github, parseWorkflowRunUrl } from "./src/github.ts";
-import { expandParallelSteps } from "./src/parallel.ts";
-import { createMermaid } from "./src/workflow_gantt.ts";
+import { expandCompositeSteps } from "./src/logic/composite.ts";
+import {
+  Github,
+  parseWorkflowRunUrl,
+  type WorkflowRun,
+} from "./src/github/github.ts";
+import { createHtmlReport } from "./src/output/html/report.ts";
+import { expandParallelSteps } from "./src/logic/parallel.ts";
+import { WorkflowModel } from "./src/models/workflow_file.ts";
+import { createMermaid } from "./src/output/mermaid/workflow_gantt.ts";
+
+type OutputFormat = "mermaid" | "html";
 
 type CliDependencies = {
   createClient?: (options: { token?: string; host?: string }) => Github;
@@ -27,14 +35,27 @@ const parseNumber = (value: string): number => {
   return parsed;
 };
 
-function createProgram(): Command {
+const parseFormat = (value: string): OutputFormat => {
+  if (value === "mermaid" || value === "html") return value;
+  throw new InvalidArgumentError(
+    `Invalid format value: ${value}. Expected "mermaid" or "html".`,
+  );
+};
+
+export function createProgram(): Command {
   return new Command()
     .name("actions-timeline-cli")
     .description("Command line tool of actions-timeline")
     .option("-t, --token <token>", "GitHub token. ex: $(gh auth token)")
     .option(
       "-o, --output <output>",
-      "Output md file path. If not set output to STDOUT. ex: output.md",
+      "Output file path. If not set output to STDOUT. ex: output.md or timeline.html",
+    )
+    .option(
+      "-f, --format <format>",
+      "Output format: html or mermaid. Default: html",
+      parseFormat,
+      "html",
     )
     .option(
       "--show-waiting-runner <showWaitingRunner>",
@@ -44,17 +65,30 @@ function createProgram(): Command {
     )
     .option(
       "--expand-composite-actions <expandCompositeActions>",
-      "Expand composite action steps in the timeline. Default: false",
+      "Expand composite action steps in the timeline. Default: true",
       parseBoolean,
-      false,
+      true,
     )
     .option(
       "--expand-composite-actions-threshold <thresholdSec>",
-      "Duration threshold in seconds for expanding composite action steps. Default: 20",
+      "Duration threshold in seconds for expanding composite action steps. Default: 0",
       parseNumber,
-      20,
+      0,
     )
     .argument("<url>");
+}
+
+async function fetchWorkflowModelSafe(
+  client: Github,
+  workflowRun: WorkflowRun,
+): Promise<WorkflowModel | undefined> {
+  if (typeof client.fetchWorkflowFiles !== "function") return undefined;
+  try {
+    const [fileContent] = await client.fetchWorkflowFiles([workflowRun]);
+    return fileContent ? new WorkflowModel(fileContent) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function runCli(
@@ -67,6 +101,7 @@ export async function runCli(
   const options = program.opts<{
     token?: string;
     output?: string;
+    format: OutputFormat;
     showWaitingRunner: boolean;
     expandCompositeActions: boolean;
     expandCompositeActionsThreshold: number;
@@ -106,14 +141,21 @@ export async function runCli(
         thresholdSec: options.expandCompositeActionsThreshold,
       })
     : parallelResult.jobs;
-  const gantt = createMermaid(workflowRun, jobs, {
-    showWaitingRunner: options.showWaitingRunner,
-  });
+
+  const output =
+    options.format === "html"
+      ? createHtmlReport(workflowRun, jobs, {
+          showWaitingRunner: options.showWaitingRunner,
+          workflowModel: await fetchWorkflowModelSafe(client, workflowRun),
+        })
+      : createMermaid(workflowRun, jobs, {
+          showWaitingRunner: options.showWaitingRunner,
+        });
 
   if (options.output) {
-    await (dependencies.writeFile ?? writeFile)(options.output, gantt, "utf8");
+    await (dependencies.writeFile ?? writeFile)(options.output, output, "utf8");
   } else {
-    (dependencies.log ?? console.log)(gantt);
+    (dependencies.log ?? console.log)(output);
   }
 }
 

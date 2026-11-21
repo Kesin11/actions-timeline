@@ -1,4 +1,4 @@
-import type { WorkflowJobs } from "./github.ts";
+import type { WorkflowJobs } from "../github/github.ts";
 
 export type TimelineStep = NonNullable<
   WorkflowJobs[number]["steps"]

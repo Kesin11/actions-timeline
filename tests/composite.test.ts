@@ -7,14 +7,14 @@ import {
   extractSubSteps,
   identifyCompositeSteps,
   parseLogBlocks,
-} from "../src/composite.ts";
+} from "../src/logic/composite.ts";
 import {
   FileContent,
   type FileContentResponse,
   type WorkflowJobs,
-} from "../src/github.ts";
-import type { TimelineJobs, TimelineStep } from "../src/types.ts";
-import { WorkflowModel } from "../src/workflow_file.ts";
+} from "../src/github/github.ts";
+import type { TimelineJobs, TimelineStep } from "../src/models/types.ts";
+import { WorkflowModel } from "../src/models/workflow_file.ts";
 
 function makeWorkflowModel(yamlContent: string): WorkflowModel {
   const fileContentResponse: FileContentResponse = {

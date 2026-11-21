@@ -3,9 +3,13 @@ import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { runCli } from "../cli.ts";
+import { createProgram, runCli } from "../cli.ts";
 import { runActionPost } from "../src/action.ts";
-import type { Github, WorkflowJobs, WorkflowRun } from "../src/github.ts";
+import type {
+  Github,
+  WorkflowJobs,
+  WorkflowRun,
+} from "../src/github/github.ts";
 
 const fixtureUrl = (name: string): URL =>
   new URL(`./fixture/contract/${name}`, import.meta.url);
@@ -42,6 +46,12 @@ function fixtureClient(
       return workflowRun;
     },
     fetchWorkflowRunJobs: async () => workflowJobs,
+    fetchWorkflowFiles: async () => [
+      {
+        content: "name: CI\njobs: {}\n",
+        raw: { path: ".github/workflows/ci.yml" },
+      },
+    ],
     fetchJobLog: async () => "",
   } as unknown as Github;
 }
@@ -51,13 +61,29 @@ test("CLI behavior contract", async (t) => {
   const expectedMermaid = await readGolden("mermaid.md");
   const expectedStderr = `${await readGolden("cli-stderr.txt")}\n`;
 
+  await t.test("uses expected default option values", () => {
+    const program = createProgram();
+    program.parse(["https://github.com/owner/example/actions/runs/1001"], {
+      from: "user",
+    });
+    const opts = program.opts();
+    assertEquals(opts.format, "html");
+    assertEquals(opts.showWaitingRunner, true);
+    assertEquals(opts.expandCompositeActions, true);
+    assertEquals(opts.expandCompositeActionsThreshold, 0);
+  });
+
   await t.test("writes Mermaid to stdout without changing bytes", async () => {
     const stdout: string[] = [];
     const stderr: string[] = [];
     const clientOptions: unknown[] = [];
     const calls = { fetchWorkflowRun: [] as unknown[][] };
     await runCli(
-      ["https://github.com/owner/example/actions/runs/1001/attempts/1"],
+      [
+        "https://github.com/owner/example/actions/runs/1001/attempts/1",
+        "--format",
+        "mermaid",
+      ],
       {
         createClient: (options) => {
           clientOptions.push(options);
@@ -79,6 +105,8 @@ test("CLI behavior contract", async (t) => {
     await runCli(
       [
         "https://github.com/owner/example/actions/runs/1001",
+        "--format",
+        "mermaid",
         "--output",
         "output.md",
         "--show-waiting-runner",
@@ -102,12 +130,39 @@ test("CLI behavior contract", async (t) => {
     });
   });
 
+  await t.test("writes self-contained HTML by default", async () => {
+    const output: { path?: string; data?: string; encoding?: string } = {};
+    await runCli(
+      [
+        "https://github.com/owner/example/actions/runs/1001",
+        "--output",
+        "timeline.html",
+      ],
+      {
+        createClient: () => fixtureClient(workflowRun, workflowJobs),
+        warn: () => {},
+        writeFile: async (path, data, encoding) => {
+          output.path = String(path);
+          output.data = String(data);
+          output.encoding = String(encoding);
+        },
+      },
+    );
+
+    assertEquals(output.path, "timeline.html");
+    assertEquals(output.encoding, "utf8");
+    assertEquals(output.data?.startsWith("<!DOCTYPE html>"), true);
+    assertEquals(output.data?.includes("const DATA = "), true);
+  });
+
   await t.test("preserves subprocess streams and exit codes", () => {
     const result = spawnSync(
       process.execPath,
       [
         fixturePath("cli-runner.ts"),
         "https://github.com/owner/example/actions/runs/1001/attempts/1",
+        "--format",
+        "mermaid",
       ],
       { encoding: "utf8" },
     );
@@ -141,68 +196,173 @@ test("CLI behavior contract", async (t) => {
   });
 });
 
-test("Action behavior contract", async () => {
+test("Action behavior contract", async (t) => {
   const { workflowRun, workflowJobs } = await loadApiFixture();
   const expectedMermaid = await readGolden("mermaid.md");
-  const logs: string[] = [];
-  const annotations: string[] = [];
-  const debugLogs: string[] = [];
-  const waits: number[] = [];
-  const getInputCalls: string[] = [];
-  const getBooleanInputCalls: string[] = [];
-  const clientOptions: unknown[] = [];
-  const fetchCalls = { fetchWorkflowRun: [] as unknown[][] };
-  let summary = "";
-  const summaryWriter = {
-    addRaw(markdown: string) {
-      summary += markdown;
-      return this;
-    },
-    async write() {
-      return undefined;
-    },
-  };
 
-  await runActionPost({
-    createClient: (options) => {
-      clientOptions.push(options);
-      return fixtureClient(workflowRun, workflowJobs, fetchCalls);
-    },
-    debug: (message) => debugLogs.push(message),
-    env: { GITHUB_RUN_ATTEMPT: "1" },
-    getBooleanInput: (name) => {
-      getBooleanInputCalls.push(name);
-      return name === "show-waiting-runner";
-    },
-    getInput: (name) => {
-      getInputCalls.push(name);
-      return name === "github-token" ? "fixture-token" : "20";
-    },
-    info: (message) => logs.push(message),
-    repository: { owner: "owner", repo: "example", runId: 1001 },
-    summary: summaryWriter,
-    wait: async (milliseconds) => {
-      waits.push(milliseconds);
-    },
-    warning: (message) => annotations.push(message),
-  });
+  await t.test(
+    "keeps Mermaid summary unchanged when output-html is false",
+    async () => {
+      const logs: string[] = [];
+      const annotations: string[] = [];
+      const debugLogs: string[] = [];
+      const waits: number[] = [];
+      const getInputCalls: string[] = [];
+      const getBooleanInputCalls: string[] = [];
+      const clientOptions: unknown[] = [];
+      const fetchCalls = { fetchWorkflowRun: [] as unknown[][] };
+      let summary = "";
+      const summaryWriter = {
+        addRaw(markdown: string) {
+          summary += markdown;
+          return this;
+        },
+        async write() {
+          return undefined;
+        },
+      };
 
-  assertEquals(summary, await readGolden("action-summary.md"));
-  assertEquals(logs.join("\n"), await readGolden("action-info.txt"));
-  assertEquals(
-    annotations.join("\n"),
-    await readGolden("action-annotations.txt"),
+      await runActionPost({
+        createClient: (options) => {
+          clientOptions.push(options);
+          return fixtureClient(workflowRun, workflowJobs, fetchCalls);
+        },
+        debug: (message) => debugLogs.push(message),
+        env: { GITHUB_RUN_ATTEMPT: "1" },
+        getBooleanInput: (name) => {
+          getBooleanInputCalls.push(name);
+          return name === "show-waiting-runner";
+        },
+        getInput: (name) => {
+          getInputCalls.push(name);
+          return name === "github-token" ? "fixture-token" : "20";
+        },
+        info: (message) => logs.push(message),
+        repository: { owner: "owner", repo: "example", runId: 1001 },
+        summary: summaryWriter,
+        wait: async (milliseconds) => {
+          waits.push(milliseconds);
+        },
+        warning: (message) => annotations.push(message),
+      });
+
+      assertEquals(summary, await readGolden("action-summary.md"));
+      assertEquals(logs.join("\n"), await readGolden("action-info.txt"));
+      assertEquals(
+        annotations.join("\n"),
+        await readGolden("action-annotations.txt"),
+      );
+      assertEquals(waits, [1000]);
+      assertEquals(debugLogs.at(-1), expectedMermaid);
+      assertEquals(clientOptions, [{ token: "fixture-token" }]);
+      assertEquals(fetchCalls.fetchWorkflowRun, [
+        ["owner", "example", 1001, 1],
+      ]);
+      assertEquals(getInputCalls, [
+        "github-token",
+        "expand-composite-actions-threshold",
+      ]);
+      assertEquals(getBooleanInputCalls, [
+        "show-waiting-runner",
+        "expand-composite-actions",
+        "output-html",
+      ]);
+    },
   );
-  assertEquals(waits, [1000]);
-  assertEquals(debugLogs.at(-1), expectedMermaid);
-  assertEquals(clientOptions, [{ token: "fixture-token" }]);
-  assertEquals(fetchCalls.fetchWorkflowRun, [["owner", "example", 1001, 1]]);
-  assertEquals(getInputCalls, [
-    "github-token",
-    "expand-composite-actions-threshold",
-  ]);
-  assertEquals(getBooleanInputCalls, [
-    "show-waiting-runner",
-    "expand-composite-actions",
-  ]);
+
+  await t.test(
+    "uploads HTML artifact and prepends link above Mermaid when output-html is true",
+    async () => {
+      const uploaded: { html: string; artifactName: string }[] = [];
+      let summary = "";
+      const summaryWriter = {
+        addRaw(markdown: string) {
+          summary += markdown;
+          return this;
+        },
+        async write() {
+          return undefined;
+        },
+      };
+
+      await runActionPost({
+        createClient: () => fixtureClient(workflowRun, workflowJobs),
+        debug: () => {},
+        env: {
+          GITHUB_JOB: "build_job",
+          GITHUB_RUN_ATTEMPT: "2",
+          RUNNER_NAME: "GitHub Actions 4",
+        },
+        getBooleanInput: (name) =>
+          name === "show-waiting-runner" || name === "output-html",
+        getInput: (name) => (name === "github-token" ? "fixture-token" : "20"),
+        info: () => {},
+        repository: { owner: "owner", repo: "example", runId: 1001 },
+        summary: summaryWriter,
+        uploadHtmlArtifact: async (html, artifactName) => {
+          uploaded.push({ html, artifactName });
+          return { artifactName, artifactId: 98765, size: html.length };
+        },
+        wait: async () => {},
+        warning: () => {},
+      });
+
+      const expectedArtifactName =
+        "actions-timeline-build_job-GitHub-Actions-4-attempt2.html";
+      assertEquals(uploaded.length, 1);
+      assertEquals(uploaded[0]?.artifactName, expectedArtifactName);
+      assertEquals(uploaded[0]?.html.startsWith("<!DOCTYPE html>"), true);
+      const expectedPrefix = `### Interactive HTML Timeline\n\n[Open interactive HTML timeline (\`${expectedArtifactName}\`)](https://github.com/owner/example/actions/runs/1001/artifacts/98765)\n\n`;
+      assertEquals(
+        summary,
+        `${expectedPrefix}${await readGolden("action-summary.md")}`,
+      );
+    },
+  );
+
+  await t.test(
+    "emits warning and still writes Mermaid summary when artifact upload fails",
+    async () => {
+      const warnings: string[] = [];
+      let summary = "";
+      let written = false;
+      const summaryWriter = {
+        addRaw(markdown: string) {
+          summary += markdown;
+          return this;
+        },
+        async write() {
+          written = true;
+        },
+      };
+
+      await runActionPost({
+        createClient: () => fixtureClient(workflowRun, workflowJobs),
+        debug: () => {},
+        env: { GITHUB_JOB: "build", GITHUB_RUN_ATTEMPT: "1" },
+        getBooleanInput: (name) =>
+          name === "show-waiting-runner" || name === "output-html",
+        getInput: (name) => (name === "github-token" ? "fixture-token" : "20"),
+        info: () => {},
+        repository: { owner: "owner", repo: "example", runId: 1001 },
+        summary: summaryWriter,
+        uploadHtmlArtifact: async () => {
+          throw new Error("skipArchive not supported on GHES");
+        },
+        wait: async () => {},
+        warning: (message) => warnings.push(message),
+      });
+
+      assertEquals(written, true);
+      assertEquals(summary, await readGolden("action-summary.md"));
+      assertEquals(
+        warnings.some((w) =>
+          w.includes(
+            "Failed to upload HTML timeline artifact: skipArchive not supported on GHES",
+          ),
+        ),
+        true,
+      );
+    },
+  );
 });

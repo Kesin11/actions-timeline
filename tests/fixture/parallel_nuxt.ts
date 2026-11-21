@@ -1,4 +1,4 @@
-import type { WorkflowJobs, WorkflowRun } from "../../src/github.ts";
+import type { WorkflowJobs, WorkflowRun } from "../../src/github/github.ts";
 
 export const workflow = {
   id: 30668200410,

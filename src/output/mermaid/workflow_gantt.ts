@@ -5,8 +5,8 @@ import {
   formatElapsedTime,
   formatName,
   formatSection,
-} from "./format_util.ts";
-import type { WorkflowRun } from "./github.ts";
+} from "../format_util.ts";
+import type { WorkflowRun } from "../../github/github.ts";
 import type {
   GanttOptions,
   ganttJob,
@@ -14,7 +14,7 @@ import type {
   StepConclusion,
   TimelineJobs,
   TimelineStep,
-} from "./types.ts";
+} from "../../models/types.ts";
 
 // ref: MAX_TEXTLENGTH https://github.com/mermaid-js/mermaid/blob/develop/packages/mermaid/src/mermaidAPI.ts
 const MERMAID_MAX_CHAR = 50_000;

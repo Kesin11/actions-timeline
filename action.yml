@@ -15,13 +15,19 @@ inputs:
     required: false
   expand-composite-actions:
     description: Expand composite action steps in the timeline.
-    default: false
+    default: true
     required: false
   expand-composite-actions-threshold:
     description: >
       Duration threshold in seconds for expanding composite action steps.
       Only steps at or above this duration are expanded. Default: 20
     default: "20"
+    required: false
+  output-html:
+    description: >
+      Generate a self-contained interactive HTML timeline report and upload it
+      as an unzipped workflow artifact.
+    default: true
     required: false
 runs:
   using: "node24"

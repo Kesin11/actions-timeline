@@ -9,13 +9,26 @@ import {
   warning as actionWarning,
 } from "@actions/core";
 import * as github from "@actions/github";
-import { expandCompositeSteps } from "./composite.ts";
-import { Github, type WorkflowJobs, type WorkflowRun } from "./github.ts";
+import {
+  type ArtifactUploader,
+  buildArtifactUrl,
+  resolveCurrentJobId,
+  resolveHtmlArtifactName,
+  uploadHtmlArtifact,
+} from "./github/artifact.ts";
+import {
+  Github,
+  type WorkflowJobs,
+  type WorkflowRun,
+} from "./github/github.ts";
+import { expandCompositeSteps } from "./logic/composite.ts";
 import {
   expandParallelSteps,
   type ParallelExpansionResult,
-} from "./parallel.ts";
-import { createMermaid } from "./workflow_gantt.ts";
+} from "./logic/parallel.ts";
+import { WorkflowModel } from "./models/workflow_file.ts";
+import { createHtmlReport } from "./output/html/report.ts";
+import { createMermaid } from "./output/mermaid/workflow_gantt.ts";
 
 const PARALLEL_FALLBACK_SUMMARY =
   "Parallel steps could not be expanded for one or more jobs. Those jobs use the standard timeline layout.\n\n";
@@ -34,6 +47,7 @@ export type ActionPostDependencies = {
   info?: (message: string) => void;
   repository?: { owner: string; repo: string; runId: number };
   summary?: SummaryWriter;
+  uploadHtmlArtifact?: ArtifactUploader;
   wait?: (milliseconds: number) => Promise<void>;
   warning?: (message: string) => void;
 };
@@ -49,6 +63,7 @@ export async function runActionPost(
   const warning = dependencies.warning ?? actionWarning;
   const wait = dependencies.wait ?? setTimeout;
   const summary = dependencies.summary ?? actionSummary;
+  const uploader = dependencies.uploadHtmlArtifact ?? uploadHtmlArtifact;
   const repository = dependencies.repository ?? {
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
@@ -61,6 +76,7 @@ export async function runActionPost(
   const expandCompositeActionsThreshold = Number(
     getInput("expand-composite-actions-threshold"),
   );
+  const outputHtml = getBooleanInput("output-html");
   const client = (
     dependencies.createClient ?? ((options) => new Github(options))
   )({ token });
@@ -105,15 +121,60 @@ export async function runActionPost(
     info,
   );
 
+  if (outputHtml) {
+    info("Create HTML timeline report...");
+    const workflowModel = await fetchWorkflowModelSafe(client, workflowRun);
+    const html = createHtmlReport(workflowRun, jobs, {
+      showWaitingRunner,
+      workflowModel,
+    });
+    const uniqueJobKey =
+      resolveCurrentJobId(workflowJobs, env.RUNNER_NAME) ?? env.RUNNER_NAME;
+    const artifactName = resolveHtmlArtifactName(
+      env.GITHUB_JOB,
+      runAttempt,
+      uniqueJobKey,
+    );
+    try {
+      const uploaded = await uploader(html, artifactName);
+      const artifactUrl = buildArtifactUrl(
+        workflowRun,
+        repository,
+        uploaded.artifactId,
+        env.GITHUB_SERVER_URL,
+      );
+      summary.addRaw(
+        `### Interactive HTML Timeline\n\n[Open interactive HTML timeline (\`${uploaded.artifactName}\`)](${artifactUrl})\n\n`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      warning(`Failed to upload HTML timeline artifact: ${message}`);
+    }
+  }
+
   info("Create gantt mermaid diagram...");
   const gantt = createMermaid(workflowRun, jobs, { showWaitingRunner });
   if (parallelResult.warnings.length > 0) {
     summary.addRaw(PARALLEL_FALLBACK_SUMMARY);
   }
-  await summary.addRaw(gantt).write();
+  summary.addRaw(gantt);
   debug(gantt);
 
+  await summary.write();
   info("Complete!");
+}
+
+async function fetchWorkflowModelSafe(
+  client: Github,
+  workflowRun: WorkflowRun,
+): Promise<WorkflowModel | undefined> {
+  if (typeof client.fetchWorkflowFiles !== "function") return undefined;
+  try {
+    const [fileContent] = await client.fetchWorkflowFiles([workflowRun]);
+    return fileContent ? new WorkflowModel(fileContent) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function expandJobs(
