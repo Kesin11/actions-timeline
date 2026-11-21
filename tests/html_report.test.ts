@@ -309,4 +309,8 @@ test(createHtmlReport.name, () => {
   assertEquals(html.includes("</script><script>alert(1)</script>"), false);
   assertEquals(html.includes("\\u003c/script>"), true);
   assertEquals(html.includes('id="toggleWait" checked'), false);
+
+  const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
+  assertEquals(scriptMatch !== null, true);
+  new Function(scriptMatch?.[1] ?? "");
 });
