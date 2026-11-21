@@ -154,6 +154,49 @@ jobs:
     );
   });
 
+  await t.test(
+    "matches overlapping matrix job IDs (test vs test-e2e) accurately",
+    () => {
+      const workflow = makeWorkflowModel(`
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps: []
+  test-e2e:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps: []
+  summary:
+    needs: [test-e2e]
+    steps: []
+`);
+      const jobs = [
+        makeJob({
+          id: 1,
+          name: "test (ubuntu-latest)",
+          started_at: "2026-01-01T00:00:00Z",
+          completed_at: "2026-01-01T00:00:20Z",
+        }),
+        makeJob({
+          id: 2,
+          name: "test-e2e (ubuntu-latest)",
+          started_at: "2026-01-01T00:00:00Z",
+          completed_at: "2026-01-01T00:00:50Z",
+        }),
+        makeJob({
+          id: 3,
+          name: "summary",
+          started_at: "2026-01-01T00:00:50Z",
+          completed_at: "2026-01-01T00:01:00Z",
+        }),
+      ];
+      assertEquals(computeCriticalPathJobIds(jobs, workflow), new Set([2, 3]));
+    },
+  );
+
   await t.test("ignores skipped jobs", () => {
     const workflow = makeWorkflowModel(`
 name: CI

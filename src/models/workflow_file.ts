@@ -87,21 +87,29 @@ export class JobModel {
       }
     }
 
-    for (const jobModel of jobModels) {
-      if (!jobModel.isMatrix()) continue;
+    const matrixModels = jobModels.filter((jobModel) => jobModel.isMatrix());
 
+    // Prefer bounded matrix job-ID matches before name or loose-prefix fallbacks
+    // so overlapping IDs like "test" and "test-e2e" resolve to the exact job.
+    for (const jobModel of matrixModels) {
       if (
         rawName.startsWith(`${jobModel.id} (`) ||
         rawName.startsWith(`${jobModel.id} `)
       ) {
         return jobModel;
       }
+    }
+
+    for (const jobModel of matrixModels) {
       if (jobModel.name !== undefined) {
         const trimmedName = jobModel.name.replace(/\$\{\{.+\}\}/g, "").trim();
         if (trimmedName.length > 0 && rawName.includes(trimmedName)) {
           return jobModel;
         }
       }
+    }
+
+    for (const jobModel of matrixModels) {
       if (rawName.startsWith(jobModel.id)) return jobModel;
     }
 

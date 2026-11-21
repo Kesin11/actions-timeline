@@ -941,6 +941,8 @@ export const renderHtmlReport = (data: HtmlReportData): string => {
   }
 
   function renderRows() {
+    const activeEl = document.activeElement;
+    const focusKey = (activeEl && activeEl.getAttribute) ? activeEl.getAttribute('data-toggle-focus') : null;
     const jobs = visibleJobs();
     if (jobs.length === 0) {
       rowsRoot.innerHTML = '<div class="empty-state">No jobs match the current filter</div>';
@@ -953,7 +955,7 @@ export const renderHtmlReport = (data: HtmlReportData): string => {
       const st = statusMeta(job.conclusion);
       const canToggle = !isSkip && (job.items.length > 0 || (state.showWait && job.waitDur >= 1));
       const isExpanded = canToggle && state.expandedJobs.has(job.id);
-      const chev = canToggle ? '<span class="chev">' + (isExpanded ? '▾' : '▸') + '</span>' : '<span class="chev-empty"></span>';
+      const chev = canToggle ? '<button type="button" class="chev chev-btn" aria-expanded="' + (isExpanded ? 'true' : 'false') + '" aria-label="Toggle job ' + esc(job.name) + '" data-toggle-focus="job:' + job.id + '">' + (isExpanded ? '▾' : '▸') + '</button>' : '<span class="chev-empty"></span>';
       const cpTag = job.isCp ? '<span class="cp-tag">CP</span>' : '';
       const stepBadge = (!isExpanded && job.rawStepCount > 0) ? '<span class="step-count">(' + job.rawStepCount + ' steps)</span>' : '';
       const jobDur = state.showWait ? job.totalDur : job.execDur;
@@ -991,9 +993,9 @@ export const renderHtmlReport = (data: HtmlReportData): string => {
 
       const entries = [];
       if (state.showWait && job.waitDur >= 1) {
-        entries.push({ kind: 'wait', start: job.waitStart, end: job.waitEnd, dur: job.waitDur });
+        entries.push({ kind: 'wait', start: job.waitStart, end: job.waitEnd, dur: job.waitDur, _itemIdx: -1 });
       }
-      job.items.forEach(it => entries.push(it));
+      job.items.forEach((it, itemIdx) => entries.push(Object.assign({ _itemIdx: itemIdx }, it)));
 
       entries.forEach((entry, idx) => {
         const branch = idx === entries.length - 1 ? '└─' : '├─';
@@ -1019,9 +1021,9 @@ export const renderHtmlReport = (data: HtmlReportData): string => {
         const stepUrl = (job.html_url && entry.number != null) ? (job.html_url + '#step:' + entry.number + ':1') : '';
 
         if (entry.kind === 'composite') {
-          const compKey = job.id + ':' + idx;
+          const compKey = job.id + ':c:' + (entry.number != null ? entry.number : entry._itemIdx);
           const compOpen = state.expandedComposites.has(compKey);
-          const cChev = '<span class="chev">' + (compOpen ? '▾' : '▸') + '</span>';
+          const cChev = '<button type="button" class="chev chev-btn" aria-expanded="' + (compOpen ? 'true' : 'false') + '" aria-label="Toggle composite ' + esc(entry.name) + '" data-toggle-focus="comp:' + esc(compKey) + '">' + (compOpen ? '▾' : '▸') + '</button>';
           const label = entry.name + ' (' + fmtDur(entry.dur) + ')';
           let bracket = '';
           if (!sSkip) {
@@ -1100,7 +1102,7 @@ export const renderHtmlReport = (data: HtmlReportData): string => {
             const cg = !cSkip ? spanGeom(ch.start, ch.end) : null;
             const nestedSubs = Array.isArray(ch.children) ? ch.children : [];
             const hasNestedComp = nestedSubs.length > 0;
-            const nestedCompKey = hasNestedComp ? (job.id + ':' + sIdx + ':' + cIdx) : '';
+            const nestedCompKey = hasNestedComp ? (job.id + ':p:' + (entry.number != null ? entry.number : entry._itemIdx) + ':' + (ch.number != null ? ch.number : cIdx)) : '';
             const nestedOpen = hasNestedComp && state.expandedComposites.has(nestedCompKey);
             let cBar = '';
             if (cg) {
@@ -1125,7 +1127,7 @@ export const renderHtmlReport = (data: HtmlReportData): string => {
               (ch.start != null ? ' data-start="' + ch.start + '" data-end="' + ch.end + '"' : '') + '>' +
               '<div class="left-cell">' +
                 '<div class="col-name i2"><span class="tree">' + cBranch + '</span>' +
-                  (hasNestedComp ? '<span class="chev">' + (nestedOpen ? '▾' : '▸') + '</span>' : '') +
+                  (hasNestedComp ? '<button type="button" class="chev chev-btn" aria-expanded="' + (nestedOpen ? 'true' : 'false') + '" aria-label="Toggle composite ' + esc(ch.name) + '" data-toggle-focus="comp:' + esc(nestedCompKey) + '">' + (nestedOpen ? '▾' : '▸') + '</button>' : '') +
                   (ch.isCp ? '<span class="cp-tag">CP</span>' : '') +
                   (hasNestedComp ? '<span class="kind k-comp">Composite</span>' : '') +
                   '<span class="name-text" title="' + esc(ch.name) + '">' + esc(ch.name) + '</span>' +
@@ -1189,6 +1191,12 @@ export const renderHtmlReport = (data: HtmlReportData): string => {
     });
 
     rowsRoot.innerHTML = parts.join('');
+    if (focusKey) {
+      const nextBtn = Array.from(rowsRoot.querySelectorAll('[data-toggle-focus]')).find(
+        el => el.getAttribute('data-toggle-focus') === focusKey
+      );
+      if (nextBtn) nextBtn.focus();
+    }
   }
 
   function render() {

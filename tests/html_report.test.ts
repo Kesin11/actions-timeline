@@ -1,5 +1,6 @@
 import { deepStrictEqual as assertEquals } from "node:assert/strict";
 import { test } from "node:test";
+import vm from "node:vm";
 import type { WorkflowRun } from "../src/github/github.ts";
 import {
   buildHtmlReportData,
@@ -314,4 +315,119 @@ test(createHtmlReport.name, () => {
   const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
   assertEquals(scriptMatch !== null, true);
   new Function(scriptMatch?.[1] ?? "");
+});
+
+test("HTML template script renders nested parallel composites without throwing", () => {
+  const jobs: TimelineJobs = [
+    {
+      id: 99,
+      name: "build",
+      status: "completed",
+      conclusion: "success",
+      created_at: "2026-01-01T00:00:00Z",
+      started_at: "2026-01-01T00:00:05Z",
+      completed_at: "2026-01-01T00:00:55Z",
+      html_url: "https://github.com/owner/repo/actions/runs/1001/job/99",
+      steps: [
+        {
+          name: "Parallel group",
+          number: 4,
+          status: "completed",
+          conclusion: "success",
+          started_at: "2026-01-01T00:00:05Z",
+          completed_at: "2026-01-01T00:00:55Z",
+          timelineRowKind: "parallel-parent",
+        },
+        {
+          name: "(bg) Setup A",
+          timelineOriginalName: "Setup A",
+          number: 2,
+          status: "completed",
+          conclusion: "success",
+          started_at: "2026-01-01T00:00:05Z",
+          completed_at: "2026-01-01T00:00:25Z",
+          timelineRowKind: "parallel-child",
+        },
+        {
+          name: "(sub) Sub 1",
+          number: 2,
+          status: "completed",
+          conclusion: "success",
+          started_at: "2026-01-01T00:00:05Z",
+          completed_at: "2026-01-01T00:00:15Z",
+          timelineRowKind: "composite-child",
+        },
+        {
+          name: "(bg) Slow B",
+          timelineOriginalName: "Slow B",
+          number: 3,
+          status: "completed",
+          conclusion: "success",
+          started_at: "2026-01-01T00:00:05Z",
+          completed_at: "2026-01-01T00:00:55Z",
+          timelineRowKind: "parallel-child",
+        },
+      ],
+    },
+  ];
+
+  const html = createHtmlReport(baseRun, jobs);
+  const scriptMatch = html.match(/<script>([\s\S]*?)<\/script>/);
+  assertEquals(scriptMatch !== null, true);
+
+  const elements = new Map<string, Record<string, unknown>>();
+  const makeEl = (id: string) => {
+    const el: Record<string, unknown> = {
+      id,
+      innerHTML: "",
+      textContent: "",
+      style: {},
+      checked: true,
+      classList: { toggle() {}, add() {}, remove() {}, contains: () => false },
+      addEventListener() {},
+      querySelectorAll: () => [],
+      getAttribute: () => null,
+    };
+    elements.set(id, el);
+    return el;
+  };
+  for (const id of [
+    "rows",
+    "axisTicks",
+    "axisScale",
+    "toggleWait",
+    "tooltip",
+    "ttName",
+    "ttDur",
+    "cursor",
+    "cursorLabel",
+    "zoomSel",
+    "zoomBadge",
+    "zoomRange",
+    "zoomReset",
+    "gridWrap",
+  ]) {
+    makeEl(id);
+  }
+
+  const sandbox = {
+    document: {
+      activeElement: null,
+      getElementById: (id: string) => elements.get(id) ?? makeEl(id),
+      querySelectorAll: () => [],
+    },
+    window: { addEventListener() {} },
+    Array,
+    Number,
+    String,
+    Math,
+    Set,
+    Object,
+    JSON,
+  };
+  vm.runInNewContext(scriptMatch?.[1] ?? "", sandbox);
+  const rowsHtml = String(elements.get("rowsRoot")?.innerHTML ?? "");
+  assertEquals(rowsHtml.includes("Setup A"), true);
+  assertEquals(rowsHtml.includes('data-comp-key="99:p:4:2"'), true);
+  assertEquals(rowsHtml.includes('aria-expanded="false"'), true);
 });

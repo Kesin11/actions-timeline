@@ -14,8 +14,8 @@ An Action that visualizes the timeline of a GitHub Actions workflow run as an **
 By default, `actions-timeline` produces two complementary views for each workflow run:
 
 1. **Interactive HTML Timeline** (default: enabled via `output-html: true`)
-   - Uploaded as a self-contained, unzipped `.html` workflow artifact (no external CDNs, fonts, or frameworks) with a link placed at the top of the Job Summary.
-   - Highlights the deterministic critical path across job `needs`, matrix jobs, parallel groups, and composite actions.
+   - Uploaded as a self-contained, unzipped `.html` workflow artifact with a link placed at the top of the Job Summary.
+   - Highlights the deterministic critical path across job `needs`.
    - Supports expanding/collapsing jobs and composite actions, filtering (`All` / `CP only` / `Failed only`), toggling runner wait bars, drag-to-zoom with double-click reset, hover tooltips, a vertical time cursor, and direct links to GitHub job/step logs.
 2. **Mermaid Gantt Diagram**
    - Rendered inline in the GitHub Actions Job Summary using GitHub Flavored Markdown Mermaid support for quick at-a-glance inspection without leaving the summary page.
@@ -76,7 +76,7 @@ jobs:
 
 `actions-timeline` fetches workflow run metadata, jobs, and steps from the GitHub API during the job's post-processing step, then builds both outputs:
 
-- **Interactive HTML report**: Embeds the timeline data and vanilla JS/CSS into a single standalone `.html` file, uploads it as an unzipped artifact (`actions-timeline-<job>-<job-id>-attempt<n>.html`), and places a link to it at the top of the Job Summary. If artifact upload fails (for example, on an environment that does not support unzipped artifacts), the action emits a warning and still writes the Mermaid summary without failing the job.
+- **Interactive HTML report**: Embeds the timeline data into a single standalone `.html` file, uploads it as an unzipped artifact.
 - **Mermaid Gantt diagram**: Formats the timeline as [Mermaid Gantt](https://mermaid.js.org/syntax/gantt.html) syntax and writes it directly to the Job Summary below the HTML link.
 
 Steps declared with the GitHub Actions `parallel` syntax are detected automatically and verified against the job log. Both outputs preserve the `Parallel group` parent alongside its concurrent child steps at their shared start time.
@@ -89,7 +89,6 @@ Register this action before your main steps so its post-processing hook captures
 
 `actions-timeline` also works on GitHub Enterprise Server (GHES). It reads the `GITHUB_API_URL` environment variable automatically from GitHub Actions' [default environment variables](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables), so no extra configuration is needed.
 
-If your GHES version does not support unzipped artifact uploads, HTML artifact upload will emit a warning and the action will still publish the Mermaid diagram to the Job Summary.
 
 ## Known issues
 
@@ -128,17 +127,17 @@ git clone https://github.com/Kesin11/actions-timeline.git
 cd actions-timeline
 npm install
 
-# Generate a self-contained interactive HTML timeline report
+# Generate a self-contained interactive HTML timeline report (default format)
 node cli.ts \
   https://github.com/Kesin11/actions-timeline/actions/runs/8021493760/attempts/1 \
   -t $(gh auth token) \
-  --format html \
   -o timeline.html
 
-# Generate a Mermaid Markdown timeline (default format)
+# Generate a Mermaid Markdown timeline
 node cli.ts \
   https://github.com/Kesin11/actions-timeline/actions/runs/8021493760/attempts/1 \
   -t $(gh auth token) \
+  --format mermaid \
   -o output.md
 
 # Fetch the latest attempt when the URL omits /attempts/<number>
@@ -168,8 +167,8 @@ node cli.ts \
   -o timeline.html
 ```
 
-- **HTML output (`--format html`)**: Writes a standalone `.html` file (or prints HTML to STDOUT) that you can open directly in any web browser—no external tools or internet connection required.
-- **Mermaid output (`--format mermaid`, default)**: Writes Mermaid Markdown to a file or STDOUT. To preview it locally, use one of:
+- **HTML output (`--format html`, default)**: Writes a standalone `.html` file (or prints HTML to STDOUT) that you can open directly in any web browser—no external tools or internet connection required.
+- **Mermaid output (`--format mermaid`)**: Writes Mermaid Markdown to a file or STDOUT. To preview it locally, use one of:
   - Online editor: [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/)
   - VS Code built-in Mermaid preview (since 1.121): [release notes](https://code.visualstudio.com/updates/v1_121#_mermaid-diagrams-in-markdown-preview-and-notebooks)
   - Local CLI: [mermaid-cli](https://github.com/mermaid-js/mermaid-cli)

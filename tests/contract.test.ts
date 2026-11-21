@@ -67,7 +67,7 @@ test("CLI behavior contract", async (t) => {
       from: "user",
     });
     const opts = program.opts();
-    assertEquals(opts.format, "mermaid");
+    assertEquals(opts.format, "html");
     assertEquals(opts.showWaitingRunner, true);
     assertEquals(opts.expandCompositeActions, true);
     assertEquals(opts.expandCompositeActionsThreshold, 0);
@@ -79,7 +79,11 @@ test("CLI behavior contract", async (t) => {
     const clientOptions: unknown[] = [];
     const calls = { fetchWorkflowRun: [] as unknown[][] };
     await runCli(
-      ["https://github.com/owner/example/actions/runs/1001/attempts/1"],
+      [
+        "https://github.com/owner/example/actions/runs/1001/attempts/1",
+        "--format",
+        "mermaid",
+      ],
       {
         createClient: (options) => {
           clientOptions.push(options);
@@ -101,6 +105,8 @@ test("CLI behavior contract", async (t) => {
     await runCli(
       [
         "https://github.com/owner/example/actions/runs/1001",
+        "--format",
+        "mermaid",
         "--output",
         "output.md",
         "--show-waiting-runner",
@@ -124,35 +130,30 @@ test("CLI behavior contract", async (t) => {
     });
   });
 
-  await t.test(
-    "writes self-contained HTML when --format html is set",
-    async () => {
-      const output: { path?: string; data?: string; encoding?: string } = {};
-      await runCli(
-        [
-          "https://github.com/owner/example/actions/runs/1001",
-          "--format",
-          "html",
-          "--output",
-          "timeline.html",
-        ],
-        {
-          createClient: () => fixtureClient(workflowRun, workflowJobs),
-          warn: () => {},
-          writeFile: async (path, data, encoding) => {
-            output.path = String(path);
-            output.data = String(data);
-            output.encoding = String(encoding);
-          },
+  await t.test("writes self-contained HTML by default", async () => {
+    const output: { path?: string; data?: string; encoding?: string } = {};
+    await runCli(
+      [
+        "https://github.com/owner/example/actions/runs/1001",
+        "--output",
+        "timeline.html",
+      ],
+      {
+        createClient: () => fixtureClient(workflowRun, workflowJobs),
+        warn: () => {},
+        writeFile: async (path, data, encoding) => {
+          output.path = String(path);
+          output.data = String(data);
+          output.encoding = String(encoding);
         },
-      );
+      },
+    );
 
-      assertEquals(output.path, "timeline.html");
-      assertEquals(output.encoding, "utf8");
-      assertEquals(output.data?.startsWith("<!DOCTYPE html>"), true);
-      assertEquals(output.data?.includes("const DATA = "), true);
-    },
-  );
+    assertEquals(output.path, "timeline.html");
+    assertEquals(output.encoding, "utf8");
+    assertEquals(output.data?.startsWith("<!DOCTYPE html>"), true);
+    assertEquals(output.data?.includes("const DATA = "), true);
+  });
 
   await t.test("preserves subprocess streams and exit codes", () => {
     const result = spawnSync(
@@ -160,6 +161,8 @@ test("CLI behavior contract", async (t) => {
       [
         fixturePath("cli-runner.ts"),
         "https://github.com/owner/example/actions/runs/1001/attempts/1",
+        "--format",
+        "mermaid",
       ],
       { encoding: "utf8" },
     );

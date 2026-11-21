@@ -53,9 +53,9 @@ export function createProgram(): Command {
     )
     .option(
       "-f, --format <format>",
-      "Output format: mermaid or html. Default: mermaid",
+      "Output format: html or mermaid. Default: html",
       parseFormat,
-      "mermaid",
+      "html",
     )
     .option(
       "--show-waiting-runner <showWaitingRunner>",
