@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { runCli } from "../../../cli.ts";
-import type { Github, WorkflowJobs, WorkflowRun } from "../../../src/github.ts";
+import type { Github, WorkflowJobs, WorkflowRun } from "../../../src/github/github.ts";
 
 const [workflowRunJson, workflowJobsJson] = await Promise.all([
   readFile(new URL("./workflow-run.json", import.meta.url), "utf8"),
@@ -11,6 +11,7 @@ const workflowJobs = JSON.parse(workflowJobsJson) as WorkflowJobs;
 const client = {
   fetchWorkflowRun: async () => workflowRun,
   fetchWorkflowRunJobs: async () => workflowJobs,
+  fetchWorkflowFiles: async () => [{ content: "name: CI\njobs: {}\n", raw: { path: ".github/workflows/ci.yml" } }],
   fetchJobLog: async () => "",
 } as unknown as Github;
 

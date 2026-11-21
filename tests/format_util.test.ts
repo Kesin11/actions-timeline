@@ -5,8 +5,8 @@ import {
   formatShortElapsedTime,
   formatStep,
   truncateName,
-} from "../src/format_util.ts";
-import type { ganttStep } from "../src/types.ts";
+} from "../src/output/format_util.ts";
+import type { ganttStep } from "../src/models/types.ts";
 
 test(formatStep.name, async (t) => {
   const baseStep: ganttStep = {

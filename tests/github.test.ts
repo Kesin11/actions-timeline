@@ -4,7 +4,7 @@ import {
 } from "node:assert/strict";
 import { test } from "node:test";
 import type { Octokit } from "@octokit/rest";
-import { Github, parseWorkflowRunUrl } from "../src/github.ts";
+import { Github, parseWorkflowRunUrl } from "../src/github/github.ts";
 
 test(parseWorkflowRunUrl.name, async (t) => {
   await t.test("Basic", () => {

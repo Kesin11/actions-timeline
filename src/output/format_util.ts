@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import type { ganttJob, ganttStep, StepConclusion } from "./types.ts";
+import type { ganttJob, ganttStep, StepConclusion } from "../models/types.ts";
 
 export const diffSec = (
   start?: string | Date | null,
