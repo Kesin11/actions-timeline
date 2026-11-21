@@ -89,7 +89,6 @@ Register this action before your main steps so its post-processing hook captures
 
 `actions-timeline` also works on GitHub Enterprise Server (GHES). It reads the `GITHUB_API_URL` environment variable automatically from GitHub Actions' [default environment variables](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables), so no extra configuration is needed.
 
-
 ## Known issues
 
 > [!IMPORTANT]
