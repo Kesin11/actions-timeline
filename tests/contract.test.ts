@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { runCli } from "../cli.ts";
+import { createProgram, runCli } from "../cli.ts";
 import { runActionPost } from "../src/action.ts";
 import type {
   Github,
@@ -46,6 +46,12 @@ function fixtureClient(
       return workflowRun;
     },
     fetchWorkflowRunJobs: async () => workflowJobs,
+    fetchWorkflowFiles: async () => [
+      {
+        content: "name: CI\njobs: {}\n",
+        raw: { path: ".github/workflows/ci.yml" },
+      },
+    ],
     fetchJobLog: async () => "",
   } as unknown as Github;
 }
@@ -54,6 +60,18 @@ test("CLI behavior contract", async (t) => {
   const { workflowRun, workflowJobs } = await loadApiFixture();
   const expectedMermaid = await readGolden("mermaid.md");
   const expectedStderr = `${await readGolden("cli-stderr.txt")}\n`;
+
+  await t.test("uses expected default option values", () => {
+    const program = createProgram();
+    program.parse(["https://github.com/owner/example/actions/runs/1001"], {
+      from: "user",
+    });
+    const opts = program.opts();
+    assertEquals(opts.format, "mermaid");
+    assertEquals(opts.showWaitingRunner, true);
+    assertEquals(opts.expandCompositeActions, true);
+    assertEquals(opts.expandCompositeActionsThreshold, 0);
+  });
 
   await t.test("writes Mermaid to stdout without changing bytes", async () => {
     const stdout: string[] = [];

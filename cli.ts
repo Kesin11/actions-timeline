@@ -42,7 +42,7 @@ const parseFormat = (value: string): OutputFormat => {
   );
 };
 
-function createProgram(): Command {
+export function createProgram(): Command {
   return new Command()
     .name("actions-timeline-cli")
     .description("Command line tool of actions-timeline")
@@ -65,15 +65,15 @@ function createProgram(): Command {
     )
     .option(
       "--expand-composite-actions <expandCompositeActions>",
-      "Expand composite action steps in the timeline. Default: false",
+      "Expand composite action steps in the timeline. Default: true",
       parseBoolean,
-      false,
+      true,
     )
     .option(
       "--expand-composite-actions-threshold <thresholdSec>",
-      "Duration threshold in seconds for expanding composite action steps. Default: 20",
+      "Duration threshold in seconds for expanding composite action steps. Default: 0",
       parseNumber,
-      20,
+      0,
     )
     .argument("<url>");
 }

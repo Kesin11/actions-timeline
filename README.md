@@ -47,8 +47,8 @@ jobs:
           # and workflow files, which may increase execution time.
           # Limitation: Composite actions that contain nested local composite
           # actions (uses: ./.github/actions/...) are not expanded.
-          # Default: false
-          expand-composite-actions: false
+          # Default: true
+          expand-composite-actions: true
           # Duration threshold in seconds for expanding composite action steps.
           # Only steps at or above this duration are expanded.
           # Default: 20
@@ -81,7 +81,7 @@ jobs:
 
 Steps declared with the GitHub Actions `parallel` syntax are detected automatically and verified against the job log. Both outputs preserve the `Parallel group` parent alongside its concurrent child steps at their shared start time.
 
-Repo-local composite actions can be expanded in both outputs by setting `expand-composite-actions: true`. The parent composite step remains visible with its internal sub-steps beneath it (collapsible in the HTML report). Nested repo-local composite actions are not currently expanded.
+Repo-local composite actions are expanded in both outputs by default (`expand-composite-actions: true`, with `expand-composite-actions-threshold: 20` seconds). The parent composite step remains visible with its internal sub-steps beneath it (collapsible in the HTML report). Set `expand-composite-actions: false` to disable expansion. Nested repo-local composite actions are not currently expanded.
 
 Register this action before your main steps so its post-processing hook captures the full job execution.
 
@@ -157,17 +157,18 @@ node cli.ts \
 ```
 
 ```bash
-# Expand composite action steps (works with both --format html and --format mermaid)
+# Composite action steps are expanded by default in the CLI
+# (--expand-composite-actions true, --expand-composite-actions-threshold 0).
+# You can customize the threshold or disable expansion:
 node cli.ts \
   https://github.com/OWNER/REPO/actions/runs/RUN_ID \
   -t $(gh auth token) \
   --format html \
-  --expand-composite-actions true \
-  --expand-composite-actions-threshold 10 \
+  --expand-composite-actions-threshold 20 \
   -o timeline.html
 ```
 
-- **HTML output (`--format html`)**: Writes a standalone `.html` file (or prints HTML to STDOUT) that you can open directly in any web browser?no external tools or internet connection required.
+- **HTML output (`--format html`)**: Writes a standalone `.html` file (or prints HTML to STDOUT) that you can open directly in any web browser—no external tools or internet connection required.
 - **Mermaid output (`--format mermaid`, default)**: Writes Mermaid Markdown to a file or STDOUT. To preview it locally, use one of:
   - Online editor: [Mermaid Live Editor](https://mermaid-js.github.io/mermaid-live-editor/)
   - VS Code built-in Mermaid preview (since 1.121): [release notes](https://code.visualstudio.com/updates/v1_121#_mermaid-diagrams-in-markdown-preview-and-notebooks)

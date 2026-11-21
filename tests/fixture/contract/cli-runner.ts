@@ -11,6 +11,7 @@ const workflowJobs = JSON.parse(workflowJobsJson) as WorkflowJobs;
 const client = {
   fetchWorkflowRun: async () => workflowRun,
   fetchWorkflowRunJobs: async () => workflowJobs,
+  fetchWorkflowFiles: async () => [{ content: "name: CI\njobs: {}\n", raw: { path: ".github/workflows/ci.yml" } }],
   fetchJobLog: async () => "",
 } as unknown as Github;
 
