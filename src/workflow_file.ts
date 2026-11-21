@@ -36,6 +36,7 @@ export class WorkflowModel {
 
 export type Job = {
   name?: string;
+  needs?: string | string[];
   "runs-on"?: string | string[];
   uses?: string;
   steps?: Step[];
@@ -57,6 +58,17 @@ export class JobModel {
     this.raw = obj;
   }
 
+  get needs(): string[] {
+    const rawNeeds = this.raw.needs;
+    if (typeof rawNeeds === "string") return [rawNeeds];
+    if (Array.isArray(rawNeeds)) {
+      return rawNeeds.filter(
+        (item): item is string => typeof item === "string",
+      );
+    }
+    return [];
+  }
+
   get steps(): StepModel[] {
     return (this.raw.steps ?? []).flatMap((step) =>
       (step.parallel ?? [step]).map((child) => new StepModel(child)),
@@ -70,16 +82,27 @@ export class JobModel {
     if (jobModels === undefined) return undefined;
 
     for (const jobModel of jobModels) {
-      if (jobModel.id === rawName) return jobModel;
-      if (jobModel.name === rawName) return jobModel;
-
-      if (jobModel.isMatrix()) {
-        if (rawName.startsWith(jobModel.id)) return jobModel;
-
-        if (jobModel.name === undefined) continue;
-        const trimmedName = jobModel.name.replace(/\$\{\{.+\}\}/g, "").trim();
-        if (rawName.includes(trimmedName)) return jobModel;
+      if (jobModel.id === rawName || jobModel.name === rawName) {
+        return jobModel;
       }
+    }
+
+    for (const jobModel of jobModels) {
+      if (!jobModel.isMatrix()) continue;
+
+      if (
+        rawName.startsWith(`${jobModel.id} (`) ||
+        rawName.startsWith(`${jobModel.id} `)
+      ) {
+        return jobModel;
+      }
+      if (jobModel.name !== undefined) {
+        const trimmedName = jobModel.name.replace(/\$\{\{.+\}\}/g, "").trim();
+        if (trimmedName.length > 0 && rawName.includes(trimmedName)) {
+          return jobModel;
+        }
+      }
+      if (rawName.startsWith(jobModel.id)) return jobModel;
     }
 
     return undefined;

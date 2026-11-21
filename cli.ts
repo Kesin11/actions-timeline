@@ -2,9 +2,13 @@ import { writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { Command, InvalidArgumentError } from "commander";
 import { expandCompositeSteps } from "./src/composite.ts";
-import { Github, parseWorkflowRunUrl } from "./src/github.ts";
+import { Github, parseWorkflowRunUrl, type WorkflowRun } from "./src/github.ts";
+import { createHtmlReport } from "./src/html_report.ts";
 import { expandParallelSteps } from "./src/parallel.ts";
+import { WorkflowModel } from "./src/workflow_file.ts";
 import { createMermaid } from "./src/workflow_gantt.ts";
+
+type OutputFormat = "mermaid" | "html";
 
 type CliDependencies = {
   createClient?: (options: { token?: string; host?: string }) => Github;
@@ -27,6 +31,13 @@ const parseNumber = (value: string): number => {
   return parsed;
 };
 
+const parseFormat = (value: string): OutputFormat => {
+  if (value === "mermaid" || value === "html") return value;
+  throw new InvalidArgumentError(
+    `Invalid format value: ${value}. Expected "mermaid" or "html".`,
+  );
+};
+
 function createProgram(): Command {
   return new Command()
     .name("actions-timeline-cli")
@@ -34,7 +45,13 @@ function createProgram(): Command {
     .option("-t, --token <token>", "GitHub token. ex: $(gh auth token)")
     .option(
       "-o, --output <output>",
-      "Output md file path. If not set output to STDOUT. ex: output.md",
+      "Output file path. If not set output to STDOUT. ex: output.md or timeline.html",
+    )
+    .option(
+      "-f, --format <format>",
+      "Output format: mermaid or html. Default: mermaid",
+      parseFormat,
+      "mermaid",
     )
     .option(
       "--show-waiting-runner <showWaitingRunner>",
@@ -57,6 +74,19 @@ function createProgram(): Command {
     .argument("<url>");
 }
 
+async function fetchWorkflowModelSafe(
+  client: Github,
+  workflowRun: WorkflowRun,
+): Promise<WorkflowModel | undefined> {
+  if (typeof client.fetchWorkflowFiles !== "function") return undefined;
+  try {
+    const [fileContent] = await client.fetchWorkflowFiles([workflowRun]);
+    return fileContent ? new WorkflowModel(fileContent) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function runCli(
   argv: string[],
   dependencies: CliDependencies = {},
@@ -67,6 +97,7 @@ export async function runCli(
   const options = program.opts<{
     token?: string;
     output?: string;
+    format: OutputFormat;
     showWaitingRunner: boolean;
     expandCompositeActions: boolean;
     expandCompositeActionsThreshold: number;
@@ -106,14 +137,21 @@ export async function runCli(
         thresholdSec: options.expandCompositeActionsThreshold,
       })
     : parallelResult.jobs;
-  const gantt = createMermaid(workflowRun, jobs, {
-    showWaitingRunner: options.showWaitingRunner,
-  });
+
+  const output =
+    options.format === "html"
+      ? createHtmlReport(workflowRun, jobs, {
+          showWaitingRunner: options.showWaitingRunner,
+          workflowModel: await fetchWorkflowModelSafe(client, workflowRun),
+        })
+      : createMermaid(workflowRun, jobs, {
+          showWaitingRunner: options.showWaitingRunner,
+        });
 
   if (options.output) {
-    await (dependencies.writeFile ?? writeFile)(options.output, gantt, "utf8");
+    await (dependencies.writeFile ?? writeFile)(options.output, output, "utf8");
   } else {
-    (dependencies.log ?? console.log)(gantt);
+    (dependencies.log ?? console.log)(output);
   }
 }
 

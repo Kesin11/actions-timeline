@@ -41,6 +41,13 @@ jobs:
           # Only steps at or above this duration are expanded.
           # Default: 20
           expand-composite-actions-threshold: 20
+          # Generate a self-contained interactive HTML timeline report and upload
+          # it as an unzipped workflow artifact with a link in the Job Summary.
+          # Default: true
+          output-html: true
+          # Custom artifact filename for the HTML timeline report.
+          # Default: actions-timeline-<job>-attempt<n>.html
+          html-artifact-name: ""
 
       # Your build steps...
 ```
@@ -171,6 +178,14 @@ node cli.ts \
   --expand-composite-actions true \
   --expand-composite-actions-threshold 10 \
   -o output.md
+
+# Generate a self-contained interactive HTML timeline report
+node cli.ts \
+  https://github.com/OWNER/REPO/actions/runs/RUN_ID \
+  -t $(gh auth token) \
+  --format html \
+  --expand-composite-actions true \
+  -o timeline.html
 ```
 
 `cli.ts` just outputs the markdown to file or STDOUT, so you have to use other

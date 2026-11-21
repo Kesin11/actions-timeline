@@ -9,12 +9,20 @@ import {
   warning as actionWarning,
 } from "@actions/core";
 import * as github from "@actions/github";
+import {
+  type ArtifactUploader,
+  buildArtifactUrl,
+  resolveHtmlArtifactName,
+  uploadHtmlArtifact,
+} from "./artifact.ts";
 import { expandCompositeSteps } from "./composite.ts";
 import { Github, type WorkflowJobs, type WorkflowRun } from "./github.ts";
+import { createHtmlReport } from "./html_report.ts";
 import {
   expandParallelSteps,
   type ParallelExpansionResult,
 } from "./parallel.ts";
+import { WorkflowModel } from "./workflow_file.ts";
 import { createMermaid } from "./workflow_gantt.ts";
 
 const PARALLEL_FALLBACK_SUMMARY =
@@ -34,6 +42,7 @@ export type ActionPostDependencies = {
   info?: (message: string) => void;
   repository?: { owner: string; repo: string; runId: number };
   summary?: SummaryWriter;
+  uploadHtmlArtifact?: ArtifactUploader;
   wait?: (milliseconds: number) => Promise<void>;
   warning?: (message: string) => void;
 };
@@ -49,6 +58,7 @@ export async function runActionPost(
   const warning = dependencies.warning ?? actionWarning;
   const wait = dependencies.wait ?? setTimeout;
   const summary = dependencies.summary ?? actionSummary;
+  const uploader = dependencies.uploadHtmlArtifact ?? uploadHtmlArtifact;
   const repository = dependencies.repository ?? {
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
@@ -61,6 +71,10 @@ export async function runActionPost(
   const expandCompositeActionsThreshold = Number(
     getInput("expand-composite-actions-threshold"),
   );
+  const outputHtml = getBooleanInput("output-html");
+  const htmlArtifactNameInput = outputHtml
+    ? getInput("html-artifact-name")
+    : "";
   const client = (
     dependencies.createClient ?? ((options) => new Github(options))
   )({ token });
@@ -110,10 +124,53 @@ export async function runActionPost(
   if (parallelResult.warnings.length > 0) {
     summary.addRaw(PARALLEL_FALLBACK_SUMMARY);
   }
-  await summary.addRaw(gantt).write();
+  summary.addRaw(gantt);
   debug(gantt);
 
+  if (outputHtml) {
+    info("Create HTML timeline report...");
+    const workflowModel = await fetchWorkflowModelSafe(client, workflowRun);
+    const html = createHtmlReport(workflowRun, jobs, {
+      showWaitingRunner,
+      workflowModel,
+    });
+    const artifactName = resolveHtmlArtifactName(
+      htmlArtifactNameInput,
+      env.GITHUB_JOB,
+      runAttempt,
+    );
+    try {
+      const uploaded = await uploader(html, artifactName);
+      const artifactUrl = buildArtifactUrl(
+        workflowRun,
+        repository,
+        uploaded.artifactId,
+        env.GITHUB_SERVER_URL,
+      );
+      summary.addRaw(
+        `\n\n[Open interactive HTML timeline (${uploaded.artifactName})](${artifactUrl})\n`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      warning(`Failed to upload HTML timeline artifact: ${message}`);
+    }
+  }
+
+  await summary.write();
   info("Complete!");
+}
+
+async function fetchWorkflowModelSafe(
+  client: Github,
+  workflowRun: WorkflowRun,
+): Promise<WorkflowModel | undefined> {
+  if (typeof client.fetchWorkflowFiles !== "function") return undefined;
+  try {
+    const [fileContent] = await client.fetchWorkflowFiles([workflowRun]);
+    return fileContent ? new WorkflowModel(fileContent) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function expandJobs(
