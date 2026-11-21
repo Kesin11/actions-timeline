@@ -125,6 +125,7 @@ test(buildHtmlReportData.name, async (t) => {
       assertEquals(data.jobs[0].isCp, true);
       assertEquals(data.jobs[0].waitDur, 5);
       assertEquals(data.jobs[0].execDur, 85);
+      assertEquals(data.jobs[0].rawStepCount, 3);
       assertEquals(data.jobs[0].items, [
         {
           kind: "composite",
