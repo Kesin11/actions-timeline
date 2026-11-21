@@ -23,7 +23,7 @@
     "@octokit/rest": "^22.0.1",
     "commander": "^14.0.3",
     "date-fns": "4.1.0",
-    "yaml": "^2.8.1"
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.8",
