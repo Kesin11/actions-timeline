@@ -1,0 +1,26 @@
+name: HTML artifact browser test
+
+on:
+  push:
+    branches: ["kesin11-improved-enigma"]
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: artifacts/html-artifact-browser-test.html
+          archive: false
+          retention-days: 1
+      - name: Add artifact link to job summary
+        env:
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+        run: |
+          echo "## HTML artifact browser test" >> "$GITHUB_STEP_SUMMARY"
+          echo "Single-file, non-zipped HTML artifact: [Open artifact]($ARTIFACT_URL)" >> "$GITHUB_STEP_SUMMARY"

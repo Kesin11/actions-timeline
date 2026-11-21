@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Actions Artifact HTML Browser Test</title>
+    <style>
+      body {
+        max-width: 42rem;
+        margin: 4rem auto;
+        padding: 0 1.5rem;
+        font: 1rem/1.5 system-ui, sans-serif;
+        color: #172033;
+        background: #f3f6fb;
+      }
+
+      main {
+        padding: 2rem;
+        border: 2px solid #2563eb;
+        border-radius: 1rem;
+        background: white;
+      }
+
+      #js-result {
+        padding: 0.75rem;
+        color: #713f12;
+        background: #fef3c7;
+      }
+
+      #js-result[data-status="passed"] {
+        color: #14532d;
+        background: #dcfce7;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>GitHub Actions HTML Artifact</h1>
+      <p>This page was uploaded as a single, non-zipped HTML artifact.</p>
+      <p id="js-result" data-status="pending">JavaScript: waiting for page load</p>
+      <button id="toggle" type="button">Toggle JavaScript marker</button>
+    </main>
+    <script>
+      const result = document.querySelector("#js-result");
+      const button = document.querySelector("#toggle");
+
+      result.textContent = "JavaScript: executed successfully";
+      result.dataset.status = "passed";
+      button.addEventListener("click", () => {
+        result.textContent =
+          result.textContent === "JavaScript: executed successfully"
+            ? "JavaScript: button click executed successfully"
+            : "JavaScript: executed successfully";
+      });
+    </script>
+  </body>
+</html>
