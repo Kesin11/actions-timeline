@@ -516,20 +516,21 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
           createStep(2, "Parallel group, lint", skipped),
         ],
       ];
-      for (const [running, skippedChild] of cases) {
-        const steps = [running, skippedChild, createParent(3)];
-
-        const result = expandParallelJobSteps(
-          steps,
-          createMarker(skippedChild.name),
-        );
-
-        assertEquals(result.steps, steps);
-        assertEquals(
-          result.warning,
+      assertEquals(
+        cases.map(([running, skippedChild]) => {
+          const steps = [running, skippedChild, createParent(3)];
+          const result = expandParallelJobSteps(
+            steps,
+            createMarker(skippedChild.name),
+          );
+          return [skippedChild.name, result.steps, result.warning];
+        }),
+        cases.map(([running, skippedChild]) => [
+          skippedChild.name,
+          [running, skippedChild, createParent(3)],
           "Could not correlate parallel groups between API steps and logs",
-        );
-      }
+        ]),
+      );
     },
   );
 
