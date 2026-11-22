@@ -83,6 +83,8 @@ Steps declared with the GitHub Actions `parallel` syntax are detected automatica
 
 If the log is unavailable or the groups cannot be matched unambiguously, the action warns and keeps the original step layout. In particular, GitHub logs a skipped child by a generated placeholder or by its custom `id`, never by its name; because the jobs API does not include that ID, a group with a skipped child that has a custom `id` is not expanded.
 
+An ordinary step named `Parallel group` that starts in the same second before a uniquely matched group's children is kept as an ordinary step. In this specific arrangement, the jobs API and available log markers cannot distinguish it from a real parallel parent whose marker is missing. Such a parent remains unexpanded without a warning; other unmatched or ambiguous groups still warn and keep the original layout.
+
 Repo-local composite actions are expanded in both outputs by default (`expand-composite-actions: true`, with `expand-composite-actions-threshold: 20` seconds). The parent composite step remains visible with its internal sub-steps beneath it (collapsible in the HTML report). Set `expand-composite-actions: false` to disable expansion. Nested repo-local composite actions are not currently expanded.
 
 Register this action before your main steps so its post-processing hook captures the full job execution.
