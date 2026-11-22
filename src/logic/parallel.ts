@@ -107,12 +107,14 @@ function matchesParallelGroup(
   }
 
   // Match whole API names instead of splitting the marker, since names can contain commas.
+  // Skipped children are logged by a generated placeholder or a custom step id, never by
+  // their API name, so only the placeholder can identify them.
   let offsets = new Set([0]);
   for (const [childOffset, childIndex] of childIndexes.entries()) {
     const child = steps[childIndex];
     const names =
       child.conclusion === "skipped"
-        ? [child.name, `__parallel_${markerIndex}_${childOffset}`]
+        ? [`__parallel_${markerIndex}_${childOffset}`]
         : [child.name];
     const separator = childOffset === childIndexes.length - 1 ? "" : ", ";
     offsets = new Set(
@@ -242,10 +244,27 @@ export function expandParallelJobSteps(
   const groups = identifyParallelGroups(steps, markers, candidateParents);
   const childIndexes = new Set(groups.flatMap((group) => group.childIndexes));
   const parentIndexes = new Set(groups.map((group) => group.parentIndex));
+  const candidateStarts = new Map(
+    candidateParents.map(({ parentIndex, childIndexes }) => [
+      parentIndex,
+      childIndexes[0],
+    ]),
+  );
+  // An ordinary same-second step between a confirmed group's candidate window start
+  // and its first matched child is not a parallel parent of its own.
+  const precedesConfirmedChildren = (index: number): boolean =>
+    !parentIndexes.has(index) &&
+    groups.some(
+      ({ parentIndex, childIndexes }) =>
+        (candidateStarts.get(parentIndex) ?? childIndexes[0]) <= index &&
+        index < childIndexes[0],
+    );
   // A step immediately after a confirmed parent has no preceding child of its own.
   const apiCandidateCount = candidateParents.filter(
     ({ parentIndex }) =>
-      !childIndexes.has(parentIndex) && !parentIndexes.has(parentIndex - 1),
+      !childIndexes.has(parentIndex) &&
+      !parentIndexes.has(parentIndex - 1) &&
+      !precedesConfirmedChildren(parentIndex),
   ).length;
   if (groups.length !== markers.length || groups.length !== apiCandidateCount) {
     return {

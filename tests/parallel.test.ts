@@ -483,7 +483,7 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
       ];
       const result = expandParallelJobSteps(
         steps,
-        createMarker("__parallel_99_9, __parallel_5_0"),
+        createMarker("__parallel_99_9, __parallel_0_1"),
       );
 
       assertEquals(result.warning, undefined);
@@ -491,10 +491,102 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
         result.steps.map((step) => step.name),
         ["Parallel group", "(bg) __parallel_99_9", "(bg) __parallel_5_0"],
       );
+
+      // A skipped child is never logged by its API name.
+      const byName = expandParallelJobSteps(
+        steps,
+        createMarker("__parallel_99_9, __parallel_5_0"),
+      );
+      assertEquals(byName.steps, steps);
+      assertEquals(
+        byName.warning,
+        "Could not correlate parallel groups between API steps and logs",
+      );
     },
   );
 
-  await t.test("rejects ambiguous suffixes instead of guessing", () => {
+  await t.test(
+    "does not match a skipped child's API name containing a comma",
+    () => {
+      // The runner logs the custom id `lint`, so `Check, lint` is not the API name.
+      const cases = [
+        [createStep(1, "Check"), createStep(2, "Check, lint", skipped)],
+        [
+          createStep(1, "Parallel group"),
+          createStep(2, "Parallel group, lint", skipped),
+        ],
+      ];
+      for (const [running, skippedChild] of cases) {
+        const steps = [running, skippedChild, createParent(3)];
+
+        const result = expandParallelJobSteps(
+          steps,
+          createMarker(skippedChild.name),
+        );
+
+        assertEquals(result.steps, steps);
+        assertEquals(
+          result.warning,
+          "Could not correlate parallel groups between API steps and logs",
+        );
+      }
+    },
+  );
+
+  await t.test(
+    "ignores a same-second ordinary Parallel group before matched children",
+    () => {
+      const steps = [
+        createStep(1, "Set up job", {
+          completed_at: "2026-07-31T21:55:20Z",
+        }),
+        createStep(2, "Parallel group", {
+          completed_at: "2026-07-31T21:55:20Z",
+        }),
+        createStep(3, "Check"),
+        createStep(4, "Build"),
+        createParent(5),
+      ];
+
+      const result = expandParallelJobSteps(
+        steps,
+        createMarker("Check, Build"),
+      );
+
+      assertEquals(result.warning, undefined);
+      assertEquals(
+        result.steps.map((step) => [step.name, step.timelineRowKind]),
+        [
+          ["Set up job", undefined],
+          ["Parallel group", undefined],
+          ["Parallel group", "parallel-parent"],
+          ["(bg) Check", "parallel-child"],
+          ["(bg) Build", "parallel-child"],
+        ],
+      );
+    },
+  );
+
+  await t.test(
+    "rejects ambiguous parent assignments instead of guessing",
+    () => {
+      const steps = [
+        createStep(1, "A"),
+        createParent(2),
+        createStep(3, "A"),
+        createParent(4),
+      ];
+      const result = expandParallelJobSteps(steps, createMarker("A"));
+
+      assertEquals(result.steps, steps);
+      assertEquals(
+        result.warning,
+        "Could not correlate parallel groups between API steps and logs",
+      );
+    },
+  );
+
+  await t.test("matches a skipped child by placeholder, not by name", () => {
     const steps = [
       createStep(1, "A"),
       createStep(2, "A, __parallel_0_1", skipped),
@@ -505,10 +597,10 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
       createMarker("A, __parallel_0_1"),
     );
 
-    assertEquals(result.steps, steps);
+    assertEquals(result.warning, undefined);
     assertEquals(
-      result.warning,
-      "Could not correlate parallel groups between API steps and logs",
+      result.steps.map((step) => step.name),
+      ["Parallel group", "(bg) A", "(bg) A, __parallel_0_1"],
     );
   });
 

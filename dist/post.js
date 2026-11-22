@@ -115709,6 +115709,7 @@ function identifyCompositeSteps(workflowJobs, workflowModel, thresholdSec) {
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
       if (apiStep.timelineRowKind === "parallel-parent") continue;
+      if (apiStep.conclusion === "skipped") continue;
       const matchingName = apiStep.timelineOriginalName ?? apiStep.name;
       if (/^(Pre Run |Post Run |Pre |Post )/.test(matchingName)) continue;
       const stepModel = StepModel.match(jobModel.steps, matchingName);
@@ -115990,7 +115991,7 @@ function matchesParallelGroup(steps, parentIndex, childIndexes, marker2, markerI
   let offsets = /* @__PURE__ */ new Set([0]);
   for (const [childOffset, childIndex] of childIndexes.entries()) {
     const child = steps[childIndex];
-    const names = child.conclusion === "skipped" ? [child.name, `__parallel_${markerIndex}_${childOffset}`] : [child.name];
+    const names = child.conclusion === "skipped" ? [`__parallel_${markerIndex}_${childOffset}`] : [child.name];
     const separator = childOffset === childIndexes.length - 1 ? "" : ", ";
     offsets = new Set(
       [...offsets].flatMap(
@@ -116083,8 +116084,17 @@ function expandParallelJobSteps(steps, logText) {
   const groups2 = identifyParallelGroups(steps, markers, candidateParents);
   const childIndexes = new Set(groups2.flatMap((group) => group.childIndexes));
   const parentIndexes = new Set(groups2.map((group) => group.parentIndex));
+  const candidateStarts = new Map(
+    candidateParents.map(({ parentIndex, childIndexes: childIndexes2 }) => [
+      parentIndex,
+      childIndexes2[0]
+    ])
+  );
+  const precedesConfirmedChildren = (index) => !parentIndexes.has(index) && groups2.some(
+    ({ parentIndex, childIndexes: childIndexes2 }) => (candidateStarts.get(parentIndex) ?? childIndexes2[0]) <= index && index < childIndexes2[0]
+  );
   const apiCandidateCount = candidateParents.filter(
-    ({ parentIndex }) => !childIndexes.has(parentIndex) && !parentIndexes.has(parentIndex - 1)
+    ({ parentIndex }) => !childIndexes.has(parentIndex) && !parentIndexes.has(parentIndex - 1) && !precedesConfirmedChildren(parentIndex)
   ).length;
   if (groups2.length !== markers.length || groups2.length !== apiCandidateCount) {
     return {
