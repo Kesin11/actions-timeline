@@ -79,7 +79,9 @@ jobs:
 - **Interactive HTML report**: Embeds the timeline data into a single standalone `.html` file, uploads it as an unzipped artifact.
 - **Mermaid Gantt diagram**: Formats the timeline as [Mermaid Gantt](https://mermaid.js.org/syntax/gantt.html) syntax and writes it directly to the Job Summary below the HTML link.
 
-Steps declared with the GitHub Actions `parallel` syntax are detected automatically and verified against the job log. Both outputs preserve the `Parallel group` parent alongside its concurrent child steps at their shared start time.
+Steps declared with the GitHub Actions `parallel` syntax are detected automatically and verified against the job log. Both outputs preserve the `Parallel group` parent alongside its concurrent child steps at their recorded start times, allowing up to a one-second difference from the parent when matching. Skipped children have zero duration; Mermaid places their rows at the parent start for display only.
+
+If the log is unavailable or the groups cannot be matched unambiguously, the action warns and keeps the original step layout. In particular, GitHub can log the custom `id` of a skipped child instead of its name; because the jobs API does not include that ID, such a group may not be expanded.
 
 Repo-local composite actions are expanded in both outputs by default (`expand-composite-actions: true`, with `expand-composite-actions-threshold: 20` seconds). The parent composite step remains visible with its internal sub-steps beneath it (collapsible in the HTML report). Set `expand-composite-actions: false` to disable expansion. Nested repo-local composite actions are not currently expanded.
 

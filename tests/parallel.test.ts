@@ -3,11 +3,13 @@ import {
   deepStrictEqual as assertEquals,
 } from "node:assert/strict";
 import { test } from "node:test";
+import type { WorkflowJobStep } from "../src/github/github.ts";
 import { expandJobSteps } from "../src/logic/composite.ts";
 import {
   expandParallelJobSteps,
   expandParallelSteps,
 } from "../src/logic/parallel.ts";
+import { buildHtmlReportData } from "../src/output/html/report.ts";
 import { createMermaid } from "../src/output/mermaid/workflow_gantt.ts";
 import {
   jobs as datafusionJobs,
@@ -19,6 +21,34 @@ import {
   log as nuxtLog,
   workflow as nuxtWorkflow,
 } from "./fixture/parallel_nuxt.ts";
+
+const createStep = (
+  number: number,
+  name: string,
+  overrides: Partial<WorkflowJobStep> = {},
+): WorkflowJobStep => ({
+  number,
+  name,
+  status: "completed",
+  conclusion: "success",
+  started_at: "2026-07-31T21:55:20Z",
+  completed_at: "2026-07-31T21:56:21Z",
+  ...overrides,
+});
+
+const createParent = (number: number): WorkflowJobStep =>
+  createStep(number, "Parallel group", {
+    completed_at: "2026-07-31T21:57:30Z",
+  });
+
+const createMarker = (names: string): string =>
+  `2026-07-31T21:55:20.5000000Z Waiting for background step(s) to complete: ${names}`;
+
+const skipped = {
+  conclusion: "skipped",
+  started_at: null,
+  completed_at: "2026-07-31T21:55:20Z",
+} satisfies Partial<WorkflowJobStep>;
 
 test(expandParallelJobSteps.name, async (t) => {
   await t.test("renders the Nuxt typecheck steps in parallel", () => {
@@ -187,6 +217,362 @@ Run sqllogictest (1s) :job0-6, after job0-3, 1s
         "(bg) Parallel group",
         "Cancel workflow on failure",
       ],
+    );
+  });
+
+  await t.test(
+    "expands skipped children and preserves one-second start differences",
+    () => {
+      const steps = [
+        createStep(1, "Fast preceding step", {
+          started_at: "2026-07-31T21:55:19Z",
+          completed_at: "2026-07-31T21:55:19Z",
+        }),
+        createStep(2, "Skipped preceding step", skipped),
+        createStep(3, "Check", {
+          started_at: "2026-07-31T21:55:19Z",
+        }),
+        createStep(4, "Skipped null", skipped),
+        createStep(5, "Skipped sentinel", {
+          ...skipped,
+          started_at: "0001-01-01T00:00:00Z",
+        }),
+        createStep(6, "Build", {
+          started_at: "2026-07-31T21:55:21Z",
+        }),
+        createParent(7),
+      ];
+      const result = expandParallelJobSteps(
+        steps,
+        createMarker("Check, __parallel_0_1, __parallel_0_2, Build"),
+      );
+
+      assertEquals(result.warning, undefined);
+      assertEquals(
+        result.steps.map((step) => [step.name, step.started_at]),
+        [
+          ["Fast preceding step", "2026-07-31T21:55:19Z"],
+          ["Skipped preceding step", null],
+          ["Parallel group", "2026-07-31T21:55:20Z"],
+          ["(bg) Check", "2026-07-31T21:55:19Z"],
+          ["(bg) Skipped null", null],
+          ["(bg) Skipped sentinel", "0001-01-01T00:00:00Z"],
+          ["(bg) Build", "2026-07-31T21:55:21Z"],
+        ],
+      );
+
+      const jobs = [{ ...nuxtJobs[0], steps: result.steps }];
+      const mermaid = createMermaid(nuxtWorkflow, jobs, {
+        showWaitingRunner: false,
+      });
+      assert(
+        mermaid.includes(
+          "(skipped) (bg) Skipped null (0s) :done, job0-4, 00:00:39, 0s",
+        ),
+      );
+      assert(
+        mermaid.includes(
+          "(skipped) (bg) Skipped sentinel (0s) :done, job0-5, 00:00:39, 0s",
+        ),
+      );
+      assert(mermaid.includes("(bg) Check (1m2s) :job0-3, 00:00:38, 62s"));
+      assert(mermaid.includes("(bg) Build (1m0s) :job0-6, 00:00:40, 60s"));
+
+      const parallel = buildHtmlReportData(
+        nuxtWorkflow,
+        jobs,
+      ).jobs[0].items.find((item) => item.kind === "parallel");
+      assert(parallel);
+      assertEquals(
+        parallel.children
+          .filter((child) => child.conclusion === "skipped")
+          .map(({ name, start, end, dur, isCp }) => [
+            name,
+            start,
+            end,
+            dur,
+            isCp,
+          ]),
+        [
+          ["Skipped null", null, null, 0, false],
+          ["Skipped sentinel", null, null, 0, false],
+        ],
+      );
+    },
+  );
+
+  await t.test(
+    "matches adjacent groups with identical child names one-to-one",
+    () => {
+      const steps = [
+        createStep(1, "Fast preceding step", {
+          completed_at: "2026-07-31T21:55:20Z",
+        }),
+        createStep(2, "Skipped preceding step", skipped),
+        createStep(3, "Run, with comma"),
+        createStep(4, "Skipped child", skipped),
+        createStep(5, "Duplicate"),
+        createStep(6, "Duplicate"),
+        createParent(7),
+        createStep(8, "Run, with comma"),
+        createStep(9, "Skipped child", skipped),
+        createStep(10, "Duplicate"),
+        createStep(11, "Duplicate"),
+        createParent(12),
+      ];
+      const markers = [
+        createMarker("Run, with comma, __parallel_0_1, Duplicate, Duplicate"),
+        createMarker("Run, with comma, __parallel_1_1, Duplicate, Duplicate"),
+      ];
+      const result = expandParallelJobSteps(steps, markers.join("\n"));
+
+      assertEquals(result.warning, undefined);
+      assertEquals(
+        result.steps.map((step) => [step.name, step.timelineRowKind]),
+        [
+          ["Fast preceding step", undefined],
+          ["Skipped preceding step", undefined],
+          ["Parallel group", "parallel-parent"],
+          ["(bg) Run, with comma", "parallel-child"],
+          ["(bg) Skipped child", "parallel-child"],
+          ["(bg) Duplicate", "parallel-child"],
+          ["(bg) Duplicate", "parallel-child"],
+          ["Parallel group", "parallel-parent"],
+          ["(bg) Run, with comma", "parallel-child"],
+          ["(bg) Skipped child", "parallel-child"],
+          ["(bg) Duplicate", "parallel-child"],
+          ["(bg) Duplicate", "parallel-child"],
+        ],
+      );
+
+      const allRunSteps = steps.map((step) =>
+        step.name === "Skipped child"
+          ? {
+              ...step,
+              conclusion: "success",
+              started_at: "2026-07-31T21:55:20Z",
+            }
+          : step,
+      );
+      const identicalMarker = createMarker(
+        "Run, with comma, Skipped child, Duplicate, Duplicate",
+      );
+      const identicalResult = expandParallelJobSteps(
+        allRunSteps,
+        [identicalMarker, identicalMarker].join("\n"),
+      );
+      assertEquals(identicalResult.warning, undefined);
+      assertEquals(
+        identicalResult.steps.filter(
+          (step) => step.timelineRowKind === "parallel-parent",
+        ).length,
+        2,
+      );
+
+      const missingMarker = expandParallelJobSteps(
+        allRunSteps,
+        identicalMarker,
+      );
+      assertEquals(missingMarker.steps, allRunSteps);
+      assertEquals(
+        missingMarker.warning,
+        "Could not correlate parallel groups between API steps and logs",
+      );
+    },
+  );
+
+  await t.test(
+    "expands an all-skipped group without absorbing an outside skip",
+    () => {
+      const steps = [
+        createStep(1, "Outside skip", skipped),
+        createStep(2, "First skipped", skipped),
+        createStep(3, "Second skipped", skipped),
+        createParent(4),
+      ];
+      const result = expandParallelJobSteps(
+        steps,
+        createMarker("__parallel_0_0, __parallel_0_1"),
+      );
+
+      assertEquals(result.warning, undefined);
+      assertEquals(
+        result.steps.map((step) => [step.name, step.timelineRowKind]),
+        [
+          ["Outside skip", undefined],
+          ["Parallel group", "parallel-parent"],
+          ["(bg) First skipped", "parallel-child"],
+          ["(bg) Second skipped", "parallel-child"],
+        ],
+      );
+    },
+  );
+
+  await t.test(
+    "allows a child and a following step named Parallel group",
+    () => {
+      const steps = [
+        createStep(1, "Set up job", {
+          completed_at: "2026-07-31T21:55:20Z",
+        }),
+        createStep(2, "Parallel group"),
+        createStep(3, "Skipped child", skipped),
+        createParent(4),
+        createStep(5, "Parallel group", {
+          completed_at: "2026-07-31T21:57:30Z",
+        }),
+      ];
+      const result = expandParallelJobSteps(
+        steps,
+        createMarker("Parallel group, __parallel_0_1"),
+      );
+
+      assertEquals(result.warning, undefined);
+      assertEquals(
+        result.steps.map((step) => [step.name, step.timelineRowKind]),
+        [
+          ["Set up job", undefined],
+          ["Parallel group", "parallel-parent"],
+          ["(bg) Parallel group", "parallel-child"],
+          ["(bg) Skipped child", "parallel-child"],
+          ["Parallel group", undefined],
+        ],
+      );
+    },
+  );
+
+  await t.test(
+    "rejects malformed, missing, extra, and custom-id markers",
+    () => {
+      const steps = [
+        createStep(1, "Check"),
+        createStep(2, "Skipped child", skipped),
+        createParent(3),
+      ];
+      const valid = createMarker("Check, __parallel_0_1");
+      const logs = [
+        "",
+        createMarker("Check, __parallel_1_1"),
+        createMarker("Check, __parallel_0_0"),
+        createMarker("__parallel_0_0, __parallel_0_1"),
+        createMarker("Check, custom_skip_id"),
+        [valid, valid].join("\n"),
+        [valid, createMarker("extra")].join("\n"),
+      ];
+
+      assertEquals(
+        logs.map((log) => {
+          const result = expandParallelJobSteps(steps, log);
+          return [result.warning, result.steps === steps];
+        }),
+        logs.map(() => [
+          "Could not correlate parallel groups between API steps and logs",
+          true,
+        ]),
+      );
+    },
+  );
+
+  await t.test(
+    "accepts real names that resemble generated placeholders",
+    () => {
+      const steps = [
+        createStep(1, "__parallel_99_9"),
+        createStep(2, "__parallel_5_0", skipped),
+        createParent(3),
+      ];
+      const result = expandParallelJobSteps(
+        steps,
+        createMarker("__parallel_99_9, __parallel_5_0"),
+      );
+
+      assertEquals(result.warning, undefined);
+      assertEquals(
+        result.steps.map((step) => step.name),
+        ["Parallel group", "(bg) __parallel_99_9", "(bg) __parallel_5_0"],
+      );
+    },
+  );
+
+  await t.test("rejects ambiguous suffixes instead of guessing", () => {
+    const steps = [
+      createStep(1, "A"),
+      createStep(2, "A, __parallel_0_1", skipped),
+      createParent(3),
+    ];
+    const result = expandParallelJobSteps(
+      steps,
+      createMarker("A, __parallel_0_1"),
+    );
+
+    assertEquals(result.steps, steps);
+    assertEquals(
+      result.warning,
+      "Could not correlate parallel groups between API steps and logs",
+    );
+  });
+
+  await t.test("rejects children outside the time and end-time checks", () => {
+    const parent = createParent(3);
+    const logs = createMarker("Check, __parallel_0_1");
+    const variants = [
+      [
+        createStep(1, "Check", { started_at: "2026-07-31T21:55:18Z" }),
+        createStep(2, "Skipped child", skipped),
+        parent,
+      ],
+      [
+        createStep(1, "Check", { started_at: "2026-07-31T21:55:22Z" }),
+        createStep(2, "Skipped child", skipped),
+        parent,
+      ],
+      [
+        createStep(1, "Check", { completed_at: "2026-07-31T21:57:31Z" }),
+        createStep(2, "Skipped child", skipped),
+        parent,
+      ],
+      [
+        createStep(1, "Check"),
+        createStep(2, "Skipped child", {
+          ...skipped,
+          completed_at: "2026-07-31T21:57:31Z",
+        }),
+        parent,
+      ],
+    ];
+
+    assertEquals(
+      variants.map((steps) => {
+        const result = expandParallelJobSteps(steps, logs);
+        return [result.warning, result.steps === steps];
+      }),
+      variants.map(() => [
+        "Could not correlate parallel groups between API steps and logs",
+        true,
+      ]),
+    );
+  });
+
+  await t.test("rejects markers outside the parent time window", () => {
+    const steps = [
+      createStep(1, "Check"),
+      createStep(2, "Skipped child", skipped),
+      createParent(3),
+    ];
+    const markers = [
+      "2026-07-31T21:55:19.999Z Waiting for background step(s) to complete: Check, __parallel_0_1",
+      "2026-07-31T21:57:31.001Z Waiting for background step(s) to complete: Check, __parallel_0_1",
+    ];
+
+    assertEquals(
+      markers.map((marker) => {
+        const result = expandParallelJobSteps(steps, marker);
+        return [result.warning, result.steps === steps];
+      }),
+      markers.map(() => [
+        "Could not correlate parallel groups between API steps and logs",
+        true,
+      ]),
     );
   });
 
