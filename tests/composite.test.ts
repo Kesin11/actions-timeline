@@ -2,20 +2,20 @@ import { deepStrictEqual as assertEquals } from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import { test } from "node:test";
 import {
+  FileContent,
+  type FileContentResponse,
+  type WorkflowJobs,
+} from "../src/github/github.ts";
+import {
   type CompositeStepInfo,
   expandJobSteps,
   extractSubSteps,
   identifyCompositeSteps,
   parseLogBlocks,
 } from "../src/logic/composite.ts";
-import {
-  FileContent,
-  type FileContentResponse,
-  type WorkflowJobs,
-} from "../src/github/github.ts";
+import { expandParallelJobSteps } from "../src/logic/parallel.ts";
 import type { TimelineJobs, TimelineStep } from "../src/models/types.ts";
 import { WorkflowModel } from "../src/models/workflow_file.ts";
-import { expandParallelJobSteps } from "../src/logic/parallel.ts";
 import { buildHtmlReportData } from "../src/output/html/report.ts";
 import { createMermaid } from "../src/output/mermaid/workflow_gantt.ts";
 import {
