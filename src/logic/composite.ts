@@ -96,6 +96,8 @@ export function identifyCompositeSteps(
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
       if (apiStep.timelineRowKind === "parallel-parent") continue;
+      // Skipped steps never emit a log header, so they must not claim another step's header.
+      if (apiStep.conclusion === "skipped") continue;
       const matchingName = apiStep.timelineOriginalName ?? apiStep.name;
       // Skip Pre/Post steps - only expand the main "Run" execution step
       if (/^(Pre Run |Post Run |Pre |Post )/.test(matchingName)) continue;

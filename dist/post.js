@@ -115709,6 +115709,7 @@ function identifyCompositeSteps(workflowJobs, workflowModel, thresholdSec) {
     for (let i = 0; i < job.steps.length; i++) {
       const apiStep = job.steps[i];
       if (apiStep.timelineRowKind === "parallel-parent") continue;
+      if (apiStep.conclusion === "skipped") continue;
       const matchingName = apiStep.timelineOriginalName ?? apiStep.name;
       if (/^(Pre Run |Post Run |Pre |Post )/.test(matchingName)) continue;
       const stepModel = StepModel.match(jobModel.steps, matchingName);
@@ -115957,35 +115958,90 @@ async function expandCompositeSteps(client2, workflowRun, workflowJobs, options 
 var PARALLEL_GROUP_NAME = "Parallel group";
 var WAITING_MESSAGE = "Waiting for background step(s) to complete:";
 var LOG_TIMESTAMP_PATTERN = String.raw`(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z)`;
+var START_TIME_TOLERANCE_MS = 1e3;
 var hasTimestamps = (step) => step.started_at !== null && step.completed_at !== null;
 function findParallelCandidateIndexes(steps, parentIndex) {
   const parent = steps[parentIndex];
   if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) return [];
+  const parentStart = new Date(parent.started_at).getTime();
+  const parentEnd = new Date(parent.completed_at).getTime();
+  if (!Number.isFinite(parentStart) || !Number.isFinite(parentEnd)) return [];
   const precedingSteps = steps.slice(0, parentIndex);
-  const lastNonChildIndex = precedingSteps.findLastIndex(
-    (step) => !hasTimestamps(step) || step.started_at !== parent.started_at || new Date(step.completed_at).getTime() > new Date(parent.completed_at).getTime()
-  );
+  const lastNonChildIndex = precedingSteps.findLastIndex((step) => {
+    if (step.number >= parent.number) return true;
+    const childEnd = step.completed_at === null ? null : new Date(step.completed_at).getTime();
+    if (step.conclusion === "skipped") {
+      return childEnd !== null && (!Number.isFinite(childEnd) || childEnd > parentEnd);
+    }
+    if (!hasTimestamps(step) || childEnd === null) return true;
+    const childStart = new Date(step.started_at).getTime();
+    return !Number.isFinite(childStart) || !Number.isFinite(childEnd) || Math.abs(childStart - parentStart) > START_TIME_TOLERANCE_MS || childEnd > parentEnd;
+  });
   return precedingSteps.slice(lastNonChildIndex + 1).map((_step, index) => lastNonChildIndex + 1 + index);
 }
-function identifyParallelGroups(steps, markers) {
-  return steps.flatMap((parent, parentIndex) => {
-    if (parent.name !== PARALLEL_GROUP_NAME || !hasTimestamps(parent)) {
-      return [];
-    }
-    const candidateIndexes = findParallelCandidateIndexes(steps, parentIndex);
-    const parentStart = new Date(parent.started_at).getTime();
-    const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
-    const childIndexes = markers.filter(
-      (marker2) => marker2.startedAt.getTime() >= parentStart && marker2.startedAt.getTime() <= parentEnd
-    ).flatMap(
-      (marker2) => candidateIndexes.flatMap((_index, offset) => {
-        const suffix = candidateIndexes.slice(offset);
-        const names = suffix.map((index) => steps[index].name).join(", ");
-        return names === marker2.childNames ? [suffix] : [];
+function matchesParallelGroup(steps, parentIndex, childIndexes, marker2, markerIndex) {
+  const parent = steps[parentIndex];
+  if (!hasTimestamps(parent)) return false;
+  const parentStart = new Date(parent.started_at).getTime();
+  const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
+  const markerStart = marker2.startedAt.getTime();
+  if (!Number.isFinite(parentStart) || !Number.isFinite(parentEnd) || !Number.isFinite(markerStart) || markerStart < parentStart || markerStart > parentEnd) {
+    return false;
+  }
+  let offsets = /* @__PURE__ */ new Set([0]);
+  for (const [childOffset, childIndex] of childIndexes.entries()) {
+    const child = steps[childIndex];
+    const names = child.conclusion === "skipped" ? [`__parallel_${markerIndex}_${childOffset}`] : [child.name];
+    const separator = childOffset === childIndexes.length - 1 ? "" : ", ";
+    offsets = new Set(
+      [...offsets].flatMap(
+        (offset) => names.flatMap((name) => {
+          const text = `${name}${separator}`;
+          return marker2.childNames.startsWith(text, offset) ? [offset + text.length] : [];
+        })
+      )
+    );
+    if (offsets.size === 0) return false;
+  }
+  return offsets.has(marker2.childNames.length);
+}
+function identifyParallelGroups(steps, markers, candidates) {
+  const matches = markers.map(
+    (marker2, markerIndex) => candidates.flatMap(
+      ({ parentIndex, childIndexes }) => childIndexes.flatMap((_index, offset) => {
+        const suffix = childIndexes.slice(offset);
+        return matchesParallelGroup(
+          steps,
+          parentIndex,
+          suffix,
+          marker2,
+          markerIndex
+        ) ? [{ parentIndex, childIndexes: suffix, markerIndex }] : [];
       })
-    ).at(0);
-    return childIndexes !== void 0 ? [{ parentIndex, childIndexes }] : [];
-  });
+    )
+  );
+  const memo = /* @__PURE__ */ new Map();
+  const findSolutions = (markerIndex, previousParentIndex) => {
+    if (markerIndex === markers.length) return [[]];
+    const key = `${markerIndex},${previousParentIndex}`;
+    const cached = memo.get(key);
+    if (cached !== void 0) return cached;
+    const solutions2 = [];
+    for (const match2 of matches[markerIndex]) {
+      if (match2.childIndexes[0] <= previousParentIndex) continue;
+      for (const rest of findSolutions(markerIndex + 1, match2.parentIndex)) {
+        solutions2.push([match2, ...rest]);
+        if (solutions2.length === 2) {
+          memo.set(key, solutions2);
+          return solutions2;
+        }
+      }
+    }
+    memo.set(key, solutions2);
+    return solutions2;
+  };
+  const solutions = findSolutions(0, -1);
+  return solutions.length === 1 ? solutions[0] : [];
 }
 function parseWaitingMarkers(logText) {
   const markerRegex = new RegExp(
@@ -116004,31 +116060,41 @@ function parseWaitingMarkers(logText) {
     ] : [];
   });
 }
-function validateParallelGroups(steps, groups2, logText) {
-  const markers = parseWaitingMarkers(logText);
-  const invalidGroup = groups2.find(({ parentIndex, childIndexes }) => {
-    const parent = steps[parentIndex];
-    if (!hasTimestamps(parent)) return true;
-    const expectedNames = childIndexes.map((index) => steps[index].name).join(", ");
-    const parentStart = new Date(parent.started_at).getTime();
-    const parentEnd = new Date(parent.completed_at).getTime() + 1e3;
-    return !markers.some(
-      (marker2) => marker2.childNames === expectedNames && marker2.startedAt.getTime() >= parentStart && marker2.startedAt.getTime() <= parentEnd
-    );
-  });
+function validateParallelGroups(steps, groups2, markers) {
+  const invalidGroup = groups2.find(
+    ({ parentIndex, childIndexes, markerIndex }, index) => {
+      const marker2 = markers[markerIndex];
+      return markerIndex !== index || marker2 === void 0 || !matchesParallelGroup(
+        steps,
+        parentIndex,
+        childIndexes,
+        marker2,
+        markerIndex
+      );
+    }
+  );
   return invalidGroup === void 0 ? void 0 : `Could not match API steps for parallel group at step ${invalidGroup.parentIndex + 1} with the job log`;
 }
 function expandParallelJobSteps(steps, logText) {
   const markers = parseWaitingMarkers(logText);
-  const groups2 = identifyParallelGroups(steps, markers);
   const candidateParents = steps.flatMap((_step, parentIndex) => {
     const childIndexes2 = findParallelCandidateIndexes(steps, parentIndex);
     return childIndexes2.length > 0 ? [{ parentIndex, childIndexes: childIndexes2 }] : [];
   });
+  const groups2 = identifyParallelGroups(steps, markers, candidateParents);
+  const childIndexes = new Set(groups2.flatMap((group) => group.childIndexes));
+  const parentIndexes = new Set(groups2.map((group) => group.parentIndex));
+  const candidateStarts = new Map(
+    candidateParents.map(({ parentIndex, childIndexes: childIndexes2 }) => [
+      parentIndex,
+      childIndexes2[0]
+    ])
+  );
+  const precedesConfirmedChildren = (index) => !parentIndexes.has(index) && groups2.some(
+    ({ parentIndex, childIndexes: childIndexes2 }) => (candidateStarts.get(parentIndex) ?? childIndexes2[0]) <= index && index < childIndexes2[0]
+  );
   const apiCandidateCount = candidateParents.filter(
-    (candidate) => !candidateParents.some(
-      (other) => other.parentIndex > candidate.parentIndex && other.childIndexes.includes(candidate.parentIndex)
-    )
+    ({ parentIndex }) => !childIndexes.has(parentIndex) && !parentIndexes.has(parentIndex - 1) && !precedesConfirmedChildren(parentIndex)
   ).length;
   if (groups2.length !== markers.length || groups2.length !== apiCandidateCount) {
     return {
@@ -116036,9 +116102,8 @@ function expandParallelJobSteps(steps, logText) {
       warning: "Could not correlate parallel groups between API steps and logs"
     };
   }
-  const warning2 = validateParallelGroups(steps, groups2, logText);
+  const warning2 = validateParallelGroups(steps, groups2, markers);
   if (warning2) return { steps, warning: warning2 };
-  const childIndexes = new Set(groups2.flatMap((group) => group.childIndexes));
   const groupsByParentIndex = new Map(
     groups2.map((group) => [group.parentIndex, group])
   );
@@ -117861,8 +117926,8 @@ var createCompositeChildPosition = (workflow, step, compositeChildAnchorId, prev
   }
   return `after ${anchorId}`;
 };
-var createParallelStepPosition = (workflow, step) => {
-  return formatElapsedTime(diffSec(workflow.run_started_at, step.started_at));
+var createParallelStepPosition = (workflow, startedAt) => {
+  return formatElapsedTime(diffSec(workflow.run_started_at, startedAt));
 };
 var createWaitingRunnerStep = (workflow, job, jobIndex) => {
   const status = "active";
@@ -117894,6 +117959,7 @@ var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
     let previousTopLevelStepId;
     let compositeChildAnchorId;
     let previousCompositeChildId;
+    let parallelParentStartedAt;
     const waitingRunnerStep = createWaitingRunnerStep(
       workflow,
       job,
@@ -117904,7 +117970,13 @@ var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
       previousTopLevelStepId = waitingRunnerStep.id;
     }
     completedSteps.forEach((step, stepIndex) => {
-      const stepElapsedSec = diffSec(step.started_at, step.completed_at);
+      if (step.timelineRowKind === "parallel-parent") {
+        parallelParentStartedAt = step.started_at;
+      } else if (step.timelineRowKind !== "parallel-child" && step.timelineRowKind !== "composite-child") {
+        parallelParentStartedAt = void 0;
+      }
+      const skippedParallelChild = step.timelineRowKind === "parallel-child" && step.conclusion === "skipped";
+      const stepElapsedSec = skippedParallelChild ? 0 : diffSec(step.started_at, step.completed_at);
       const id = createGanttStepId(jobIndex, steps.length);
       const nextStep = completedSteps[stepIndex + 1];
       const position = step.timelineRowKind === "composite-child" ? createCompositeChildPosition(
@@ -117912,13 +117984,19 @@ var createGanttJobs = (workflow, workflowJobs, showWaitingRunner = true) => {
         step,
         compositeChildAnchorId,
         previousCompositeChildId
-      ) : step.timelineRowKind === "parallel-parent" || step.timelineRowKind === "parallel-child" ? createParallelStepPosition(workflow, step) : createTopLevelStepPosition(
+      ) : step.timelineRowKind === "parallel-parent" || step.timelineRowKind === "parallel-child" ? createParallelStepPosition(
+        workflow,
+        skippedParallelChild ? parallelParentStartedAt ?? step.started_at : step.started_at
+      ) : createTopLevelStepPosition(
         workflow,
         jobStartedAt,
         previousTopLevelStepId
       );
       steps.push({
-        name: formatName(step.name, stepElapsedSec),
+        name: formatName(
+          skippedParallelChild ? `(skipped) ${step.name}` : step.name,
+          stepElapsedSec
+        ),
         id,
         status: step.timelineRowKind === "parallel-parent" ? "" : convertStepToStatus(step.conclusion),
         position,

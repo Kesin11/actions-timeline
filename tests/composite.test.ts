@@ -2,19 +2,26 @@ import { deepStrictEqual as assertEquals } from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import { test } from "node:test";
 import {
+  FileContent,
+  type FileContentResponse,
+  type WorkflowJobs,
+} from "../src/github/github.ts";
+import {
   type CompositeStepInfo,
   expandJobSteps,
   extractSubSteps,
   identifyCompositeSteps,
   parseLogBlocks,
 } from "../src/logic/composite.ts";
-import {
-  FileContent,
-  type FileContentResponse,
-  type WorkflowJobs,
-} from "../src/github/github.ts";
+import { expandParallelJobSteps } from "../src/logic/parallel.ts";
 import type { TimelineJobs, TimelineStep } from "../src/models/types.ts";
 import { WorkflowModel } from "../src/models/workflow_file.ts";
+import { buildHtmlReportData } from "../src/output/html/report.ts";
+import { createMermaid } from "../src/output/mermaid/workflow_gantt.ts";
+import {
+  jobs as nuxtJobs,
+  workflow as nuxtWorkflow,
+} from "./fixture/parallel_nuxt.ts";
 
 function makeWorkflowModel(yamlContent: string): WorkflowModel {
   const fileContentResponse: FileContentResponse = {
@@ -256,6 +263,95 @@ jobs:
         thresholdSec,
       );
       assertEquals(result.size, 0);
+    },
+  );
+
+  await t.test(
+    "does not copy sub-steps into a skipped parallel composite child",
+    () => {
+      const parallelWorkflowModel = makeWorkflowModel(`
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - parallel:
+          - uses: ./.github/actions/setup
+            if: false
+          - uses: ./.github/actions/setup
+`);
+      const compositeName = "Run ./.github/actions/setup";
+      const apiSteps = [
+        {
+          name: compositeName,
+          status: "completed",
+          conclusion: "skipped",
+          number: 1,
+          started_at: "0001-01-01T00:00:00Z",
+          completed_at: "2024-01-15T10:00:00Z",
+        },
+        {
+          name: compositeName,
+          status: "completed",
+          conclusion: "success",
+          number: 2,
+          started_at: "2024-01-15T10:00:00Z",
+          completed_at: "2024-01-15T10:00:30Z",
+        },
+        {
+          name: "Parallel group",
+          status: "completed",
+          conclusion: "success",
+          number: 3,
+          started_at: "2024-01-15T10:00:00Z",
+          completed_at: "2024-01-15T10:00:30Z",
+        },
+      ] as NonNullable<WorkflowJobs[number]["steps"]>;
+      const log = [
+        `2024-01-15T10:00:00.1000000Z Waiting for background step(s) to complete: __parallel_0_0, ${compositeName}`,
+        `2024-01-15T10:00:00.2000000Z ##[group]${compositeName}`,
+        "2024-01-15T10:00:00.3000000Z ##[group]Run echo setup",
+      ].join("\n");
+      const parallel = expandParallelJobSteps(apiSteps, log);
+      assertEquals(parallel.warning, undefined);
+      const workflowJobs = [
+        { ...nuxtJobs[0], id: 1, name: "test", steps: parallel.steps },
+      ] as TimelineJobs;
+
+      const compositeInfos = identifyCompositeSteps(
+        workflowJobs,
+        parallelWorkflowModel,
+        thresholdSec,
+      ).get(1)!;
+      assertEquals(
+        compositeInfos.map(({ apiStepIndex, logHeaderOccurrence }) => [
+          apiStepIndex,
+          logHeaderOccurrence,
+        ]),
+        [[2, 0]],
+      );
+
+      const steps = expandJobSteps(
+        parallel.steps,
+        compositeInfos,
+        new Map([["./.github/actions/setup", 1]]),
+        parseLogBlocks(log),
+      );
+      assertEquals(
+        steps.map((step) => [step.name, step.conclusion]),
+        [
+          ["Parallel group", "success"],
+          [`(bg) ${compositeName}`, "skipped"],
+          [`(bg) ${compositeName}`, "success"],
+          ["(sub) echo setup", "success"],
+        ],
+      );
+
+      const jobs = [{ ...workflowJobs[0], steps }];
+      const mermaid = createMermaid(nuxtWorkflow, jobs, {});
+      assertEquals(mermaid.match(/\(sub\) echo setup/g)?.length, 1);
+      const html = JSON.stringify(buildHtmlReportData(nuxtWorkflow, jobs));
+      assertEquals(html.match(/echo setup/g)?.length, 1);
     },
   );
 });

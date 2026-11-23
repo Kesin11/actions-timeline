@@ -66,9 +66,9 @@ const createCompositeChildPosition = (
 
 const createParallelStepPosition = (
   workflow: WorkflowRun,
-  step: TimelineStep,
+  startedAt: string | null,
 ): string => {
-  return formatElapsedTime(diffSec(workflow.run_started_at, step.started_at));
+  return formatElapsedTime(diffSec(workflow.run_started_at, startedAt));
 };
 
 const createWaitingRunnerStep = (
@@ -122,6 +122,7 @@ export const createGanttJobs = (
       let previousTopLevelStepId: ganttStep["id"] | undefined;
       let compositeChildAnchorId: ganttStep["id"] | undefined;
       let previousCompositeChildId: ganttStep["id"] | undefined;
+      let parallelParentStartedAt: string | null | undefined;
 
       const waitingRunnerStep = createWaitingRunnerStep(
         workflow,
@@ -134,7 +135,20 @@ export const createGanttJobs = (
       }
 
       completedSteps.forEach((step, stepIndex) => {
-        const stepElapsedSec = diffSec(step.started_at, step.completed_at);
+        if (step.timelineRowKind === "parallel-parent") {
+          parallelParentStartedAt = step.started_at;
+        } else if (
+          step.timelineRowKind !== "parallel-child" &&
+          step.timelineRowKind !== "composite-child"
+        ) {
+          parallelParentStartedAt = undefined;
+        }
+        const skippedParallelChild =
+          step.timelineRowKind === "parallel-child" &&
+          step.conclusion === "skipped";
+        const stepElapsedSec = skippedParallelChild
+          ? 0
+          : diffSec(step.started_at, step.completed_at);
         const id = createGanttStepId(jobIndex, steps.length);
         const nextStep = completedSteps[stepIndex + 1];
         const position =
@@ -147,7 +161,12 @@ export const createGanttJobs = (
               )
             : step.timelineRowKind === "parallel-parent" ||
                 step.timelineRowKind === "parallel-child"
-              ? createParallelStepPosition(workflow, step)
+              ? createParallelStepPosition(
+                  workflow,
+                  skippedParallelChild
+                    ? (parallelParentStartedAt ?? step.started_at)
+                    : step.started_at,
+                )
               : createTopLevelStepPosition(
                   workflow,
                   jobStartedAt,
@@ -155,7 +174,10 @@ export const createGanttJobs = (
                 );
 
         steps.push({
-          name: formatName(step.name, stepElapsedSec),
+          name: formatName(
+            skippedParallelChild ? `(skipped) ${step.name}` : step.name,
+            stepElapsedSec,
+          ),
           id,
           status:
             step.timelineRowKind === "parallel-parent"
